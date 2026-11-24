@@ -1,7 +1,7 @@
 # Feature Spec: A4 Weather Data & Parameters
 
 **Parent:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md (Feature 1)
-**Status:** Approved (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9): `groundWater` becomes `waterToGround`, the `ground_water` parameter group moves to A5 (20 constants, 23 table rows), `HydrologyInputs` and `WeatherHandoff` types added.
+**Status:** Done (2026-11-24; built in package `DraoiHexWorldWeather`, see the plan). Approved 2026-11-16. Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9): `groundWater` becomes `waterToGround`, the `ground_water` parameter group moves to A5 (20 constants, 23 table rows), `HydrologyInputs` and `WeatherHandoff` types added.
 **Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d):** `pressureAnomaly` joins `WeatherFields` (ten arrays); `WeatherHandoff` gains `influenceWater`; `HydrologyInputs` carries A5's firn constants; the descriptor table gains the `influence` block (GDD §10a) with `Int` and `Enum` kinds (41 rows).
 **Design source:** `DesignDocs/COW/Output Docs/GDD/08_SystemsDeepDive/A4_Weather/A4_TuningParameters.md` §1–§10, §10a, §14 and `A4_TechnicalSpec.md` §1, §4.1 (all locked 2026-11-17, CHANGE-047); `A4_EdgeCaseMatrix.md` (EC-01, EC-19)
 **Depends on:** S-1 Biome widening (10 → 13; built) and `WorldGeneration::BiomeFromId`. No Dia code beyond `DynamicArrayC` and `Json::Value`.
@@ -219,7 +219,7 @@ User decisions from the world-sim review. Each item **supersedes** any contradic
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (A5 hand-off). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). Plan: [weather-data.plan.md](weather-data.plan.md) (written 2026-11-16, not started).
+**Status:** `Done` (2026-11-24). Approved 2026-11-16. Amended 2026-11-17 (A5 hand-off). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). Plan: [weather-data.plan.md](weather-data.plan.md) (written 2026-11-16, not started).
 
 **Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).
 

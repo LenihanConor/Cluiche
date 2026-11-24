@@ -311,3 +311,68 @@ TEST(WeatherInitialise, WorldWithOnlyWaterSourceAndBiomeGivesValidState)
         EXPECT_LE(sim.Fields().temperature[i], 1.0f);
     }
 }
+
+// ---- Gap-audit edges (Task 9) -----------------------------------------------------------------------------------
+
+TEST(WeatherInitialise, BaselineRowSelectsEachSeasonsOwnColumn)
+{
+    WeatherParameters p = MakeParams();
+    EXPECT_EQ(p.BaselineRow(Season::Spring), p.baselineSpring);
+    EXPECT_EQ(p.BaselineRow(Season::Summer), p.baselineSummer);
+    EXPECT_EQ(p.BaselineRow(Season::Autumn), p.baselineAutumn);
+    EXPECT_EQ(p.BaselineRow(Season::Winter), p.baselineWinter);
+    const WeatherParameters& cp = p;
+    EXPECT_EQ(cp.BaselineRow(Season::Autumn), p.baselineAutumn);
+}
+
+TEST(WeatherInitialise, LargeMapInitialisesAndIsDeterministic)
+{
+    // S-1 Large is 104 x 64 = 6,656 cells.
+    WeatherTerrain t = MakeTerrain(104, 64);
+    WeatherSimulation a, b;
+    ASSERT_TRUE(a.Initialise(t, MakeParams(), Reg()));
+    ASSERT_TRUE(b.Initialise(t, MakeParams(), Reg()));
+    EXPECT_EQ(a.Fields().CellCount(), 6656u);
+    EXPECT_TRUE(SameFields(a.Fields(), b.Fields()));
+    EXPECT_FLOAT_EQ(a.Fields().moisture[0], kWaterMois);
+    EXPECT_FLOAT_EQ(a.Fields().moisture[6655], kLandMois);
+}
+
+TEST(WeatherInitialise, GrowingThenShrinkingThenGrowingAgainStaysEqualToFresh)
+{
+    WeatherSimulation reused;
+    ASSERT_TRUE(reused.Initialise(MakeTerrain(3, 2), MakeParams(), Reg()));
+    ASSERT_TRUE(reused.Initialise(MakeTerrain(104, 64), MakeParams(), Reg()));
+    ASSERT_TRUE(reused.Initialise(MakeTerrain(6, 4), MakeParams(), Reg()));
+    WeatherSimulation fresh;
+    ASSERT_TRUE(fresh.Initialise(MakeTerrain(6, 4), MakeParams(), Reg()));
+    EXPECT_TRUE(SameFields(reused.Fields(), fresh.Fields()));
+    EXPECT_EQ(reused.Terrain().biome.Size(), 24u);
+}
+
+TEST(WeatherInitialise, BaselineInputOfWrongLengthLeavesThePreviousWorldAlone)
+{
+    WeatherSimulation sim;
+    ASSERT_TRUE(sim.Initialise(MakeTerrain(), MakeParams(), Reg()));
+    WeatherSimulation reference;
+    ASSERT_TRUE(reference.Initialise(MakeTerrain(), MakeParams(), Reg()));
+    SeasonalBaselineInput in;
+    in.temperature.Reserve(5);
+    for (uint32_t i = 0; i < 5; ++i) in.temperature.Add(0.5f);
+    EXPECT_FALSE(sim.Initialise(MakeTerrain(), MakeParams(), Reg(), &in));
+    EXPECT_TRUE(SameFields(sim.Fields(), reference.Fields()));
+}
+
+TEST(WeatherInitialise, BaselineInputIgnoresTheBiomeArray)
+{
+    SeasonalBaselineInput in;
+    in.temperature.Reserve(24);
+    for (uint32_t i = 0; i < 24; ++i) in.temperature.Add(0.7f);
+    WeatherTerrain t = MakeTerrain();
+    t.biome[0] = kNoBiome;
+    t.biome[1] = BiomeIndex(250);
+    WeatherSimulation sim;
+    ASSERT_TRUE(sim.Initialise(t, MakeParams(), Reg(), &in));
+    EXPECT_FLOAT_EQ(sim.Fields().temperature[0], Clamp01(0.7f * (1.0f - kCooling * t.latitude[0])));
+    EXPECT_FLOAT_EQ(sim.Fields().temperature[1], Clamp01(0.7f * (1.0f - kCooling * t.latitude[1])));
+}

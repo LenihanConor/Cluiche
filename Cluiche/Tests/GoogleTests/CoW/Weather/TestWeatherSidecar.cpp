@@ -602,3 +602,47 @@ TEST(WeatherSidecar, UntouchedRoundTripThroughTheMutationHelperStillLoads)
     Loaded l(Dump(ParseText(SidecarText())));   // guards the fixtures above: only the mutation breaks the file
     EXPECT_TRUE(l.ok) << l.err.key.AsCStr() << ": " << l.err.reason.AsCStr();
 }
+
+// ---- Gap-audit edges (Task 9) -----------------------------------------------------------------------------------
+
+TEST(WeatherSidecar, PackKeyInTheWrongGroupIsDroppedWithAWarning)
+{
+    Loaded l;
+    ASSERT_TRUE(l.ok);
+    ParamWarnings warn;
+    ParamError err;
+    const Json::Value pack = ParseText(PackText(l.file, "\"solar.snow_threshold\":0.25,\"snow.melt_rate\":0.31"));
+    ASSERT_TRUE(l.file.ApplyPack(pack, warn, err));
+    EXPECT_GE(warn.items.Size(), 1u);
+    EXPECT_EQ(l.file.Schema().FindAttribute(StringCRC("solar.snow_threshold")), nullptr);
+    EXPECT_FLOAT_EQ(l.file.Values().GetValue(StringCRC("precipitation.snow_threshold")), 0.3f);
+    EXPECT_FLOAT_EQ(l.file.Values().GetValue(StringCRC("snow.melt_rate")), 0.31f);   // the valid key still applied
+}
+
+TEST(WeatherSidecar, TheLastRegistryBiomeIsBoundInEverySeasonColumn)
+{
+    Loaded l;
+    ASSERT_TRUE(l.ok);
+    ParamBinding<WeatherParameters> b;
+    BindingReport report;
+    ASSERT_TRUE(Resolve(b, l.file, report));
+    WeatherParameters p;
+    for (uint32_t s = 0; s < kSeasonCount; ++s) p.BaselineRow(static_cast<Season>(s))[Reg().Count() - 1] = -3.0f;
+    b.Snapshot(l.file.Values(), p);
+    const BiomeIndex last = static_cast<BiomeIndex>(Reg().Count() - 1);
+    EXPECT_FLOAT_EQ(p.baselineSpring[last], 0.70f);   // Biome.DesertifiedPlain
+    EXPECT_FLOAT_EQ(p.baselineSummer[last], 0.88f);
+    EXPECT_FLOAT_EQ(p.baselineAutumn[last], 0.72f);
+    EXPECT_FLOAT_EQ(p.baselineWinter[last], 0.50f);
+}
+
+TEST(WeatherSidecar, ResolveAgainstTheWrongBiomeCountReportsCountMismatches)
+{
+    Loaded l;
+    ASSERT_TRUE(l.ok);
+    ParamBinding<WeatherParameters> b;
+    BindWeatherParameters(b, Reg().Count() - 1);   // a stale count after the registry grew
+    BindingReport report;
+    EXPECT_FALSE(b.Resolve(l.file.Schema(), report));
+    EXPECT_EQ(report.countMismatches.Size(), 4u);
+}
