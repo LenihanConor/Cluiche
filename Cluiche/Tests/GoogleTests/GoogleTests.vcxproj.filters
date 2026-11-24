@@ -2742,8 +2742,8 @@
     <ClCompile Include="CoW\TestBiomeEdgeCases.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="CoW\TestRegionsAndSitesTypes.cpp">
-      <Filter>CoW</Filter>
+    <ClCompile Include="Draoi\TestRegionsAndSitesTypes.cpp">
+      <Filter>Draoi</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestSiteRegistry.cpp">
       <Filter>CoW</Filter>
@@ -3299,6 +3299,9 @@
     </ClCompile>
     <ClCompile Include="Draoi\TestTerrainTestHost.cpp">
       <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestRegionsAndSitesTypesCoW.cpp">
+      <Filter>CoW</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

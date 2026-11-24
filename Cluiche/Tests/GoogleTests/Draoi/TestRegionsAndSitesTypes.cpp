@@ -1,6 +1,6 @@
 // S-1 Regions, Nodes and Site Hook task 1: RegionTable, SiteSet, PlaceResult, DeriveSubSeed.
 #include <gtest/gtest.h>
-#include <Shared/CoWNodeKinds.h>
+#include <DraoiHexWorldTerrain/Testing/TerrainTestHost.h>
 #include <DraoiHexWorldTerrain/TerrainTypes.h>
 #include <DraoiHexWorld/Regions.h>
 #include <DraoiHexWorld/Sites.h>
@@ -14,8 +14,8 @@
 #include <type_traits>
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
-using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Core::StringCRC;
 
 static_assert(std::is_trivially_copyable_v<Site>, "Site must be trivially copyable");
@@ -61,7 +61,7 @@ TEST(RegionTypes, ResizeClearsRegionsAndSites)
     w.regions.absorbedCells = 3;
     w.regions.mainlandRegionCount = 1;
     w.regions.limitedBy = kStratumWild;
-    w.sites.Add(MakeSite(BuiltinNodeKinds::Corridor(), 2));
+    w.sites.Add(MakeSite(TestNodeKinds().corridor, 2));
     w.Cells()[0].region = 1;
 
     w.Resize({4, 4});
@@ -147,18 +147,18 @@ TEST(SiteSet, EmptySetBehaviour)
 {
     SiteSet s;
     EXPECT_EQ(s.Count(), 0);
-    EXPECT_EQ(s.Count(BuiltinNodeKinds::River()), 0);
+    EXPECT_EQ(s.Count(TestNodeKinds().river), 0);
     EXPECT_TRUE(s.All().empty());
-    EXPECT_TRUE(s.Of(BuiltinNodeKinds::River()).empty());
+    EXPECT_TRUE(s.Of(TestNodeKinds().river).empty());
     EXPECT_FALSE(s.Has(0));
     EXPECT_EQ(s.At(0).Size(), 0u);
-    EXPECT_EQ(s.Find(BuiltinNodeKinds::River(), 0), nullptr);
+    EXPECT_EQ(s.Find(TestNodeKinds().river, 0), nullptr);
 }
 
 TEST(SiteSet, SortedByKindThenCellAfterOutOfOrderAdds)
 {
     SiteSet s;
-    const StringCRC kinds[3] = { BuiltinNodeKinds::Corridor(), BuiltinNodeKinds::River(), BuiltinNodeKinds::Hunting() };
+    const StringCRC kinds[3] = { TestNodeKinds().corridor, TestNodeKinds().river, TestNodeKinds().hunting };
     for (uint32_t cell : { 9u, 2u, 7u, 4u })
     {
         for (const StringCRC& k : kinds) { EXPECT_TRUE(s.Add(MakeSite(k, cell))); }
@@ -171,42 +171,42 @@ TEST(SiteSet, SortedByKindThenCellAfterOutOfOrderAdds)
                              (all[i - 1].kindCrc == all[i].kindCrc && all[i - 1].cell < all[i].cell);
         EXPECT_TRUE(ordered) << "index " << i;
     }
-    const auto of = s.Of(BuiltinNodeKinds::River());
+    const auto of = s.Of(TestNodeKinds().river);
     ASSERT_EQ(of.size(), 4u);
     EXPECT_EQ(of[0].cell, 2u);
     EXPECT_EQ(of[1].cell, 4u);
     EXPECT_EQ(of[2].cell, 7u);
     EXPECT_EQ(of[3].cell, 9u);
-    EXPECT_EQ(s.Count(BuiltinNodeKinds::River()), 4);
-    EXPECT_EQ(s.Count(BuiltinNodeKinds::Resource()), 0);
-    EXPECT_TRUE(s.Of(BuiltinNodeKinds::Resource()).empty());
+    EXPECT_EQ(s.Count(TestNodeKinds().river), 4);
+    EXPECT_EQ(s.Count(TestNodeKinds().resource), 0);
+    EXPECT_TRUE(s.Of(TestNodeKinds().resource).empty());
 }
 
 TEST(SiteSet, HasAtAndFind)
 {
     SiteSet s;
-    s.Add(MakeSite(BuiltinNodeKinds::River(), 5, 3));
-    s.Add(MakeSite(BuiltinNodeKinds::Corridor(), 5, 3));
-    s.Add(MakeSite(BuiltinNodeKinds::Hunting(), 6, 4));
+    s.Add(MakeSite(TestNodeKinds().river, 5, 3));
+    s.Add(MakeSite(TestNodeKinds().corridor, 5, 3));
+    s.Add(MakeSite(TestNodeKinds().hunting, 6, 4));
     EXPECT_TRUE(s.Has(5));
     EXPECT_TRUE(s.Has(6));
     EXPECT_FALSE(s.Has(7));
     EXPECT_EQ(s.At(5).Size(), 2u);
     EXPECT_EQ(s.At(6).Size(), 1u);
     EXPECT_EQ(s.At(7).Size(), 0u);
-    ASSERT_NE(s.Find(BuiltinNodeKinds::Hunting(), 6), nullptr);
-    EXPECT_EQ(s.Find(BuiltinNodeKinds::Hunting(), 6)->region, 4);
-    EXPECT_EQ(s.Find(BuiltinNodeKinds::Hunting(), 5), nullptr);
+    ASSERT_NE(s.Find(TestNodeKinds().hunting, 6), nullptr);
+    EXPECT_EQ(s.Find(TestNodeKinds().hunting, 6)->region, 4);
+    EXPECT_EQ(s.Find(TestNodeKinds().hunting, 5), nullptr);
 }
 
 TEST(SiteSet, DuplicateKindAndCellRejected)
 {
     SiteSet s;
-    EXPECT_TRUE(s.Add(MakeSite(BuiltinNodeKinds::River(), 5)));
-    EXPECT_FALSE(s.Add(MakeSite(BuiltinNodeKinds::River(), 5, 9)));
+    EXPECT_TRUE(s.Add(MakeSite(TestNodeKinds().river, 5)));
+    EXPECT_FALSE(s.Add(MakeSite(TestNodeKinds().river, 5, 9)));
     EXPECT_EQ(s.Count(), 1);
-    EXPECT_EQ(s.Find(BuiltinNodeKinds::River(), 5)->region, 1);   // original kept
-    EXPECT_TRUE(s.Add(MakeSite(BuiltinNodeKinds::Corridor(), 5)));  // other kind on same cell is fine
+    EXPECT_EQ(s.Find(TestNodeKinds().river, 5)->region, 1);   // original kept
+    EXPECT_TRUE(s.Add(MakeSite(TestNodeKinds().corridor, 5)));  // other kind on same cell is fine
     EXPECT_EQ(s.Count(), 2);
 }
 
@@ -214,9 +214,9 @@ TEST(SiteSet, ClearAndEquality)
 {
     SiteSet a, b;
     EXPECT_TRUE(a == b);
-    a.Add(MakeSite(BuiltinNodeKinds::River(), 1));
+    a.Add(MakeSite(TestNodeKinds().river, 1));
     EXPECT_FALSE(a == b);
-    b.Add(MakeSite(BuiltinNodeKinds::River(), 1));
+    b.Add(MakeSite(TestNodeKinds().river, 1));
     EXPECT_TRUE(a == b);
     a.Clear();
     EXPECT_EQ(a.Count(), 0);
@@ -224,20 +224,15 @@ TEST(SiteSet, ClearAndEquality)
 }
 
 // ---- Built-in kinds --------------------------------------------------------------------------
-TEST(SiteKinds, BuiltinIdsAndInfo)
+TEST(SiteKinds, BuiltinInfoForInjectedKinds)
 {
-    EXPECT_STREQ(BuiltinNodeKinds::Corridor().AsChar(), "CoW.Node.Corridor");
-    EXPECT_STREQ(BuiltinNodeKinds::River().AsChar(), "CoW.Node.River");
-    EXPECT_STREQ(BuiltinNodeKinds::Hunting().AsChar(), "CoW.Node.Hunting");
-    EXPECT_STREQ(BuiltinNodeKinds::Resource().AsChar(), "CoW.Node.Resource");
-
-    const StringCRC kinds[4] = { BuiltinNodeKinds::Corridor(), BuiltinNodeKinds::River(),
-                                 BuiltinNodeKinds::Hunting(), BuiltinNodeKinds::Resource() };
+    const StringCRC kinds[4] = { TestNodeKinds().corridor, TestNodeKinds().river,
+                                 TestNodeKinds().hunting, TestNodeKinds().resource };
     const char* names[4] = { "Corridor Node", "River Node", "Hunting Ground", "Resource Deposit" };
     std::set<uint32_t> crcs, colours;
     for (int i = 0; i < 4; ++i)
     {
-        const SiteKindInfo info = BuiltinNodeKindInfo(CoWNodeKindIds(), kinds[i]);
+        const SiteKindInfo info = BuiltinNodeKindInfo(TestNodeKinds(), kinds[i]);
         EXPECT_EQ(info.kindCrc, SiteKindId(kinds[i]));
         EXPECT_STREQ(info.id, kinds[i].AsChar());
         EXPECT_STREQ(info.displayName, names[i]);
@@ -249,12 +244,13 @@ TEST(SiteKinds, BuiltinIdsAndInfo)
     EXPECT_EQ(colours.size(), 4u);
 }
 
-TEST(SiteKinds, UnknownKindInfoIsEmptyAndFlagged)
+TEST(SiteKinds, UnknownInjectedKindInfoIsEmptyAndFlagged)
 {
-    const SiteKindInfo info = BuiltinNodeKindInfo(CoWNodeKindIds(), StringCRC("Dragon.Hearth"));
-    EXPECT_EQ(info.kindCrc, SiteKindId(StringCRC("Dragon.Hearth")));
+    const SiteKindInfo info = BuiltinNodeKindInfo(TestNodeKinds(), StringCRC("Test.Unknown"));
+    EXPECT_EQ(info.kindCrc, SiteKindId(StringCRC("Test.Unknown")));
     EXPECT_EQ(info.displayName[0], '\0');
 }
+
 
 // ---- PlaceResult -----------------------------------------------------------------------------
 TEST(PlaceResult, FactoriesAndReason)
@@ -286,14 +282,14 @@ TEST(PlaceResult, LongReasonIsTruncatedAndTerminated)
 // ---- DeriveSubSeed ---------------------------------------------------------------------------
 TEST(DeriveSubSeed, Deterministic)
 {
-    EXPECT_EQ(DeriveSubSeed(42ull, StringCRC("CoW.Regions")), DeriveSubSeed(42ull, StringCRC("CoW.Regions")));
+    EXPECT_EQ(DeriveSubSeed(42ull, StringCRC("Test.Regions")), DeriveSubSeed(42ull, StringCRC("Test.Regions")));
     EXPECT_EQ(DeriveSubSeed(42ull, uint64_t(7)), DeriveSubSeed(42ull, uint64_t(7)));
 }
 
 TEST(DeriveSubSeed, StepIdsDiffer)
 {
-    const StringCRC steps[] = { StringCRC("CoW.Regions"), StringCRC("CoW.Node.Corridor"), StringCRC("CoW.Node.River"),
-                                StringCRC("CoW.Node.Fill") };
+    const StringCRC steps[] = { StringCRC("Test.Regions"), StringCRC("Test.Node.Corridor"), StringCRC("Test.Node.River"),
+                                StringCRC("Test.Node.Fill") };
     std::set<uint64_t> seen;
     for (const StringCRC& s : steps) { seen.insert(DeriveSubSeed(42ull, s)); }
     EXPECT_EQ(seen.size(), 4u);
@@ -301,7 +297,7 @@ TEST(DeriveSubSeed, StepIdsDiffer)
 
 TEST(DeriveSubSeed, ParentChangeChangesOutput)
 {
-    EXPECT_NE(DeriveSubSeed(1ull, StringCRC("CoW.Regions")), DeriveSubSeed(2ull, StringCRC("CoW.Regions")));
+    EXPECT_NE(DeriveSubSeed(1ull, StringCRC("Test.Regions")), DeriveSubSeed(2ull, StringCRC("Test.Regions")));
     EXPECT_NE(DeriveSubSeed(1ull, uint64_t(3)), DeriveSubSeed(2ull, uint64_t(3)));
 }
 

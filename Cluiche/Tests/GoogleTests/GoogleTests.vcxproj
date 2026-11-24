@@ -1196,7 +1196,7 @@
     <ClCompile Include="CoW\TestBiomeGenerator.cpp" />
     <ClCompile Include="CoW\TestBiomeAcceptance.cpp" />
     <ClCompile Include="CoW\TestBiomeEdgeCases.cpp" />
-    <ClCompile Include="CoW\TestRegionsAndSitesTypes.cpp" />
+    <ClCompile Include="Draoi\TestRegionsAndSitesTypes.cpp" />
     <ClCompile Include="CoW\TestSiteRegistry.cpp" />
     <ClCompile Include="CoW\TestRegionPartition.cpp" />
     <ClCompile Include="CoW\TestRegionRepair.cpp" />
@@ -1376,6 +1376,7 @@
     <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\EntitySpawnerModule.cpp" />
     <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\TriggerScriptModule.cpp" />
     <ClCompile Include="Draoi\TestTerrainTestHost.cpp" />
+    <ClCompile Include="CoW\TestRegionsAndSitesTypesCoW.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
