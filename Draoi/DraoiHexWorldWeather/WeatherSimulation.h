@@ -65,6 +65,14 @@ public:
     // weeksRemaining 0. WindOverride with weeksRemaining 0 lasts until cleared.
     bool     AddForcing(const WeatherForcing& forcing);
     uint32_t ForcingCount() const { return mForcings.Size(); }
+    // Removes every WindOverride forcing (including the until-cleared ones); every other kind stays, in order. No
+    // allocation. Call only when no step is in flight (between Commit and the next Capture).
+    void     ClearWindOverrides();
+
+    // Sets one cell's biome in the simulation's owned terrain copy; the next Capture's baseline resolution sees it.
+    // False, nothing changed, before Initialise or when the cell is out of range. No allocation. Call only when no
+    // step is in flight (between Commit and the next Capture).
+    bool     SetCellBiome(uint32_t cell, BiomeIndex biome);
 
     // Registers a region (ascending, de-duplicated, every index < cell count). Returns the handle (its index), or
     // kNoCellSet for an empty, unsorted, duplicated or out-of-range list, a full store (kMaxCellSets) or before Initialise.

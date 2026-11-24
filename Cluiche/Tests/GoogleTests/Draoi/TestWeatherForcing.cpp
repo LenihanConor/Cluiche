@@ -647,3 +647,66 @@ TEST(WeatherForcing, RunDoesNotReallocateForcingStorage)
     EXPECT_EQ(claimedSize, rig.sim.Tables().claimed.Size());
     EXPECT_EQ(setData, &rig.sim.Captured().cellSets.cells[0u]);
 }
+
+// ---- SetCellBiome / ClearWindOverrides (weather-module amendment 6) --------------------------------------------------
+
+TEST(WeatherForcing, SetCellBiomeUpdatesTerrainAndRejectsBadInput)
+{
+    Rig rig(Land());
+    EXPECT_TRUE(rig.sim.SetCellBiome(5, 7));
+    EXPECT_EQ(7, static_cast<int>(rig.sim.Terrain().biome[5]));
+    EXPECT_EQ(2, static_cast<int>(rig.sim.Terrain().biome[6]));
+    EXPECT_FALSE(rig.sim.SetCellBiome(kN, 7));
+    EXPECT_FALSE(rig.sim.SetCellBiome(0xFFFFFFFFu, 7));
+    EXPECT_EQ(7, static_cast<int>(rig.sim.Terrain().biome[5]));
+}
+
+TEST(WeatherForcing, SetCellBiomeBeforeInitialiseFails)
+{
+    WeatherSimulation sim;
+    EXPECT_FALSE(sim.SetCellBiome(0, 7));
+}
+
+TEST(WeatherForcing, SetCellBiomeIsVisibleAtTheNextCapture)
+{
+    Rig rig(Land());
+    Rig reference(Land(0.3f, 7));
+    rig.Capture();
+    reference.Capture();
+    ASSERT_NE(rig.sim.Captured().seasonBaseline[5], reference.sim.Captured().seasonBaseline[5]);
+    ASSERT_TRUE(rig.sim.SetCellBiome(5, 7));
+    rig.Capture();
+    EXPECT_EQ(rig.sim.Captured().seasonBaseline[5], reference.sim.Captured().seasonBaseline[5]);
+    EXPECT_NE(rig.sim.Captured().seasonBaseline[6], reference.sim.Captured().seasonBaseline[6]);
+}
+
+TEST(WeatherForcing, ClearWindOverridesRemovesOnlyWindOverrides)
+{
+    Rig rig(Land());
+    ASSERT_TRUE(rig.sim.AddForcing(Make(ForcingKind::WindOverride, 5, 1.0f, 0, 0.6f)));
+    ASSERT_TRUE(rig.sim.AddForcing(Make(ForcingKind::PressureHold, 6, 0.9f, 3)));
+    ASSERT_TRUE(rig.sim.AddForcing(Make(ForcingKind::WindOverride, 7, 1.0f, 4, 0.6f)));
+    ASSERT_TRUE(rig.sim.AddForcing(Make(ForcingKind::Rain, 8, 0.2f, 2)));
+    rig.sim.ClearWindOverrides();
+    ASSERT_EQ(2u, rig.sim.ForcingCount());
+    EXPECT_EQ(ForcingKind::PressureHold, rig.sim.LiveForcings()[0].kind);
+    EXPECT_EQ(6u, rig.sim.LiveForcings()[0].cell);
+    EXPECT_EQ(ForcingKind::Rain, rig.sim.LiveForcings()[1].kind);
+    EXPECT_EQ(8u, rig.sim.LiveForcings()[1].cell);
+}
+
+TEST(WeatherForcing, ClearWindOverridesWithNoneIsANoOpAndStopsTheOverride)
+{
+    Rig rig(Land());
+    ASSERT_TRUE(rig.sim.AddForcing(Make(ForcingKind::PressureHold, 6, 0.9f, 3)));
+    rig.sim.ClearWindOverrides();
+    EXPECT_EQ(1u, rig.sim.ForcingCount());
+
+    const float v = 0.5f * kPiF;
+    ASSERT_TRUE(rig.sim.AddForcing(Make(ForcingKind::WindOverride, 5, v, 0, 0.6f)));
+    rig.Step();
+    EXPECT_EQ(rig.sim.Fields().windDirection[5], v);
+    rig.sim.ClearWindOverrides();
+    rig.Step();
+    EXPECT_NE(rig.sim.Fields().windDirection[5], v);
+}

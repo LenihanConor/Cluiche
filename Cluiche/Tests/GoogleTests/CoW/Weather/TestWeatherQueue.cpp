@@ -1,7 +1,7 @@
 // A4 WeatherModule Task 4: the Queue* API and ApplyEntry for the nine entry kinds (AC 19, 21, 22 and the forcing,
 // region forcing, biome change, preset, state-replace and wind-clear kinds). Entries apply in arrival order at Capture,
-// before the step latches its inputs. Biome change and clear-wind are drained and logged only until Draoi grows the
-// WeatherSimulation methods; preset until Feature 6; state replace until Feature 4.
+// before the step latches its inputs. Biome change and clear-wind apply through WeatherSimulation::SetCellBiome and
+// ClearWindOverrides; preset is drained and logged until Feature 6; state replace until Feature 4.
 #include "WeatherParamTestKit.h"
 
 namespace
@@ -201,28 +201,76 @@ TEST_F(WeatherQueueTest, RegionForcingWithNoCellsOrOutOfRangeCellsIsHandled)
 
 // ---- the kinds that are drained and logged ------------------------------------------------------------------------
 
-TEST_F(WeatherQueueTest, PresetStateReplaceBiomeChangeAndClearWindAreDrainedInArrivalOrder)
+TEST_F(WeatherQueueTest, PresetAndStateReplaceAreDrainedInArrivalOrderAndLogged)
 {
     CoW::Weather::WeatherPreset preset;
     snprintf(preset.id, sizeof(preset.id), "drought");
     ASSERT_TRUE(stage.QueuePreset(preset));
-    ASSERT_TRUE(stage.QueueBiomeChange(4, 2));
     CoW::Weather::WeatherStateRecord record;
     record.cellCount = 48;
     ASSERT_TRUE(stage.QueueStateReplace(record));
-    ASSERT_TRUE(stage.QueueClearWindOverrides());
-    EXPECT_EQ(4u, stage.QueueCount());
+    EXPECT_EQ(2u, stage.QueueCount());
     Step(0);
     EXPECT_EQ(0u, stage.QueueCount());
     const int a = Log().IndexOf("preset 'drought' drained");
-    const int b = Log().IndexOf("biome change for cell 4 drained");
     const int c = Log().IndexOf("state replace drained");
-    const int d = Log().IndexOf("clear-wind-overrides drained");
     EXPECT_GE(a, 0);
-    EXPECT_LT(a, b);
-    EXPECT_LT(b, c);
-    EXPECT_LT(c, d);
-    EXPECT_TRUE(stage.IsReady());   // none of them fails the stage
+    EXPECT_LT(a, c);
+    EXPECT_TRUE(stage.IsReady());   // neither fails the stage
+}
+
+// ---- biome change and clear-wind take effect at the next Capture ---------------------------------------------------
+
+TEST_F(WeatherQueueTest, BiomeChangeTakesEffectAtTheNextCapture)
+{
+    RefSim unchanged(Snapshot(), kSpinUpWeeks);
+    RefSim changed(Snapshot(), kSpinUpWeeks);
+    ASSERT_TRUE(changed.sim.SetCellBiome(4, 7));
+    unchanged.Live(0);
+    changed.Live(0);
+    ASSERT_TRUE(stage.QueueBiomeChange(4, 7));
+    EXPECT_EQ(1u, stage.QueueCount());
+    Step(0);
+    EXPECT_EQ(0u, stage.QueueCount());
+    EXPECT_TRUE(Matches(changed));
+    EXPECT_FALSE(Matches(unchanged)) << "the biome change must be observable in the fields";
+    EXPECT_EQ(0u, Log().Count(LogLevel::kWarning, "biome change"));
+}
+
+TEST_F(WeatherQueueTest, BiomeChangeOutOfRangeLogsAWarningAndChangesNothing)
+{
+    RefSim unchanged(Snapshot(), kSpinUpWeeks);
+    unchanged.Live(0);
+    ASSERT_TRUE(stage.QueueBiomeChange(100000u, 7));
+    Step(0);
+    EXPECT_GE(Log().Count(LogLevel::kWarning, "biome change for cell 100000 refused"), 1u);
+    EXPECT_TRUE(Matches(unchanged));
+}
+
+TEST_F(WeatherQueueTest, ClearWindOverridesTakesEffectAtTheNextCapture)
+{
+    WeatherForcing wind;
+    wind.kind = ForcingKind::WindOverride;
+    wind.cell = 9;
+    wind.value = 1.0f;
+    wind.value2 = 0.9f;
+    wind.weeksRemaining = 0;   // until cleared
+    ASSERT_TRUE(stage.QueueForcing(wind));
+    ASSERT_TRUE(stage.QueueForcing(Pressure(5, 0.9f, 5)));
+    Step(0);
+    ASSERT_EQ(2u, Forcings());
+
+    ASSERT_TRUE(stage.QueueClearWindOverrides());
+    Step(1);
+    EXPECT_EQ(1u, Forcings()) << "the wind override is gone, the pressure hold stays";
+
+    RefSim ref(Snapshot(), kSpinUpWeeks);
+    ASSERT_TRUE(ref.sim.AddForcing(wind));
+    ASSERT_TRUE(ref.sim.AddForcing(Pressure(5, 0.9f, 5)));
+    ref.Live(0);
+    ref.sim.ClearWindOverrides();
+    ref.Live(1);
+    EXPECT_TRUE(Matches(ref));
 }
 
 TEST_F(WeatherQueueTest, ForcingDoesNotChangeWhatAReaderSeesUntilCommit)

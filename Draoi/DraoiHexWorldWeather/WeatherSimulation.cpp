@@ -421,6 +421,29 @@ bool WeatherSimulation::AddForcing(const WeatherForcing& forcing)
     return true;
 }
 
+void WeatherSimulation::ClearWindOverrides()
+{
+    uint32_t keep = 0;
+    for (uint32_t i = 0; i < mForcings.Size(); ++i)
+    {
+        if (mForcings[i].kind == ForcingKind::WindOverride) continue;
+        if (keep != i) mForcings[keep] = mForcings[i];
+        ++keep;
+    }
+    while (mForcings.Size() > keep) mForcings.Remove();
+}
+
+bool WeatherSimulation::SetCellBiome(uint32_t cell, BiomeIndex biome)
+{
+    if (!mInitialised || cell >= mTerrain.biome.Size())
+    {
+        DIA_LOG_WARNING("Weather", "WeatherSimulation: SetCellBiome rejected (initialised %d, cell %u)", mInitialised ? 1 : 0, cell);
+        return false;
+    }
+    mTerrain.biome[cell] = biome;
+    return true;
+}
+
 } // namespace Weather
 } // namespace HexWorld
 } // namespace Draoi

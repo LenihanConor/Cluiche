@@ -232,9 +232,10 @@ void WeatherHooks::ApplyEntry(WeatherSimulation& working, WeatherLatch&, const W
         break;
     }
     case EntryKind::kBiomeChange:
-        // WeatherSimulation has no per-cell biome setter (its terrain is read-only after Initialise); needs a Draoi API.
-        DIA_LOG_WARNING(kLogChannel, "WTH: biome change for cell %u drained but not applied (no WeatherSimulation setter yet)",
-                        static_cast<unsigned>(entry.cell));
+        if (!working.SetCellBiome(entry.cell, entry.biome))
+        {
+            DIA_LOG_WARNING(kLogChannel, "WTH: biome change for cell %u refused by the simulation", static_cast<unsigned>(entry.cell));
+        }
         break;
     case EntryKind::kPreset:
         // Plan Feature 6 owns WeatherPreset and ApplyPreset; the kind and slot are in place for it.
@@ -245,8 +246,7 @@ void WeatherHooks::ApplyEntry(WeatherSimulation& working, WeatherLatch&, const W
         DIA_LOG_WARNING(kLogChannel, "WTH: state replace drained but not applied (state restore is Feature 4)");
         break;
     case EntryKind::kClearWindOverrides:
-        // WeatherSimulation::ClearWindOverrides does not exist yet; needs a Draoi API.
-        DIA_LOG_WARNING(kLogChannel, "WTH: clear-wind-overrides drained but not applied (no WeatherSimulation method yet)");
+        working.ClearWindOverrides();
         break;
     default:
         break;
