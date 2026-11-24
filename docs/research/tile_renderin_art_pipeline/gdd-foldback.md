@@ -103,12 +103,12 @@ Pass/Fail Metrics table: replace "All 12 biomes", "All 5 states", "Manual inspec
 
 ---
 
-## 5. Naming reconciliation (needs a GDD decision; proposals)
+## 5. Naming reconciliation (decided by the user 2026-11-24 as proposed; the GDD session applies it)
 
 | Item | The conflict | Proposal |
 |---|---|---|
 | **Biome set** | `TileRenderingPipeline`/`V1_TileRendering`: 12 Phase-2 fantasy biomes. `ColourPaletteAndLighting`: 8 palette biomes + coastal water. Code: a data-driven Biome Registry (10 generated biomes + 3 succession biomes). | The **registry is the truth**. The 8 palette biomes (Grassland/Steppe, Temperate Forest, Wetland/Delta, Desert/Dry Basin, Alpine/Mountain, Tundra/Boreal, Rainforest, Volcanic/Ashland) map onto the generated land biomes; Ocean and Lake use the water table. Drop the 12 fantasy names from V-1 and the pipeline doc, or keep them as lore names only. |
-| **Succession biomes** (Scrub, Burned Ashland, Desertified Plain) | No GDD palette. | Provisional: Scrub = Grassland primary desaturated 25% with Desert accent; Burned Ashland = Volcanic primary with Alpine secondary; Desertified Plain = Desert palette. **Please confirm or replace.** |
+| **Succession biomes** (Scrub, Burned Ashland, Desertified Plain) | No GDD palette. | Provisional: Scrub = Grassland primary desaturated 25% with Desert accent; Burned Ashland = Volcanic primary with Alpine secondary; Desertified Plain = Desert palette. **Confirmed by the user 2026-11-24; stands until the GDD supplies its own.** |
 | **Season names** | Spring/Summer/Autumn/Winter (V-1, pipeline) vs Bloom/Hunt/Dry/Freeze (palette and lighting). | **Bloom/Hunt/Dry/Freeze** everywhere; the palette doc is the locked colour source. |
 | **Ecology states** | Five (Thriving, Stable, Recovering, Depleted, Barren) in V-1/pipeline vs four (Thriving, Stable, Stressed, Collapsed) in Style Core and sort layers. | The map renders a **continuous health value in four bands** (Collapsed < 0.33, Stressed < 0.66, Stable, Thriving) matching Style Core's saturation rules. The five-state names are A1's hysteretic labels; they are not separate visuals. A1 owns the label set. |
 | **Snow** | `snow_cover: bool` in pipeline §7.1/7.2 vs A4's continuous snow pack. | Continuous pack, blended by slope, elevation and temperature (see §3.3). |

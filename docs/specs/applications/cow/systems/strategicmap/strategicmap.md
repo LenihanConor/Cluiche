@@ -111,7 +111,7 @@ Every source implements `IMapChannelSource`, so the V-1 stand-ins and the live s
 
 | # | Feature | Summary | Spec | Status |
 |---|---|---|---|---|
-| 1 | Map Visual Data | Biome visual table keyed by Biome Registry ids: palette P/S/A, season callouts, ground marks, relief weights, prop sets; depth-zone ink and hatch; GDD season grade tokens; ecology bands. Schema'd files under `Global/Map/` | [map-visual-data.md](map-visual-data.md) | Draft |
+| 1 | Map Visual Data | Biome visual table keyed by Biome Registry ids: palette P/S/A, season callouts, ground marks, relief weights, prop sets; depth-zone ink and hatch; GDD season grade tokens; ecology bands. Schema'd files under `Global/Map/` | [map-visual-data.md](map-visual-data.md) | Approved 2026-11-24 |
 | 2 | Channel Binding | `IMapChannelSource`, S-1 binding, year clock, slots for A1/A3/A4/A5 (stand-ins provided by V-1) | [channel-binding.md](channel-binding.md) | Approved 2026-11-24 |
 | 3 | Props and Fauna Set | CoW palette-masked SVG props (Claude-authored first; Gemini only if needed through the asset forge) and placement rules; herd and bird sprites; cloud sprites | [props-and-fauna-set.md](props-and-fauna-set.md) | Approved 2026-11-24 |
 | 4 | StrategicMapModule and Camera | Render-side module; strategic camera (Orbit + zoom-dependent pitch, bounds); `cow.map.*` commands; style parameter file load/save/reload | [module-and-camera.md](module-and-camera.md) | Approved 2026-11-24 |
@@ -147,11 +147,11 @@ Build order: 1 → 2 → 4 (first map on S-1 data), then 3 and 5. Each feature c
 
 1. **Hex readability.** The art hides the grid. Should players read cells through a grid overlay on demand, a hover/selection outline, or Layer 3 icons only? This affects whether DraoiHexWorldRender3D draws a cell outline (its system ODQ 1).
 2. **Camera.** Should pitch flatten automatically toward top-down as you zoom out, then tilt at regional zoom? How is occlusion behind ranges handled: lower relief at far zoom, or a see-through outline on the selected cell?
-3. **GDD naming conflicts.** These must be settled before Feature 1:
+3. ~~GDD naming conflicts.~~ **Decided 2026-11-24 (user), as proposed:**
    - biome set (registry vs the 12 Phase-2 names vs the 8 palette biomes);
    - ecology state names (5 vs 4);
    - season names (Bloom/Hunt/Dry/Freeze wins in the palette doc).
 
 ## Status
 
-`Approved` (2026-11-20, user). The interview was done during the research session (2026-11-20). Specced now, built at CoW build order #18 (user decision). **Features 2 to 5 Approved 2026-11-24** after review against the Draoi and Dia approvals (Snow channel and succession-fade layout, CPU season blend, owner-texture cell outline, `RebakeAll` tuning). **Feature 1 stays Draft** until the three GDD naming answers arrive.
+`Approved` (2026-11-20, user). The interview was done during the research session (2026-11-20). Specced now, built at CoW build order #18 (user decision). **Features 2 to 5 Approved 2026-11-24** after review against the Draoi and Dia approvals (Snow channel and succession-fade layout, CPU season blend, owner-texture cell outline, `RebakeAll` tuning). **Feature 1 Approved 2026-11-24 too**, after the user decided the three GDD naming conflicts (registry is the biome truth; Bloom/Hunt/Dry/Freeze; provisional succession palettes). All five features are Approved.

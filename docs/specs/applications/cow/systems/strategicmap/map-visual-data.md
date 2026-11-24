@@ -13,7 +13,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/app.js` (`BASE_PAL`, `seasonalPalette`, state defaults), `js/shaders.js` (`gradeOne`, zone weights, hatch coverage)
 
 ## Status
-`Draft` (2026-11-20). Drafted from the approved prototype; awaiting user review. **Blocked in part on three GDD naming conflicts** (see Open Design Questions 1–3); the file formats and tables below are not.
+`Approved` (2026-11-24, user, after spec review). Drafted 2026-11-20 from the approved prototype. The three GDD naming conflicts (Open Design Questions 1–3) were **decided by the user 2026-11-24** as proposed; the GDD session applies the matching text from `docs/research/tile_renderin_art_pipeline/gdd-foldback.md`.
 
 ### Amendment 2026-11-23: layer split (user)
 
@@ -151,11 +151,11 @@ Pure CoW-Shared code (no GPU), unit-testable.
 | AD-003 | GDD owns design intent | Values come from the Visual Bible; changes via the GDD session |
 | PD-001 | StringCRC ids | Biome ids resolved through the registry; season names are enum values |
 
-## Open Design Questions (GDD conflicts to settle before build)
+## Open Design Questions (GDD conflicts; 1–3 decided 2026-11-24)
 
-1. **CONFLICT: biome set.** The palette doc defines 8 biomes. `TileRenderingPipeline`/V-1 name 12 Phase-2 fantasy biomes. S-1's registry has 10 generated plus 3 succession biomes. Proposed: the registry is the truth. The 8 palette biomes map onto the generated land biomes (Grassland, Temperate Forest, Wetland, Desert, Alpine, Tundra, Rainforest, Volcanic), Ocean and Lake use the water table, and the 12 fantasy names are dropped. Needs GDD fold-back.
-2. **CONFLICT: season names.** Bloom/Hunt/Dry/Freeze (palette doc) against Spring/Summer/Autumn/Winter (pipeline and V-1 docs). Proposed: Bloom/Hunt/Dry/Freeze (the palette doc is the locked colour source). The data table uses those names, and the code refers to seasons by index 0..3.
-3. **Palettes for succession biomes.** `Scrub`, `BurnedAshland`, `DesertifiedPlain` have no GDD palette. Proposed (flag as provisional): Scrub = Grassland primary desaturated 25% with Desert accent; BurnedAshland = Volcanic primary with Alpine secondary; DesertifiedPlain = Desert palette. Needs the user's or GDD's approval.
+1. **DECIDED 2026-11-24 (user): biome set.** The palette doc defines 8 biomes. `TileRenderingPipeline`/V-1 name 12 Phase-2 fantasy biomes. S-1's registry has 10 generated plus 3 succession biomes. Proposed: the registry is the truth. The 8 palette biomes map onto the generated land biomes (Grassland, Temperate Forest, Wetland, Desert, Alpine, Tundra, Rainforest, Volcanic), Ocean and Lake use the water table, and the 12 fantasy names are dropped. Needs GDD fold-back.
+2. **DECIDED 2026-11-24 (user): season names.** Bloom/Hunt/Dry/Freeze (palette doc) against Spring/Summer/Autumn/Winter (pipeline and V-1 docs). Proposed: Bloom/Hunt/Dry/Freeze (the palette doc is the locked colour source). The data table uses those names, and the code refers to seasons by index 0..3.
+3. **DECIDED 2026-11-24 (user): palettes for succession biomes.** `Scrub`, `BurnedAshland`, `DesertifiedPlain` have no GDD palette. Proposed (flag as provisional): Scrub = Grassland primary desaturated 25% with Desert accent; BurnedAshland = Volcanic primary with Alpine secondary; DesertifiedPlain = Desert palette. Confirmed by the user 2026-11-24; the derived palettes stand until the GDD supplies its own.
 4. **Ecology state names.** Four (Collapsed / Stressed / Stable / Thriving, sort-layers doc) against five (+ Recovering / Depleted / Barren, V-1 doc). The map uses a continuous health value with four bands, so this feature needs only the band thresholds; the label set is an A1/GDD matter.
 
 ## Tasks
@@ -167,5 +167,5 @@ Pure CoW-Shared code (no GPU), unit-testable.
 | 3 | Transcribe GDD tables into the shipped files; table tests | AC 2, 3, 5 | Not Started | sonnet | |
 | 4 | Ecology bands and zone lookups | AC 6 | Not Started | sonnet | |
 | 5 | `MapStyleFile` load/save/hash and parity capture | AC 7, 8 | Not Started | sonnet | user signs off parity |
-| 6 | Succession biome rows | AC 11 | Not Started | haiku | after ODQ 3 is answered |
+| 6 | Succession biome rows | AC 11 | Not Started | haiku | ODQ 3 answered 2026-11-24 |
 | 7 | Hot reload and observability | AC 10, 12 | Not Started | sonnet | |
