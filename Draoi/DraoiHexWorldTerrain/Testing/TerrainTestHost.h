@@ -55,6 +55,9 @@ inline void SetTerrainTestConfig(const TerrainTestConfig& config) { TerrainTestH
 // Clears the config so the unset-config abort can be exercised in a death test.
 inline void ResetTerrainTestConfigForTest() { TerrainTestHostDetail::Config() = TerrainTestConfig(); }
 
+// The node kind ids the host injected.
+inline const NodeKindIds& TestNodeKinds() { return TerrainTestHostDetail::RequireConfig().nodeKinds; }
+
 inline const std::string& TestSidecarText()
 {
     const TerrainTestConfig& config = TerrainTestHostDetail::RequireConfig();

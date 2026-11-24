@@ -94,6 +94,9 @@
     <ClInclude Include="Testing\TerrainSliderDriver.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="Testing\WorldJsonTestWorlds.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BiomeClassify.cpp" />
