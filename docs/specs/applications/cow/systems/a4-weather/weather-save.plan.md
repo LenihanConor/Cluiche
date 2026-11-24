@@ -75,3 +75,9 @@ Re-planned 2026-11-24 against the Draoi layer amendment and the code as it stand
 7. **Task 3 edits Draoi `WeatherSimulation`** (adds restore methods; no new header). Confirm under the escalation rule.
 8. **Features 7 and 8 are unbuilt:** ACs 22-23 and the `influences`/`climate` blocks stay Skipped; spec stays Approved-with-deferrals unless you decide otherwise. StateReplace apply (Decisions 6) is left to Feature 5/6.
 9. Spec Open Design Question 2 (a `strict` load option for S-3.5 R2) stays unbuilt.
+
+## User decisions (2026-11-24, recorded before build)
+- **Draoi edit (Task 3) approved:** restore methods may be added to `Draoi/DraoiHexWorldWeather/WeatherSimulation` with unit tests. No new Draoi header. AD-001 cleared for this.
+- **Save field ranges:** this feature authors the sidecar ranges (`cow.weather.layers/<field>`, `cow.weather_state`); weather-debug reuses them. Tasks 4-5 therefore write the real entries, not only fixtures. `wind_direction` is `[0, 2π)`; the sidecar range is inclusive, so note and test the upper edge.
+- **Pending biome dropped:** the pending blob holds the ten field arrays only; no biome array and no two-argument `RestoreCompleted`. Record `step_day = week * 7` as the kit does.
+- **Base stage fix (Task 6) is in scope:** re-arm step state after `DeserializePending` in `WorldStepStageBase` (CoW code, not Dia).
