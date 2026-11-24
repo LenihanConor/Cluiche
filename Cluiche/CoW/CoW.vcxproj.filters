@@ -142,6 +142,12 @@
     <ClCompile Include="Shared\Weather\WeatherParameterStore.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\Weather\WeatherSaveFields.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Weather\WeatherSaveParticipant.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEnd\FrontEndModule.h">
@@ -314,6 +320,12 @@
     </ClInclude>
     <ClInclude Include="Shared\Weather\WeatherSideStore.h">
       <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherSaveFields.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Weather\WeatherSaveParticipant.h">
+      <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

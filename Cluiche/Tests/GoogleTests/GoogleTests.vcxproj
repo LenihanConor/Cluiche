@@ -1414,6 +1414,9 @@
     <ClCompile Include="CoW\Weather\TestWeatherQueue.cpp" />
     <ClCompile Include="..\..\CoW\Shared\Weather\WeatherParameterStore.cpp" />
     <ClCompile Include="CoW\Weather\TestWeatherEdgeCases.cpp" />
+    <ClCompile Include="CoW\Weather\TestWeatherSaveFields.cpp" />
+    <ClCompile Include="CoW\Weather\TestWeatherSaveParticipant.cpp" />
+    <ClCompile Include="CoW\Weather\TestWeatherPendingSave.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

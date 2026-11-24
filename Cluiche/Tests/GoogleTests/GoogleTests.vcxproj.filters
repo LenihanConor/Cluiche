@@ -3417,5 +3417,14 @@
     <ClCompile Include="CoW\Weather\TestWeatherEdgeCases.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherSaveFields.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherSaveParticipant.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherPendingSave.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
