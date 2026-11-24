@@ -96,6 +96,7 @@ const Dia::Core::StringCRC WeatherModule::kTypeId("WeatherModule");
 WeatherModule::WeatherModule(const Dia::Core::StringCRC& instanceId)
     : SimModule(instanceId)
 {
+    mSaveParticipant = std::make_unique<Weather::WeatherSaveParticipant>(mStage);
 }
 
 WeatherModule::~WeatherModule() {}

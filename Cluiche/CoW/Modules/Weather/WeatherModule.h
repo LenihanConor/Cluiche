@@ -17,6 +17,7 @@
 #include <Modules/MessageBusHostModule.h>
 #include <Modules/WorldStep/WorldStepModule.h>
 #include <Shared/Weather/WeatherStage.h>
+#include <Modules/Weather/WeatherSaveParticipant.h>
 
 #include <memory>
 #include <string>
@@ -36,6 +37,8 @@ public:
 
     Weather::WeatherStage& GetStage() { return mStage; }
     const Weather::WeatherStage& GetStage() const { return mStage; }
+    // The cow.weather save participant (owned here; registration with SaveLoadModule is plan Task 12).
+    Weather::WeatherSaveParticipant& GetSaveParticipant() { return *mSaveParticipant; }
 
     // Parameters: the sidecar is read through this source (borrowed; null = the stage keeps the parameters it was handed).
     // Task 5 supplies the production file source from config. Packs are applied after each load and reload.
@@ -119,6 +122,7 @@ private:
     Dia::Core::FileWatcher mWatcher;
 
     Weather::WeatherStage mStage;
+    std::unique_ptr<Weather::WeatherSaveParticipant> mSaveParticipant;   // after mStage: destroyed first
     WorldStepModule* mWorldStep = nullptr;   // borrowed; set while registered
     bool mRegistered = false;
     TestHosts mTestHosts;

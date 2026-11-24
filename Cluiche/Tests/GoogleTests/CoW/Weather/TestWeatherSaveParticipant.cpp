@@ -1,9 +1,410 @@
-// A4 weather-save feature: save participant tests (gap pass 7, task 1 scaffold).
+// A4 weather-save Task 9: the cow.weather save participant against a real SaveManager on a temp slot.
+// AC 4 (ready:false), AC 7 (Validate mutates nothing), AC 8 (a failed Validate aborts the load), version 1, happy path.
 #include <gtest/gtest.h>
 
+#include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include <Modules/Weather/WeatherModule.h>   // first: pulls WorldGenerationModule.h before windows.h
+#include "../WorldStep/WorldStepSaveRig.h"
+#include <DiaMessageBus/Bus.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
+#include <DiaValueSchema/ValueSchemaLoader.h>
+#include <DiaValueSchema/ValueSchemaRegistry.h>
+#include <DraoiHexWorldWeather/Testing/WeatherTestFixtures.h>
+#include <Modules/Weather/WeatherMessages.h>
 #include <Modules/Weather/WeatherSaveParticipant.h>
+#include <Modules/WorldGen/WorldGenerationMessages.h>
+#include <Shared/Weather/WeatherSaveFields.h>
+#include "WeatherTestWorld.h"
 
 namespace
 {
-// Tests added by weather-save plan
+using Dia::Core::StringCRC;
+using CoW::Weather::kWeatherSaveFieldCount;
+
+const char* kLayersSidecarPath = "Cluiche/Assets/CoW/Global/Weather/weather_layers.schema.json";
+
+std::string ReadShippedSidecar()
+{
+    std::error_code ec;
+    std::filesystem::path dir = std::filesystem::absolute(std::filesystem::path(__FILE__), ec).parent_path();
+    while (!dir.empty())
+    {
+        const std::filesystem::path candidate = dir / kLayersSidecarPath;
+        if (std::filesystem::is_regular_file(candidate, ec))
+        {
+            std::ifstream in(candidate, std::ios::binary);
+            std::stringstream ss;
+            ss << in.rdbuf();
+            return ss.str();
+        }
+        const std::filesystem::path parent = dir.parent_path();
+        if (parent == dir) break;
+        dir = parent;
+    }
+    ADD_FAILURE() << "sidecar not found: " << kLayersSidecarPath;
+    return std::string();
+}
+
+bool PublishSidecar(Dia::ValueSchema::ValueSchemaRegistry& reg, const std::string& text)
+{
+    Dia::ValueSchema::LoadResult r = Dia::ValueSchema::ValueSchemaLoader::LoadFromText(text.c_str(), "fixture.json");
+    if (!r.mOk) { return false; }
+    for (unsigned i = 0; i < r.mEntries.Size(); ++i)
+    {
+        if (reg.Register(r.mEntries[i]) != Dia::ValueSchema::RegisterResult::Ok) { return false; }
+    }
+    reg.Publish();
+    return true;
+}
+
+class WeatherProbe : public CoW::WeatherModule
+{
+public:
+    explicit WeatherProbe(const StringCRC& id) : CoW::WeatherModule(id) {}
+    Dia::ApplicationFlow::StartResult CallStart() { return DoStart(); }
+    Dia::ApplicationFlow::StopResult CallStop() { return DoStop(); }
+};
+
+class OneWorldSource : public CoW::Weather::IWeatherWorldSource
+{
+public:
+    bool GetWorld(CoW::WorldStep::WorldView& view, Draoi::HexWorld::Weather::WeatherTerrain& terrain) override
+    {
+        Draoi::HexWorld::Weather::Testing::HexTerrainOptions o;
+        o.waterColumns = 1;
+        WeatherTestWorld::CopyTerrain(Draoi::HexWorld::Weather::Testing::MakeHexTerrain(6, 5, o), terrain);
+        view.present = true;
+        view.width = 6;
+        view.height = 5;
+        return true;
+    }
+};
+
+struct NullHold : public CoW::WorldStep::IGenerationHold
+{
+    void Hold() override {}
+    void Release() override {}
+};
+
+// Everything one live weather world needs, with a real SaveManager whose registry holds cow.weather.
+struct SaveWorld
+{
+    explicit SaveWorld(const std::string& slotName)
+        : harness(WsTest::Config("weather", 7, true))
+        , module(StringCRC("WeatherModule"))
+        , slotId(slotName.c_str())
+        , saveConfig{ "temp/worldstep_save_tests/", "slot_{id}.sav", 0, Dia::SaveGame::SaveFormat::Json }
+    {
+        _mkdir("temp");
+        _mkdir("temp/worldstep_save_tests");
+        bus.Initialize();
+        bus.RegisterType<CoW::WorldGenerationComplete, 4>();
+        bus.RegisterType<CoW::WorldGenerationFailed, 4>();
+        bus.RegisterType<CoW::WeatherUpdated, 4>();
+        CoW::WeatherModule::TestHosts hosts;
+        hosts.worldStep = &harness.module;
+        hosts.bus = &bus;
+        hosts.worldSource = &source;
+        hosts.generationHold = &hold;
+        module.UseTestHosts(hosts);
+        module.GetStage().SetRegistry(&Draoi::HexWorld::Weather::Testing::TestRegistry());
+        module.GetStage().SetParameters(Draoi::HexWorld::Weather::Testing::MakeTestParams());
+        module.GetStage().SetSpinupWeeks(4);
+        module.GetStage().SetLaunchMode(CoW::Weather::WeatherStage::LaunchMode::kSynchronous);
+
+        EXPECT_TRUE(PublishSidecar(layers, ReadShippedSidecar()));
+        Draoi::HexWorld::SaveError err;
+        EXPECT_TRUE(module.GetSaveParticipant().ConfigureSchema(layers, err)) << err.field.AsCStr();
+
+        manager.Init(saveConfig, registry);
+        registry.Register(StringCRC("cow.weather"), &module.GetSaveParticipant());
+        EXPECT_EQ(Dia::ApplicationFlow::StartResult::kReady, module.CallStart());
+    }
+    ~SaveWorld()
+    {
+        registry.Unregister(StringCRC("cow.weather"));
+        module.CallStop();
+    }
+
+    void Announce(uint32_t revision)
+    {
+        CoW::WorldGenerationComplete msg;
+        msg.worldRevision = revision;
+        ASSERT_TRUE(bus.Broadcast(msg));
+        bus.Update();
+        module.GetStage().Update();
+    }
+
+    // One weekly step per call at the given week index (day = week * 7).
+    void StepWeeks(uint32_t firstWeek, uint32_t count)
+    {
+        Dia::ParallelExecutor::SerialExecutor executor;
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            module.GetStage().Capture(static_cast<Dia::DeferredStep::StepKey>((firstWeek + i) * 7));
+            module.GetStage().Run(executor);
+            module.GetStage().Commit();
+        }
+    }
+
+    Dia::SaveGame::SaveResult Save() { return manager.Save(slotId); }
+    Dia::SaveGame::LoadResult Load() { return manager.Load(slotId); }
+
+    // The participant's own record, as a parsed value (through real JSON text).
+    Json::Value Record()
+    {
+        Dia::SaveGame::SaveContext ctx;
+        module.GetSaveParticipant().Serialize(ctx);
+        const std::string text = Draoi::HexWorld::Serialize(ctx.Root());
+        Json::Value parsed;
+        Json::Reader reader;
+        EXPECT_TRUE(reader.parse(text, parsed));
+        return parsed;
+    }
+
+    WsTest::Harness harness;
+    WeatherProbe module;
+    Dia::MessageBus::Bus bus;
+    OneWorldSource source;
+    NullHold hold;
+    Dia::ValueSchema::ValueSchemaRegistry layers;
+    StringCRC slotId;
+    Dia::SaveGame::SaveConfig saveConfig;
+    Dia::SaveGame::SaveRegistry registry;
+    Dia::SaveGame::SaveManager manager;
+};
+
+// A value snapshot of everything a failed load must leave alone.
+struct Snap
+{
+    bool hasSim = false;
+    bool ready = false;
+    bool stashed = false;
+    uint32_t cells = 0;
+    uint64_t week = 0;
+    uint32_t queue = 0;
+    std::vector<uint32_t> bits;
+    std::vector<uint32_t> biomes;
+    bool operator==(const Snap& o) const
+    {
+        return hasSim == o.hasSim && ready == o.ready && stashed == o.stashed && cells == o.cells && week == o.week
+            && queue == o.queue && bits == o.bits && biomes == o.biomes;
+    }
+};
+
+Snap Take(CoW::Weather::WeatherStage& stage)
+{
+    Snap s;
+    s.ready = stage.IsReady();
+    s.stashed = stage.HasStashedRecord();
+    s.queue = stage.QueueCount();
+    const Draoi::HexWorld::Weather::WeatherSimulation* sim = stage.ReadableSim();
+    if (sim == nullptr) { return s; }
+    s.hasSim = true;
+    s.week = sim->GetCommittedWeek();
+    s.cells = sim->Fields().CellCount();
+    const float* ptrs[kWeatherSaveFieldCount];
+    CoW::Weather::WeatherFieldPointers(sim->Fields(), ptrs);
+    for (uint32_t f = 0; f < kWeatherSaveFieldCount; ++f)
+    {
+        for (uint32_t c = 0; c < s.cells; ++c)
+        {
+            uint32_t u;
+            std::memcpy(&u, &ptrs[f][c], sizeof(u));
+            s.bits.push_back(u);
+        }
+    }
+    for (uint32_t c = 0; c < sim->Terrain().biome.Size(); ++c) { s.biomes.push_back(static_cast<uint32_t>(sim->Terrain().biome[c])); }
+    return s;
+}
+
+std::string SlotPath(const std::string& slot) { return WsTest::TempDir() + "slot_" + slot + ".sav"; }
+}
+
+TEST(WeatherSaveParticipant, IdIsCowWeatherAndVersionIsOne)
+{
+    EXPECT_STREQ("cow.weather", CoW::World::SaveId(CoW::World::kWeather).c_str());
+    CoW::Weather::WeatherStage stage;
+    CoW::Weather::WeatherSaveParticipant participant(stage);
+    EXPECT_EQ(1u, participant.GetVersion());
+}
+
+TEST(WeatherSaveParticipant, SaveThenLoadIntoAFreshModuleGivesEqualCommittedFields)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    Snap saved;
+    {
+        SaveWorld a(slot);
+        a.Announce(5);
+        a.StepWeeks(1, 3);
+        saved = Take(a.module.GetStage());
+        ASSERT_EQ(3u, saved.week);
+        ASSERT_TRUE(saved.ready);
+        ASSERT_TRUE(a.Save().Ok());
+    }
+    SaveWorld b(slot);
+    b.Announce(5);
+    ASSERT_NE(saved, Take(b.module.GetStage()));   // the spun-up world has not been stepped
+    const Dia::SaveGame::LoadResult result = b.Load();
+    ASSERT_TRUE(result.Ok()) << static_cast<int>(result.code);
+    EXPECT_EQ(saved, Take(b.module.GetStage()));
+}
+
+TEST(WeatherSaveParticipant, WithNoActiveSimSerializeWritesReadyFalseOnly)
+{
+    SaveWorld a(WsTest::UniqueSlot());
+    const Json::Value record = a.Record();
+    ASSERT_TRUE(record.isObject());
+    EXPECT_EQ(1u, record.size());
+    ASSERT_TRUE(record["ready"].isBool());
+    EXPECT_FALSE(record["ready"].asBool());
+}
+
+TEST(WeatherSaveParticipant, ReadyFalseRecordLoadsAsANoOpAndTheNextCompletionSpinsUpNormally)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    {
+        SaveWorld a(slot);
+        ASSERT_TRUE(a.Save().Ok());
+    }
+    SaveWorld b(slot);
+    const Dia::SaveGame::LoadResult result = b.Load();
+    ASSERT_TRUE(result.Ok()) << static_cast<int>(result.code);
+    EXPECT_FALSE(b.module.GetStage().IsReady());
+    EXPECT_EQ(nullptr, b.module.GetStage().ReadableSim());
+    EXPECT_FALSE(b.module.GetStage().HasStashedRecord());
+    b.Announce(5);
+    EXPECT_TRUE(b.module.GetStage().IsReadyForRevision(5));
+    EXPECT_EQ(30u, b.module.GetStage().GetSnapshot().cellCount);
+}
+
+TEST(WeatherSaveParticipant, ReadyFalseRecordLoadedOverALiveSimLeavesTheStageReady)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    {
+        SaveWorld a(slot);
+        ASSERT_TRUE(a.Save().Ok());
+    }
+    SaveWorld b(slot);
+    b.Announce(5);
+    ASSERT_TRUE(b.Load().Ok());
+    b.module.GetStage().Update();
+    EXPECT_TRUE(b.module.GetStage().IsReadyForRevision(5));
+}
+
+TEST(WeatherSaveParticipant, ValidateRejectsEveryDefectAndMutatesNothing)
+{
+    SaveWorld w(WsTest::UniqueSlot());
+    w.Announce(5);
+    w.StepWeeks(1, 2);
+    ASSERT_TRUE(w.module.QueueClearWindOverrides());
+    ASSERT_TRUE(w.module.QueueClearWindOverrides());
+    const Snap before = Take(w.module.GetStage());
+    ASSERT_EQ(2u, before.queue);
+    ASSERT_EQ(2u, before.week);
+
+    const Json::Value good = w.Record();
+    {
+        Dia::SaveGame::LoadContext ctx(good);
+        EXPECT_TRUE(w.module.GetSaveParticipant().Validate(ctx)) << "control: the unmodified record must validate";
+        EXPECT_EQ(before, Take(w.module.GetStage()));
+    }
+
+    std::vector<std::pair<std::string, Json::Value>> defects;
+    // every top-level key missing, one at a time
+    const Json::Value::Members names = good.getMemberNames();
+    ASSERT_GT(names.size(), 10u);
+    for (const std::string& name : names)
+    {
+        if (name == "biome_palette_hash") { continue; }   // optional: absent means no drift check
+        Json::Value bad = good;
+        bad.removeMember(name);
+        defects.emplace_back("missing " + name, bad);
+    }
+    {
+        Json::Value bad = good;
+        bad["moisture"][0u] = 1.0e9;
+        defects.emplace_back("moisture out of range", bad);
+    }
+    {
+        Json::Value bad = good;
+        Json::Value shorter(Json::arrayValue);
+        for (Json::ArrayIndex i = 0; i + 1 < bad["pressure"].size(); ++i) { shorter.append(bad["pressure"][i]); }
+        bad["pressure"] = shorter;
+        defects.emplace_back("pressure wrong length", bad);
+    }
+    {
+        Json::Value bad = good;
+        bad["wind_speed"][0u] = "not a number";
+        defects.emplace_back("wind_speed not a number", bad);
+    }
+    {
+        Json::Value bad = good;
+        bad["biome"][0u] = 9999;
+        defects.emplace_back("biome index past the palette", bad);
+    }
+    {
+        Json::Value bad = good;
+        bad["cell_count"] = 31;
+        defects.emplace_back("cell_count disagrees with the arrays", bad);
+    }
+    defects.emplace_back("not an object", Json::Value(Json::arrayValue));
+    {
+        Json::Value bad = good;
+        bad["ready"] = "yes";
+        defects.emplace_back("ready not a bool", bad);
+    }
+
+    for (const auto& defect : defects)
+    {
+        SCOPED_TRACE(defect.first);
+        Dia::SaveGame::LoadContext ctx(defect.second);
+        EXPECT_FALSE(w.module.GetSaveParticipant().Validate(ctx));
+        EXPECT_EQ(before, Take(w.module.GetStage()));
+    }
+}
+
+TEST(WeatherSaveParticipant, AFailedValidateAbortsTheRealLoadAndLiveStateIsUntouched)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    {
+        SaveWorld a(slot);
+        a.Announce(5);
+        a.StepWeeks(1, 3);
+        ASSERT_TRUE(a.Save().Ok());
+    }
+    // Corrupt the participant's block in the slot file: one value out of its sidecar range.
+    {
+        std::ifstream in(SlotPath(slot), std::ios::binary);
+        std::stringstream ss;
+        ss << in.rdbuf();
+        in.close();
+        Json::Value root;
+        Json::Reader reader;
+        ASSERT_TRUE(reader.parse(ss.str(), root));
+        ASSERT_TRUE(root.isMember("cow.weather"));
+        root["cow.weather"]["temperature"][0u] = 1.0e9;
+        Json::FastWriter writer;
+        std::ofstream out(SlotPath(slot), std::ios::binary | std::ios::trunc);
+        out << writer.write(root);
+    }
+    SaveWorld b(slot);
+    b.Announce(5);
+    b.StepWeeks(1, 1);
+    const Snap before = Take(b.module.GetStage());
+    ASSERT_EQ(1u, before.week);
+    const Dia::SaveGame::LoadResult result = b.Load();
+    EXPECT_FALSE(result.Ok());
+    EXPECT_EQ(Dia::SaveGame::LoadResultCode::DeserializeError, result.code);
+    EXPECT_EQ(before, Take(b.module.GetStage()));
 }

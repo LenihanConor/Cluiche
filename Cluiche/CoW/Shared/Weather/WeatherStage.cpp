@@ -1,4 +1,5 @@
 #include <Shared/Weather/WeatherStage.h>
+#include <Shared/Weather/WeatherSaveFields.h>
 
 #include <DraoiHexWorld/BiomeRegistry.h>
 #include <DiaDeferredStep/IDeferredStep.h>
@@ -283,6 +284,28 @@ void WeatherHooks::CommitSim(WeatherSimulation& sim, uint32_t stepDay)
     DIA_TRACE_ZONE("WeatherStage::Commit", Dia::Observation::Trace::Category::kNone);
     sim.Commit();
     sim.SetCommittedWeek(WeekOf(stepDay));
+}
+
+bool WeatherHooks::RestoreCommitted(WeatherSimulation& sim, const Json::Value& record)
+{
+    if (saveSpec == nullptr || registry == nullptr)
+    {
+        DIA_LOG_ERROR(kLogChannel, "WTH: restore has no record spec or biome registry, discarding the saved weather");
+        return false;
+    }
+    WeatherRecord rec;
+    Draoi::HexWorld::SaveError err;
+    if (!DecodeRecord(record, *saveSpec, *registry, rec, err) || !rec.ready)
+    {
+        DIA_LOG_ERROR(kLogChannel, "WTH: saved weather could not be decoded at '%s': %s", err.field.AsCStr(), err.reason.AsCStr());
+        return false;
+    }
+    if (!sim.RestoreCommitted(rec.week, rec.fields, rec.biomes))
+    {
+        DIA_LOG_ERROR(kLogChannel, "WTH: saved weather does not fit the simulation, discarding it");
+        return false;
+    }
+    return true;
 }
 
 void WeatherHooks::PublishCommit(const WeatherSimulation&, uint32_t stepDay)

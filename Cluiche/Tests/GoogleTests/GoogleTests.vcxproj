@@ -166,6 +166,7 @@
     <ClInclude Include="..\..\CoW\Shared\Weather\WeatherPreset.h" />
     <ClInclude Include="..\..\CoW\Shared\Weather\WeatherSideStore.h" />
     <ClInclude Include="..\..\CoW\Shared\Weather\WeatherSaveFields.h" />
+    <ClInclude Include="..\..\CoW\Modules\Weather\WeatherSaveParticipant.h" />
   </ItemGroup>
   <!-- Source Files -->
   <ItemGroup>
@@ -1419,6 +1420,7 @@
     <ClCompile Include="CoW\Weather\TestWeatherSaveParticipant.cpp" />
     <ClCompile Include="CoW\Weather\TestWeatherPendingSave.cpp" />
     <ClCompile Include="..\..\CoW\Shared\Weather\WeatherSaveFields.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\Weather\WeatherSaveParticipant.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

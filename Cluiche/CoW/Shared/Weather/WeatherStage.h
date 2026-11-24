@@ -88,6 +88,13 @@ public:
 
     void OnStopExtra() override { side.Reset(); }
 
+    // Restore step 4 (weather-save): DecodeRecord against saveSpec/registry, then sim.RestoreCommitted. false -> the base
+    // discards the restore. ExtraCountMatches keeps the base default (true): weather has no extra counts.
+    bool RestoreCommitted(Draoi::HexWorld::Weather::WeatherSimulation& sim, const Json::Value& record) override;
+
+    // The fields and caps a saved record is decoded against (not owned; set through WeatherStage::SetSaveSpec).
+    const WorldStep::RecordSpec* saveSpec = nullptr;
+
     // The step's parameters: a ParamBinding snapshot of the loaded sidecar. When no sidecar was loaded (tests that hand
     // the stage a parameter struct through SetParameters) a copy of `params`.
     void SnapshotParameters(Draoi::HexWorld::Weather::WeatherParameters& out) const
@@ -181,6 +188,9 @@ public:
     void SetParameters(const Draoi::HexWorld::Weather::WeatherParameters& params) { hooks.params = params; }
     void SetRegistry(const Draoi::HexWorld::BiomeRegistry* registry) { hooks.registry = registry; }
     bool HasRegistry() const { return hooks.registry != nullptr; }
+    const Draoi::HexWorld::BiomeRegistry* GetRegistry() const { return hooks.registry; }
+    // The record spec used both for pending-blob validation (base) and for decoding a committed record in Restore.
+    void SetSaveSpec(const WorldStep::RecordSpec* spec) { hooks.saveSpec = spec; SetRecordSpec(spec); }
     void SetSpinupWeeks(uint32_t weeks) { hooks.spinupWeeks = weeks; }
     // Providers are borrowed (null = none); read only inside Capture on SimPU.
     void SetBaselineProvider(IBiomeSeasonalBaseline* provider) { hooks.baselineProvider = provider; }

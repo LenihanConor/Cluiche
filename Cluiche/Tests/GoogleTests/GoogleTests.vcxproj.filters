@@ -1861,6 +1861,9 @@
     <ClInclude Include="..\..\CoW\Shared\Weather\WeatherSaveFields.h">
       <Filter>CoW</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\CoW\Modules\Weather\WeatherSaveParticipant.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
@@ -3430,6 +3433,9 @@
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="..\..\CoW\Shared\Weather\WeatherSaveFields.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\Weather\WeatherSaveParticipant.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
   </ItemGroup>
