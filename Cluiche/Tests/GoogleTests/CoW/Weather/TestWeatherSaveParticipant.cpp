@@ -21,6 +21,7 @@
 #include <Modules/Weather/WeatherSaveParticipant.h>
 #include <Modules/WorldGen/WorldGenerationMessages.h>
 #include <Shared/Weather/WeatherSaveFields.h>
+#include "WeatherParamTestKit.h"
 #include "WeatherTestWorld.h"
 
 namespace
@@ -568,4 +569,178 @@ TEST(WeatherSaveParticipant, RestoredWeekIsTheSavedWeekAndTheFirstStepPublishesI
     ASSERT_EQ(1u, published.size());
     EXPECT_EQ(4u, published[0]);
     EXPECT_EQ(4u, Take(b.module.GetStage()).week);
+}
+
+// ---- Task 11: params_hash on load (AC 11) ---------------------------------------------------------------------------
+
+namespace
+{
+// Loads the shipped parameter sidecar (plus optional packs) into a SaveWorld's stage.
+bool LoadSidecarParams(SaveWorld& w, const std::vector<Json::Value>& packs = {})
+{
+    static WeatherParamKit::CountingSource source;
+    CoW::Weather::ParamError err;
+    const bool ok = w.module.GetStage().LoadParameters(source, packs, err);
+    EXPECT_TRUE(ok) << err.key << ": " << err.reason;
+    return ok;
+}
+
+// A full copy of the sidecar's baseline.spring map with Grassland moved.
+Json::Value SpringMapPack(double grassland)
+{
+    Json::Value doc = WeatherParamKit::ParseJson(WeatherParamKit::SidecarText());
+    Json::Value pack(Json::objectValue);
+    pack["format"] = "cow.weather_params";
+    pack["version"] = 1;
+    for (const Json::Value& e : doc["entries"])
+    {
+        if (e["key"].asString() == "baseline.spring")
+        {
+            Json::Value map = e["default"];
+            map["Biome.Grassland"] = grassland;
+            pack["baseline.spring"] = map;
+        }
+    }
+    return pack;
+}
+
+Json::Value AlbedoPack(double v)
+{
+    return WeatherParamKit::ParseJson("{\"format\":\"cow.weather_params\",\"version\":1,\"solar.cloud_albedo\":" + std::to_string(v) + "}");
+}
+
+bool IsDegraded(SaveWorld& w)
+{
+    return w.module.GetStage().GetHealth().status == Dia::Observation::Health::HealthStatus::kDegraded;
+}
+
+// Saves a world stepped under `packs`, returning the saved params hash.
+uint64_t SaveUnderParams(const std::string& slot, const std::vector<Json::Value>& packs)
+{
+    SaveWorld a(slot);
+    LoadSidecarParams(a, packs);
+    a.Announce(5);
+    a.StepWeeks(1, 3);
+    EXPECT_TRUE(a.Save().Ok());
+    return a.module.GetStage().ParametersHash();
+}
+}
+
+TEST(WeatherSaveParticipant, SavedParamsHashEqualsParametersHashAndChangesWithAPerBiomeMapValue)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    SaveWorld a(slot);
+    ASSERT_TRUE(LoadSidecarParams(a));
+    a.Announce(5);
+    a.StepWeeks(1, 2);
+    const uint64_t hash = a.module.GetStage().ParametersHash();
+    ASSERT_NE(0u, hash);
+    EXPECT_EQ(hash, a.Record()["params_hash"].asUInt64());
+
+    SaveWorld b(WsTest::UniqueSlot());
+    ASSERT_TRUE(LoadSidecarParams(b, { SpringMapPack(0.56) }));
+    EXPECT_NE(hash, b.module.GetStage().ParametersHash());
+    SaveWorld c(WsTest::UniqueSlot());
+    ASSERT_TRUE(LoadSidecarParams(c, { SpringMapPack(0.56) }));
+    EXPECT_EQ(b.module.GetStage().ParametersHash(), c.module.GetStage().ParametersHash());
+}
+
+TEST(WeatherSaveParticipant, LoadWithEqualParametersGivesNoWarningAndIsNotDegraded)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    SaveUnderParams(slot, {});
+
+    SaveWorld b(slot);
+    ASSERT_TRUE(LoadSidecarParams(b));
+    b.Announce(5);
+    RestoreLog log("WTH");
+    ASSERT_TRUE(b.Load().Ok());
+    EXPECT_EQ(0u, log.Warnings());
+    EXPECT_FALSE(IsDegraded(b));
+    EXPECT_TRUE(b.module.GetStage().IsReadyForRevision(5));
+}
+
+TEST(WeatherSaveParticipant, LoadUnderDifferentScalarParametersWarnsOnceDegradesAndRunsOnCurrentParameters)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    const uint64_t savedHash = SaveUnderParams(slot, {});
+
+    SaveWorld b(slot);
+    ASSERT_TRUE(LoadSidecarParams(b, { AlbedoPack(0.55) }));
+    ASSERT_NE(savedHash, b.module.GetStage().ParametersHash());
+    b.Announce(5);
+    RestoreLog log("WTH");
+    ASSERT_TRUE(b.Load().Ok());
+    EXPECT_EQ(1u, log.Warnings());
+    EXPECT_EQ(1u, log.Warnings("params_hash"));
+    EXPECT_TRUE(IsDegraded(b));
+    EXPECT_TRUE(b.module.GetStage().IsReadyForRevision(5));
+
+    // The run continues under the current parameters.
+    Draoi::HexWorld::Weather::WeatherParameters p;
+    b.module.GetStage().Parameters().Snapshot(p);
+    EXPECT_FLOAT_EQ(0.55f, p.cloudAlbedo);
+    b.StepWeeks(4, 1);
+    EXPECT_EQ(4u, Take(b.module.GetStage()).week);
+    EXPECT_TRUE(IsDegraded(b));
+}
+
+TEST(WeatherSaveParticipant, LoadUnderADifferentPerBiomeMapValueWarnsOnceAndDegrades)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    SaveUnderParams(slot, {});
+
+    SaveWorld b(slot);
+    ASSERT_TRUE(LoadSidecarParams(b, { SpringMapPack(0.56) }));
+    b.Announce(5);
+    RestoreLog log("WTH");
+    ASSERT_TRUE(b.Load().Ok());
+    EXPECT_EQ(1u, log.Warnings());
+    EXPECT_TRUE(IsDegraded(b));
+}
+
+TEST(WeatherSaveParticipant, LoadAfterAQueuedOverrideAppliedWarnsOnceAndDegrades)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    SaveUnderParams(slot, {});
+
+    SaveWorld b(slot);
+    ASSERT_TRUE(LoadSidecarParams(b));
+    b.Announce(5);
+    CoW::Weather::ParamError err;
+    ASSERT_TRUE(b.module.GetStage().QueueParameterOverrides(AlbedoPack(0.5), err));
+    b.StepWeeks(1, 1);   // applied at Capture; the hash moves
+    RestoreLog log("WTH");
+    ASSERT_TRUE(b.Load().Ok());
+    EXPECT_EQ(1u, log.Warnings());
+    EXPECT_TRUE(IsDegraded(b));
+}
+
+TEST(WeatherSaveParticipant, AFollowingOverridePackOrReloadApplyClearsDegraded)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    SaveUnderParams(slot, {});
+
+    for (int viaReload = 0; viaReload < 2; ++viaReload)
+    {
+        SCOPED_TRACE(viaReload);
+        SaveWorld b(slot);
+        ASSERT_TRUE(LoadSidecarParams(b, { AlbedoPack(0.55) }));
+        b.Announce(5);
+        ASSERT_TRUE(b.Load().Ok());
+        ASSERT_TRUE(IsDegraded(b));
+        ASSERT_EQ(StringCRC("params_changed"), b.module.GetStage().GetHealth().reason);
+        CoW::Weather::ParamError err;
+        if (viaReload) { ASSERT_TRUE(b.module.GetStage().QueueReload()); }
+        else { ASSERT_TRUE(b.module.GetStage().QueueParameterOverrides(AlbedoPack(0.5), err)); }
+        b.StepWeeks(4, 1);
+        // The stepped stage may still be Degraded for the no-baseline-provider fallback; params_changed must be gone.
+        EXPECT_NE(StringCRC("params_changed"), b.module.GetStage().GetHealth().reason);
+    }
 }
