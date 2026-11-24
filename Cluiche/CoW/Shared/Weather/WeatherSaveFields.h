@@ -7,6 +7,8 @@
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DraoiHexWorld/HexWorldSaveCodec.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
+#include <DraoiHexWorldWeather/WeatherSimulation.h>
 #include <DraoiHexWorldWeather/WeatherTypes.h>
 #include <Shared/World/WorldSimNames.h>
 #include <Shared/WorldStep/WorldSimSaveCodec.h>
@@ -48,6 +50,33 @@ void WriteWeatherFieldArrays(Json::Value& root, const Draoi::HexWorld::Weather::
 // Draoi Validate (lengths, finiteness and ranges are not re-checked); false when an array is missing or has
 // the wrong length or an element is not a number, leaving `fields` unspecified.
 bool ReadWeatherFieldArrays(const Json::Value& root, uint32_t cellCount, Draoi::HexWorld::Weather::WeatherFields& fields);
+
+// A decoded weather record (what DecodeRecord produces; Task 8 hands it to WeatherSimulation::RestoreCommitted).
+struct WeatherRecord
+{
+    bool                                                    ready = false;   // false for a ready:false record
+    uint64_t                                                week = 0;        // WeekOf(step_day)
+    uint64_t                                                paramsHash = 0;
+    uint32_t                                                width = 0;
+    uint32_t                                                height = 0;
+    Draoi::HexWorld::Weather::WeatherFields                 fields;
+    Dia::Core::Containers::DynamicArray<Draoi::HexWorld::BiomeIndex> biomes;   // remapped into the supplied registry
+};
+
+// Writes the whole weather record into `out`: ready:false only for an uninitialised sim; otherwise the kit header
+// (step_day = committed week * kDaysPerWeek, basin_count 0, world_hash 0), the ten arrays of the committed fields
+// and the biome palette + cells (sim.Terrain().biome under `registry`). Writes no influences/climate. Returns false
+// with `out` untouched when step_day would not fit the int32 the kit writes.
+bool EncodeRecord(const Draoi::HexWorld::Weather::WeatherSimulation& sim, uint64_t paramsHash,
+                  const Draoi::HexWorld::BiomeRegistry& registry, Json::Value& out);
+
+// Validates `root` against `spec` (kit Validate), then reads the fields and remaps the biome palette into
+// `registry` (unknown id -> fallback biome with one kit Warning per id; hash mismatch with a clean remap -> one kit
+// Info). A ready:false record succeeds with out.ready false. Incoming influences/climate blocks are ignored with
+// one Info on the WTH channel. On failure returns false with `err` naming the field and `out` reset to empty.
+bool DecodeRecord(const Json::Value& root, const WorldStep::RecordSpec& spec,
+                  const Draoi::HexWorld::BiomeRegistry& registry, WeatherRecord& out,
+                  Draoi::HexWorld::SaveError& err);
 
 } // namespace Weather
 } // namespace CoW

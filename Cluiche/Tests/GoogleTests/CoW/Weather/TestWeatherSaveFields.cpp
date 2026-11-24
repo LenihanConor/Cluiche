@@ -16,6 +16,12 @@
 #include <DiaValueSchema/ValueSchemaLoader.h>
 #include <DiaValueSchema/ValueSchemaRegistry.h>
 #include <DiaValueSchema/ValueSchemaService.h>
+#include <DiaDeferredStep/Testing/LogCapture.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorldWeather/Testing/WeatherTestFixtures.h>
+#include <DraoiHexWorldWeather/WeatherSimulation.h>
+#include <Shared/CoWCalendar.h>
 #include <Shared/Weather/WeatherSaveFields.h>
 
 namespace
@@ -576,4 +582,283 @@ TEST_F(WeatherSaveValidateTest, CellCountNotWidthTimesHeightIsRejected)
     SaveError err;
     EXPECT_FALSE(ValidateSpec(rec, spec, err));
     EXPECT_STREQ("cell_count", err.field.AsCStr());
+}
+
+// ---- A4 weather-save Task 7: the whole record (header, ten arrays, biome palette) ----
+namespace
+{
+namespace WT = Draoi::HexWorld::Weather::Testing;
+using Draoi::HexWorld::BiomeIndex;
+using Draoi::HexWorld::BiomeRegistry;
+using Draoi::HexWorld::Weather::WeatherSimulation;
+typedef Dia::DeferredStep::Testing::LogCapture LogCapture;
+
+constexpr uint32_t kW = 8, kH = 6, kN = kW * kH;
+
+// A sim on an 8x6 world, biomes cycling through the registry, stepped `steps` weeks, committed week set to `week`.
+void MakeSim(WeatherSimulation& sim, const BiomeRegistry& reg, uint32_t steps, uint64_t week)
+{
+    WT::HexTerrainOptions o;
+    o.waterColumns = 2;
+    o.latitudeRamp = true;
+    Draoi::HexWorld::Weather::WeatherTerrain terrain = WT::MakeHexTerrain(kW, kH, o);
+    Draoi::HexWorld::Weather::WeatherParameters params = WT::MakeTestParams();
+    ASSERT_TRUE(sim.Initialise(terrain, params, reg, nullptr));
+    for (uint32_t i = 0; i < kN; ++i) { ASSERT_TRUE(sim.SetCellBiome(i, static_cast<BiomeIndex>(i % reg.Count()))); }
+    Draoi::HexWorld::Weather::HydrologyInputs noHydro;
+    Draoi::HexWorld::Weather::InfluenceSnapshot noInfl;
+    Dia::ParallelExecutor::SerialExecutor exec;
+    for (uint32_t i = 0; i < steps; ++i)
+    {
+        sim.Step(params, static_cast<Draoi::HexWorld::Weather::Season>((i / 13u) % 4u), i % 52u, reg, nullptr, noHydro, noInfl, exec);
+    }
+    sim.SetCommittedWeek(week);
+}
+
+class WeatherSaveRecordTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        ASSERT_TRUE(Publish(layers, ReadShippedSidecar()));
+        SaveError err;
+        ASSERT_TRUE(CoW::Weather::ResolveWeatherSaveFields(layers, fields, err)) << err.field.AsCStr();
+        spec = CoW::Weather::WeatherSaveRecordSpec(fields);
+    }
+
+    // Encode -> real JSON text -> parse.
+    Json::Value EncodeParsed(const WeatherSimulation& sim, const BiomeRegistry& reg, uint64_t hash = 0xABCDEF0123456789ull)
+    {
+        Json::Value out(Json::objectValue);
+        EXPECT_TRUE(CoW::Weather::EncodeRecord(sim, hash, reg, out));
+        return ThroughText(out);
+    }
+
+    bool Decode(const Json::Value& root, const BiomeRegistry& reg, CoW::Weather::WeatherRecord& rec, SaveError& err)
+    {
+        return CoW::Weather::DecodeRecord(root, spec, reg, rec, err);
+    }
+
+    Dia::ValueSchema::ValueSchemaRegistry layers;
+    SavedField fields[kWeatherSaveFieldCount];
+    CoW::WorldStep::RecordSpec spec;
+};
+} // namespace
+
+TEST_F(WeatherSaveRecordTest, WholeRecordRoundTripsBitIdenticalThroughRealJsonText)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    WeatherSimulation sim;
+    MakeSim(sim, reg, 5, 5);
+    const Json::Value parsed = EncodeParsed(sim, reg);
+
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+    ASSERT_TRUE(Decode(parsed, reg, rec, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+    EXPECT_TRUE(rec.ready);
+    EXPECT_EQ(5u, rec.week);
+    EXPECT_EQ(0xABCDEF0123456789ull, rec.paramsHash);
+    EXPECT_EQ(kW, rec.width);
+    EXPECT_EQ(kH, rec.height);
+    EXPECT_TRUE(WT::SameFields(sim.Fields(), rec.fields));
+    ASSERT_EQ(kN, rec.biomes.Size());
+    for (uint32_t i = 0; i < kN; ++i) { EXPECT_EQ(sim.Terrain().biome[i], rec.biomes[i]) << "cell " << i; }
+}
+
+TEST_F(WeatherSaveRecordTest, RecordPassesTheKitValidateAndCarriesNoInfluencesOrClimate)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    WeatherSimulation sim;
+    MakeSim(sim, reg, 3, 3);
+    const Json::Value parsed = EncodeParsed(sim, reg);
+    SaveError err;
+    EXPECT_TRUE(Draoi::HexWorld::Validate(parsed, spec.fields, spec.fieldCount, spec.caps, err)) << err.field.AsCStr();
+    EXPECT_FALSE(parsed.isMember("influences"));
+    EXPECT_FALSE(parsed.isMember("climate"));
+    EXPECT_EQ(0u, parsed["basin_count"].asUInt());
+    EXPECT_EQ(0u, parsed["world_hash"].asUInt64());
+    EXPECT_EQ(kN, parsed["cell_count"].asUInt());
+}
+
+TEST_F(WeatherSaveRecordTest, StepDayIsWeekTimesSevenAndRestoresTheWeekExactly)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    const uint64_t weeks[] = { 0, 1, 52, 123456, 306783377 };   // last: 306783377 * 7 = 2147483639 <= INT32_MAX
+    for (uint64_t week : weeks)
+    {
+        SCOPED_TRACE(week);
+        WeatherSimulation sim;
+        MakeSim(sim, reg, 0, week);
+        const Json::Value parsed = EncodeParsed(sim, reg);
+        EXPECT_EQ(static_cast<Json::UInt64>(week * CoW::kDaysPerWeek), parsed["step_day"].asUInt64());
+        CoW::Weather::WeatherRecord rec;
+        SaveError err;
+        ASSERT_TRUE(Decode(parsed, reg, rec, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+        EXPECT_EQ(week, rec.week);
+    }
+}
+
+TEST_F(WeatherSaveRecordTest, AWeekWhoseStepDayOverflowsInt32IsRefusedAndOutIsUntouched)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    WeatherSimulation sim;
+    MakeSim(sim, reg, 0, 306783379ull);   // * 7 = 2147483653 > INT32_MAX
+    Json::Value out(Json::objectValue);
+    out["keep"] = 1;
+    EXPECT_FALSE(CoW::Weather::EncodeRecord(sim, 1, reg, out));
+    EXPECT_EQ(1u, out.size());
+    EXPECT_EQ(1, out["keep"].asInt());
+}
+
+TEST_F(WeatherSaveRecordTest, AnUninitialisedSimWritesReadyFalseOnlyAndDecodesAsNotReady)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    WeatherSimulation sim;
+    Json::Value out(Json::objectValue);
+    EXPECT_TRUE(CoW::Weather::EncodeRecord(sim, 7, reg, out));
+    const Json::Value parsed = ThroughText(out);
+    ASSERT_EQ(1u, parsed.size());
+    ASSERT_TRUE(parsed.isMember("ready"));
+    EXPECT_FALSE(parsed["ready"].asBool());
+
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+    ASSERT_TRUE(Decode(parsed, reg, rec, err));
+    EXPECT_FALSE(rec.ready);
+    EXPECT_EQ(0u, rec.fields.CellCount());
+    EXPECT_EQ(0u, rec.biomes.Size());
+}
+
+TEST_F(WeatherSaveRecordTest, UnknownPaletteIdBecomesTheFallbackBiomeWithOneWarningPerId)
+{
+    const BiomeRegistry reg = Draoi::HexWorld::Testing::LoadShippedVariant({});   // fresh: its warned-id set starts empty
+    WeatherSimulation sim;
+    MakeSim(sim, reg, 2, 2);
+    Json::Value parsed = EncodeParsed(sim, reg);
+    // Palette entries 1 and 2 become two different ids unknown to the registry; many cells use them.
+    parsed["biome_palette"][1u] = "Biome.NoSuchOne";
+    parsed["biome_palette"][2u] = "Biome.NoSuchTwo";
+
+    LogCapture log("HexWorld");
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+    ASSERT_TRUE(Decode(parsed, reg, rec, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+    EXPECT_EQ(1u, log.Warnings("NoSuchOne"));
+    EXPECT_EQ(1u, log.Warnings("NoSuchTwo"));
+    EXPECT_EQ(2u, log.Warnings());
+    ASSERT_EQ(kN, rec.biomes.Size());
+    const BiomeIndex fallback = reg.ResolveOrFallback(Dia::Core::StringCRC("Biome.NoSuchOne"));
+    for (uint32_t i = 0; i < kN; ++i)
+    {
+        const BiomeIndex original = sim.Terrain().biome[i];
+        const BiomeIndex expected = (original == 1 || original == 2) ? fallback : original;
+        EXPECT_EQ(expected, rec.biomes[i]) << "cell " << i;
+    }
+}
+
+TEST_F(WeatherSaveRecordTest, RegistryHashMismatchWithACleanRemapIsOneInfoAndNoWarning)
+{
+    const BiomeRegistry reg = Draoi::HexWorld::Testing::LoadShippedVariant({});
+    WeatherSimulation sim;
+    MakeSim(sim, reg, 2, 2);
+    Json::Value parsed = EncodeParsed(sim, reg);
+    parsed["biome_palette_hash"] = Json::UInt64(reg.Hash() ^ 0x5Aull);
+
+    LogCapture log("HexWorld");
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+    ASSERT_TRUE(Decode(parsed, reg, rec, err)) << err.field.AsCStr();
+    EXPECT_EQ(1u, log.Infos("hash differs"));
+    EXPECT_EQ(0u, log.Warnings());
+    for (uint32_t i = 0; i < kN; ++i) { EXPECT_EQ(sim.Terrain().biome[i], rec.biomes[i]); }
+}
+
+TEST_F(WeatherSaveRecordTest, APaletteIndexPastThePaletteIsRejectedNamingTheBiomeField)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    WeatherSimulation sim;
+    MakeSim(sim, reg, 1, 1);
+    Json::Value parsed = EncodeParsed(sim, reg);
+    parsed["biome"][4u] = parsed["biome_palette"].size();
+
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+    EXPECT_FALSE(Decode(parsed, reg, rec, err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+    EXPECT_FALSE(rec.ready);
+    EXPECT_EQ(0u, rec.fields.CellCount());
+    EXPECT_EQ(0u, rec.biomes.Size());
+}
+
+TEST_F(WeatherSaveRecordTest, ARecordWithAnOutOfRangeFieldOrMissingBiomeFailsAndLeavesTheResultEmpty)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    WeatherSimulation sim;
+    MakeSim(sim, reg, 1, 1);
+    const Json::Value good = EncodeParsed(sim, reg);
+
+    Json::Value badField = good;
+    badField["snow_pack"][3u] = 5.0;
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+    EXPECT_FALSE(Decode(badField, reg, rec, err));
+    EXPECT_STREQ("snow_pack", err.field.AsCStr());
+    EXPECT_EQ(0u, rec.fields.CellCount());
+
+    Json::Value noBiome = good;
+    noBiome.removeMember("biome");
+    EXPECT_FALSE(Decode(noBiome, reg, rec, err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+    EXPECT_EQ(0u, rec.fields.CellCount());
+    EXPECT_EQ(0u, rec.biomes.Size());
+}
+
+// The appended Savanna biome saves and loads with no code change; a registry without it falls back with one warning.
+TEST_F(WeatherSaveRecordTest, AnAppendedBiomeFromTheExtraFixtureRegistrySavesAndLoads)
+{
+    const BiomeRegistry& extra = Draoi::HexWorld::Testing::ExtraBiomeRegistry();
+    const BiomeIndex savanna = Draoi::HexWorld::Testing::B(extra, "Biome.Savanna");
+    WeatherSimulation sim;
+    MakeSim(sim, extra, 2, 2);
+    ASSERT_TRUE(sim.SetCellBiome(5, savanna));
+    ASSERT_TRUE(sim.SetCellBiome(9, savanna));
+    const Json::Value parsed = EncodeParsed(sim, extra);
+
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+    ASSERT_TRUE(Decode(parsed, extra, rec, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+    EXPECT_EQ(savanna, rec.biomes[5]);
+    EXPECT_EQ(savanna, rec.biomes[9]);
+    for (uint32_t i = 0; i < kN; ++i) { EXPECT_EQ(sim.Terrain().biome[i], rec.biomes[i]); }
+
+    const BiomeRegistry plain = Draoi::HexWorld::Testing::LoadShippedVariant({});
+    LogCapture log("HexWorld");
+    CoW::Weather::WeatherRecord rec2;
+    ASSERT_TRUE(Decode(parsed, plain, rec2, err));
+    EXPECT_EQ(1u, log.Warnings("Biome.Savanna"));
+    EXPECT_EQ(plain.ResolveOrFallback(Dia::Core::StringCRC("Biome.Savanna")), rec2.biomes[5]);
+}
+
+TEST_F(WeatherSaveRecordTest, IncomingInfluencesAndClimateBlocksAreIgnoredWithOneInfo)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    WeatherSimulation sim;
+    MakeSim(sim, reg, 2, 2);
+    Json::Value parsed = EncodeParsed(sim, reg);
+    {
+        LogCapture log("WTH");
+        CoW::Weather::WeatherRecord rec;
+        SaveError err;
+        ASSERT_TRUE(Decode(parsed, reg, rec, err));
+        EXPECT_EQ(0u, log.Total());   // a clean record logs nothing on the weather channel
+    }
+    parsed["influences"] = Json::Value(Json::objectValue);
+    parsed["climate"] = Json::Value(Json::objectValue);
+    LogCapture log("WTH");
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+    ASSERT_TRUE(Decode(parsed, reg, rec, err));
+    EXPECT_EQ(1u, log.Infos("influences"));
+    EXPECT_EQ(1u, log.Total());
+    EXPECT_TRUE(WT::SameFields(sim.Fields(), rec.fields));
 }
