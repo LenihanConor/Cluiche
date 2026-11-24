@@ -9,7 +9,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/props.js` (`placeProps`, `BIOME_PROPS`), `js/app.js` (`buildClouds`), `js/alive.js` (`Fauna.instances`), `js/weather.js` (`Precip`)
 
 ## Status
-`Draft` (2026-11-20). Drafted from the approved prototype; awaiting user review. **Moved 2026-11-23 (layer split):** was DiaTerrainMap3D Feature 3; namespace now `Draoi::HexWorldRender3D`. The condition-to-density curve and the dead-variant threshold become `HexWorldStyle` parameters with the prototype values as defaults, so CoW's ecology bands are data (TMAP-012). Particle snow and rain now read the Weather channel's snow fraction.
+`Approved` (2026-11-24, user, after spec review: every number is a live-tweakable style field, neutral flat density default, instances store class id with season palette looked up in the shader, per-class `wet` flag). Drafted 2026-11-20 from the approved prototype. **Moved 2026-11-23 (layer split):** was DiaTerrainMap3D Feature 3; namespace now `Draoi::HexWorldRender3D`. The condition-to-density curve and the dead-variant threshold become `HexWorldStyle` parameters with the prototype values as defaults, so CoW's ecology bands are data (TMAP-012). Particle snow and rain now read the Weather channel's snow fraction.
 
 ## Summary
 
@@ -28,13 +28,15 @@ Everything that stands on or flies above the terrain: props scattered by class a
 ## Goals
 
 1. **Deterministic scatter**: the same world, seed, class table and condition give the same instance list, at any thread count.
-2. **Class rules** (data): per class, a list of `{ propType, density per cell, size, minimum slope, maximum slope, wet-only flag }`.
-3. **Condition scaling**: density follows the ecology bands, so Collapsed cells have about 5% of baseline and Thriving about 130%. Trees degrade to dead trees at low condition.
+2. **Class rules** (data): per class, a list of `{ propType, density per cell, size, minimum slope, maximum slope, needsWet }`. `needsWet` tests a per-class `wet` flag in `HexWorldVisuals` (not the Water channel, so props do not depend on rivers).
+3. **Condition scaling**: density follows a style curve of condition. The **neutral default is flat (1.0 at every condition)**, so Draoi names no ecology bands (TMAP-012). CoW's style file supplies the prototype curve (about 5% of baseline when Collapsed, 130% when Thriving). Trees degrade to dead trees below `deadBelow`.
 4. **Placement validity** via `OwnerAt`/margin: never in water, never on a class border margin of 0 (avoid straddling), snap `z` to terrain `HeightAt`.
 5. **Incremental rescatter**: when a cell's class or condition changes, only its instances are recomputed.
 6. **Dynamic sprite layers** with per-frame instance building and ground snap.
-7. **Particle density mapping**: weather channel → rain and snow density by the cell's own temperature; events channel → smoke density.
+7. **Particle density mapping**: weather channel → rain and snow density by the channel's snow fraction; events channel → smoke density.
 8. **Fixed-frequency sway** with amplitude from per-instance rigidity and the weather gust channel (TMAP-006).
+9. **Everything tweakable (TOON-006, user 2026-11-24).** Every number is a live-tweakable style field with a range and a neutral default: the scatter disc radius, the placement tries, the condition curve (breakpoints and slopes), `deadBelow`, `deadChance`, global size and jitter scales, sway frequency (one fixed value, never per-instance), sway amplitude and gust gain, and the rain, snow and smoke density gains. Scalar per-rule fields (`perCell`, `size`, `sizeJitter`, slopes) are map attributes in `HexWorldVisuals`; adding or removing a rule is a data reload.
+10. **Dirty-rescatter rule.** A change to any scatter-affecting field (curve, radius, tries, dead-variant numbers, a rule field, a class `wet` flag) marks the scatter dirty, and the next frame runs one deterministic `Rebuild`. Sway, particle gains and palettes apply immediately with no rescatter.
 
 ## Non-Goals
 
@@ -57,8 +59,7 @@ namespace Draoi::HexWorldRender3D {
         const uint8_t* primaryClass; const uint8_t* secondaryClass;      // per cell
         const float*   condition;                                         // per cell 0..1
         const ClassPropRules* rulesByClass; uint32_t classCount;
-        const uint32_t* paletteByClass;                                   // 3 x RGBA8 per class, per season set
-        uint32_t seed;
+        uint32_t seed;                                                    // palettes are not inputs: instances carry the class id
     };
     class PropScatter {
     public:
@@ -70,10 +71,10 @@ namespace Draoi::HexWorldRender3D {
 
 - **Per-cell stream.** Each cell seeds its own RNG from `(cellId, seed)`, so rescattering one cell never perturbs another, and the result does not depend on iteration order or thread count.
 - **Count.** For each rule, `n = perCell × densityScale(condition) × slopeFactor`; the integer part plus a Bernoulli on the fraction.
-- **Density scale.** A `HexWorldStyle` curve (three segments by condition band); the default is the prototype's piecewise: condition < 0.33 → `0.05 + 1.2c`; < 0.66 → `0.45 + 1.67(c − 0.33)`; else `1.0 + 0.9(c − 0.66)`.
-- **Position.** Uniform in a disc of radius 0.85 around the cell centre, accepted only if `OwnerAt` is that cell (up to 6 tries), the point is land, and slope is within the rule's range. `z` from `HeightAt`.
-- **Dead variants.** Rules with `deadVariant` switch to it when `condition < deadBelow` (default 0.22) with probability `deadChance` (default 0.6), deterministic per instance.
-- **Colour.** Each instance carries the class palette's three slot colours, with a seasonal override set supplied by the game.
+- **Density scale.** A `HexWorldStyle` curve: three segments by condition, each `{ upTo, base, slope }`, value `base + slope * (c - segmentStart)`. **Neutral default: all three segments `base 1.0, slope 0`** (flat). The prototype's curve, which CoW's style file supplies, is: c < 0.33 → `0.05 + 1.2c`; < 0.66 → `0.45 + 1.67(c − 0.33)`; else `1.0 + 0.9(c − 0.66)`.
+- **Position.** Uniform in a disc of `scatterRadius` (default 0.85) around the cell centre, accepted only if `OwnerAt` is that cell (up to `placementTries`, default 6), the point is land, and slope is within the rule's range. `z` from `HeightAt`.
+- **Dead variants.** Rules with `deadVariant` switch to it when `condition < deadBelow` with probability `deadChance`, deterministic per instance. Neutral defaults: `deadBelow 0` (never), so Draoi imposes no ecology threshold; CoW's file sets 0.22 and 0.6.
+- **Colour.** Each instance stores its **class id**, not colours. The material looks up the class palette (and the season's override) in the shader, so a season or palette change recolours props with no rescatter.
 - **Dynamic layers.** `DynamicSprites` takes `{x, y, type, scale, palette, flags}` and fills `z` from `HeightAt` (lifted by a per-layer altitude for clouds and birds), then submits to the translucent or cutout layer.
 - **Particle mapping.** Per-cell channels → `DensityField` at cell resolution: rain density = `precip × (1 − snowFraction)`, snow density = `precip × snowFraction`, smoke density = burn intensity. The `DensityField` is rewritten when the channel changes.
 
@@ -81,18 +82,19 @@ namespace Draoi::HexWorldRender3D {
 
 1. **Determinism.** Two scatters of the same inputs give identical instance lists (byte-identical); different seeds give different lists; the result is independent of thread count and cell iteration order.
 2. **Locality.** `RebuildCells` for K cells changes only instances belonging to those cells; the result equals a full rebuild with the same inputs.
-3. **No water.** Over S-1 Small worlds (all presets, seeds 1–3), no instance has `OwnerAt` pointing to a water cell or `kNoOwner`.
+3. **No water.** Over synthetic hex worlds built in the test (islands, lakes, coasts; no CoW presets, so Draoi tests stay CoW-free), no instance has `OwnerAt` pointing to a water cell or `kNoOwner`.
 4. **Terrain snap.** Every instance's `z` equals `HeightAt(x, y)` within half precision.
-5. **Condition scaling.** Average instance count per cell at condition 0.1 / 0.5 / 0.9 is about 0.17 / 0.75 / 1.2 × the baseline (within 20%) over a large hand-built grid; at 0.0 it is at most 5% of baseline.
-6. **Dead variants.** Below condition 0.22 a tree rule produces dead variants about 60% of the time (±10%) and never above 0.22.
-7. **Slope rules.** A rule with `maxSlope` produces no instances on steeper terrain, and `needsWet` produces none on cells with the wet tag absent.
-8. **Palette and rigidity.** Instances carry the class palette; `rigid` rules set the rigid flag; other instances sway.
+5. **Condition scaling.** With the neutral default curve, average instance count per cell is the same at every condition (within 20%). With the prototype curve set explicitly, it is about 0.17 / 0.75 / 1.2 × the baseline at condition 0.1 / 0.5 / 0.9 (within 20%) over a large hand-built grid, and at 0.0 at most 5% of baseline.
+6. **Dead variants.** With `deadBelow 0.22` and `deadChance 0.6` set explicitly, a tree rule below 0.22 produces dead variants about 60% of the time (±10%) and never above 0.22. With the neutral default, none.
+7. **Slope rules.** A rule with `maxSlope` produces no instances on steeper terrain, and `needsWet` produces none on cells whose class has the `wet` flag clear.
+8. **Class id and rigidity.** Instances carry the class id (a season or palette change recolours them with no rescatter, counted); `rigid` rules set the rigid flag; other instances sway.
 9. **Dynamic layers.** A dynamic sprite at `(x, y)` is drawn at terrain height plus layer altitude; cloud and bird layers use the translucent layer; counts and draws are within DiaBgfx3D limits (64k).
 10. **Density mapping.** A cell with precip 0.8 and snow fraction 0 gives rain density 0.8 and snow density 0; with snow fraction 1 the reverse; zero precip gives zero in both; burn intensity gives smoke density; fields are rewritten only when the channel version changes.
 11. **Rain or snow by cell.** In a test world with a cold plateau and a warm lowland under one storm, snow falls on the plateau cells and rain on the lowland (particle kinds counted by region).
 12. **No jitter on props.** Prop screen positions are stable frame to frame with the camera still (no boil, no frequency changes); a gust changes amplitude only.
 13. **Budget.** Instance counts at Large with default rules and density 1.0 are logged; the cap of 64k per layer is respected (excess dropped lowest-priority first with a warning, never crashes).
 14. **Observability.** Log channel `HWR3D`; scopes `Props.Scatter`, `Props.Rebuild`; metrics `hwr3d.props`, `hwr3d.dynamic_sprites`, `hwr3d.scatter_ms`.
+15. **Live tweak.** Changing a scatter-affecting field on the style or visuals attributes causes exactly one `Rebuild` on the next frame and the result equals a fresh scatter with those values; changing sway, gust or particle gains causes no rescatter (counter) and takes effect next frame. Every field in goal 9 has a range and a neutral default in its sidecar.
 
 ## Binding Decisions
 
@@ -102,7 +104,8 @@ namespace Draoi::HexWorldRender3D {
 | TMAP-005 | Per-cell channels | Particle density comes from per-cell channels |
 | TMAP-006 | No prop boil, fixed-frequency sway | AC 12 |
 | CFB-001..003 | DiaCellFieldBake | Placement uses `OwnerAt` and the baked world only |
-| TMAP-012 | Neutral defaults; numbers are game data | Density curve and dead-variant numbers are style parameters |
+| TMAP-012 | Neutral defaults; numbers are game data | Density curve and dead-variant numbers are style parameters, neutral by default (flat curve, no dead variants) |
+| TOON-006 / TMAP-013 | Live-tweakable attributes | Goal 9, 10; AC 15 |
 | PD-001 | StringCRC ids | Prop types are indices into the sprite atlas; class ids are small ints; rule tables keyed by `StringCRC` at the CoW layer |
 | PD-004 | No STL in public APIs | Raw rule arrays |
 
@@ -123,3 +126,4 @@ namespace Draoi::HexWorldRender3D {
 | 5 | Dynamic sprite layers | AC 9 | Not Started | sonnet | needs DiaBgfx3D B |
 | 6 | Density mapping to particles | AC 10, 11 | Not Started | sonnet | needs DiaBgfx3D C |
 | 7 | Sway/stability test, budget, observability | AC 12, 13, 14 | Not Started | sonnet | |
+| 8 | Style fields, sidecars, dirty-rescatter rule | AC 15 | Not Started | sonnet | do with task 1; neutral defaults per goal 3 |

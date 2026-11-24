@@ -9,7 +9,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/app.js` (frame loop, draw order, state defaults)
 
 ## Status
-`Draft` (2026-11-23). **Was DiaTerrainMap3D Feature 4 Module, Presentation and Tooling (Draft 2026-11-20, Open Design Questions 4–6 added 2026-11-22).** Draoi packages are plain libraries (TMAP-011), so it is split:
+`Approved` (2026-11-24, user, after spec review: live-tweakable style via `AttributeSet`, no `boilFrame` argument, render-thread ownership, optional renderers, `heightScaleFactor`). Drafted 2026-11-23. **Was DiaTerrainMap3D Feature 4 Module, Presentation and Tooling (Draft 2026-11-20, Open Design Questions 4–6 added 2026-11-22).** Draoi packages are plain libraries (TMAP-011), so it is split:
 - **Kept here (library):** the `HexWorldMap` facade, versioned uploads, draw order, layer toggles, data-view switch, post settings hand-off, picking helpers, bake-state query, logs, profile scopes and metrics.
 - **Moved to CoW Strategic Map Feature 4 (@docs/specs/applications/cow/systems/strategicmap/module-and-camera.md):** the module, the stream contract and snapshot types, bake jobs and commit timing, all DiaAPI commands, presets, the capture command, the map camera, the health reporter, selection routing, markers and regions, and the S-1 Data | Map view switch (the old Open Design Questions 1, 3, 4, 5 and 6).
 
@@ -19,11 +19,13 @@
 
 ## Goals
 
-1. **Facade.** `HexWorldMap` owns `HexTerrainSurface`, the hex terrain material, `PropScatter`, the dynamic sprite layers and the particle density fields. Its references to the DiaBgfx3D sprite renderer, particle system and post stack come from the caller.
+1. **Facade.** `HexWorldMap` owns `HexTerrainSurface`, the hex terrain material, `PropScatter`, the dynamic sprite layers and the particle density fields. Its references to the DiaBgfx3D sprite renderer, particle system and post stack come from the caller. **Each renderer pointer may be null and its layer is then skipped**, so the first visible map (surface and material, Features 1 and 2) needs neither Feature 3 nor DiaBgfx3D B, C or D; props, sprites, particles and post light up as those land.
 2. **World lifecycle.** `SetWorld` builds the heightfield, textures and scatter from a committed bake. `ApplyRebake(changedRect, changedCells)` uploads the rectangle and rescatters those cells. A new world releases the old resources.
 3. **Versioned channel uploads.** `UpdateChannel` and `UpdateCustomSlots` take a version, and an unchanged version is a no-op (counted). A Condition change rescatters affected cells. Weather and Events changes refresh the particle density.
 4. **Draw order.** Skirt → terrain → props (cutout) → particles → translucent sprites → post (DiaBgfx3D D, settings from the style) → caller's UI.
 5. **Toggles and data views** as style fields (`layers.*`, `dataView`). Switching never rebuilds the world.
+5a. **Live-tweakable style (TOON-006, TMAP-013).** The map exposes its style as an `AttributeSet` (`GetStyle()`), read once per frame. Any field, including layer toggles and post settings, changes the next frame with no call. `SetStyle` remains as "load a whole parameter file". Scatter-affecting changes follow Feature 3's dirty rule.
+5b. **Thread ownership.** `HexWorldMap` and its style `AttributeSet` are touched only on the render thread. Edits from the Inspector, DiaAPI or a file reload reach it through the game's module (CoW Strategic Map Feature 4), which marshals them over a stream; the library takes no locks.
 6. **Picking helpers.** `ScreenToWorld` (ray against the heightfield through `HeightAt`) and `WorldToCell` (through `OwnerAt`).
 7. **Bake state query.** `BakeState { Idle, Baking(done, total), Ready }`, set by the caller's progress callback and readable by its status command.
 8. **Observability.** Logs on world set, rebake applied and rejected inputs; profile scopes; metrics (below). No health reporter here: the module that owns the map registers one.
@@ -50,9 +52,10 @@ namespace Draoi::HexWorldRender3D {
         void UpdateChannel(Channel, const float* valuesPerCell, uint32_t version);
         void UpdateCustomSlots(const float* rgbaPerCell, uint32_t version);
         void SetDynamicSprites(SpriteLayer, const DynamicSprite*, uint32_t count);
-        void SetStyle(const HexWorldStyle&);                 // includes layers.* toggles and dataView
-        void SetSeasonWeights(const float weights[4]);
-        void Draw(const Dia::Camera3D&, float heightScale, float timeSeconds, uint32_t boilFrame);
+        Dia::Attribute::AttributeSet& GetStyle();             // live-tweakable; includes layers.* toggles, dataView, post settings
+        void SetStyle(const HexWorldStyle&);                 // load a whole style (parameter file); same fields as GetStyle()
+        void SetSeasonWeights(const float weights[4]);       // used as given, not normalised
+        void Draw(const Dia::Camera3D&, float heightScaleFactor, float timeSeconds);
         bool ScreenToWorld(const Dia::Camera3D&, float sx, float sy, float& wx, float& wy) const;
         uint16_t WorldToCell(float wx, float wy) const;      // kNoOwner outside
         void SetBakeState(BakeState); BakeState GetBakeState() const;
@@ -61,7 +64,7 @@ namespace Draoi::HexWorldRender3D {
 }
 ```
 
-The caller owns time, the boil frame (12 Hz in the prototype) and the height scale (the camera eases it with zoom). The library takes them as arguments, so captures stay deterministic.
+The caller owns time and the height-scale easing. `heightScaleFactor` (default 1) multiplies the style's `heightScale`, so the camera can ease relief with zoom without a second competing field. The boil frame is derived inside the material from `timeSeconds` and the style's `boilHz` (Feature 2). With both passed as arguments, captures stay deterministic.
 
 ## Acceptance Criteria
 
@@ -71,9 +74,11 @@ The caller owns time, the boil frame (12 Hz in the prototype) and the height sca
 4. **Draw order.** A capture with every layer on matches the documented order (translucent sprites over particles over props; post last). Each toggle removes exactly its layer.
 5. **Data views.** Each view renders its raw value; switching view does not call any world rebuild (counter).
 6. **Picking.** `ScreenToWorld` then `WorldToCell` round-trips a grid of screen points through the camera and the grid under tilt and relief (error under half a texel). A ray that misses the world returns false.
-7. **Determinism.** The same inputs, camera, time and boil frame give byte-identical frames (the caller's capture command relies on this).
+7. **Determinism.** The same inputs, camera, time, height-scale factor and style give byte-identical frames (the caller's capture command relies on this).
 8. **Lifetime.** 20 cycles of `SetWorld` and `Release` leak nothing.
-9. **Observability.** Log channel `HWR3D` (info on world set and rebake, error on rejected inputs); scopes `HexWorldMap.Draw`, `HexWorldMap.ApplyRebake`; metrics `hwr3d.frame_ms`, `hwr3d.channels_uploaded`, `hwr3d.instances`.
+9. **Optional layers.** With every renderer pointer null, `Draw` renders the terrain alone and does not crash; supplying a renderer later adds its layer on the next frame.
+10. **Live tweak.** Setting a layer toggle, a post setting and a material field on `GetStyle()` changes the next frame with no other call. A toggle round trip leaves the capture byte-identical to the original.
+11. **Observability.** Log channel `HWR3D` (info on world set and rebake, error on rejected inputs); scopes `HexWorldMap.Draw`, `HexWorldMap.ApplyRebake`; metrics `hwr3d.frame_ms`, `hwr3d.channels_uploaded`, `hwr3d.instances`.
 
 ## Binding Decisions
 
@@ -82,6 +87,8 @@ The caller owns time, the boil frame (12 Hz in the prototype) and the height sca
 | TMAP-011 | Plain library | No module, stream, command or PU affinity; the game calls it |
 | TMAP-005 | Per-cell channels | Channel inputs are per-cell arrays |
 | PD-012 | Draoi: no modules, wiring or debug domains | Everything wired lives in CoW Strategic Map Feature 4 |
+| TOON-006 / TMAP-013 | Live-tweakable attributes, single-thread ownership | AC 10; `GetStyle()`; render-thread-only (goal 5b) |
+| PU boundaries are streams | No cross-PU locked reads | The game's module marshals edits; the library takes no locks |
 | CFB-004 | Double-buffered rebake committed at a frame boundary | `ApplyRebake` is called after the caller's `Commit` |
 
 ## Open Design Questions
@@ -94,7 +101,8 @@ The caller owns time, the boil frame (12 Hz in the prototype) and the height sca
 |---|------|------|--------|-------|-------|
 | 1 | `HexWorldMap` world lifecycle and release | AC 1, 8 | Not Started | sonnet | |
 | 2 | `ApplyRebake` and versioned channel updates | AC 2, 3 | Not Started | sonnet | |
-| 3 | Draw order, toggles, post hand-off | AC 4, 7 | Not Started | sonnet | needs DiaBgfx3D D |
+| 3 | Draw order, toggles, post hand-off, optional renderers | AC 4, 7, 9 | Not Started | sonnet | post part needs DiaBgfx3D D; the rest does not |
+| 7 | `GetStyle()` live-tweak binding | AC 10 | Not Started | sonnet | after Feature 2 task 1 |
 | 4 | Data views switch | AC 5 | Not Started | haiku | |
 | 5 | `ScreenToWorld` / `WorldToCell` | AC 6 | Not Started | sonnet | |
-| 6 | Bake state, observability | AC 9 | Not Started | haiku | |
+| 6 | Bake state, observability | AC 11 | Not Started | haiku | |

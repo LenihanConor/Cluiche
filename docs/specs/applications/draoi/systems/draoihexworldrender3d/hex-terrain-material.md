@@ -9,7 +9,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/shaders.js` (`GROUND_FS`), screenshots in `lookdev/shots/`
 
 ## Status
-`Draft` (2026-11-23). **Was DiaTerrainMap3D Feature 2 Style Shader Library (Draft 2026-11-20).** Split by layer: the techniques went to DiaToonShading, and the GDD numbers (strata coverage 15 / 40 / 70%, ink weights 1 / 1.2 / 1.5, season tints, condition bands) went to CoW Map Visual Data (@docs/specs/applications/cow/systems/strategicmap/map-visual-data.md). This feature keeps the hex-world composition. The old game-side shader override root is dropped: CoW-only looks go through the custom slots (TMAP-010).
+`Approved` (2026-11-24, user, after spec review: live-tweakable style, boil clock `boilHz`, river banks above width 0, custom-slot branch). Drafted 2026-11-23. **Was DiaTerrainMap3D Feature 2 Style Shader Library (Draft 2026-11-20).** Split by layer: the techniques went to DiaToonShading, and the GDD numbers (strata coverage 15 / 40 / 70%, ink weights 1 / 1.2 / 1.5, season tints, condition bands) went to CoW Map Visual Data (@docs/specs/applications/cow/systems/strategicmap/map-visual-data.md). This feature keeps the hex-world composition. The old game-side shader override root is dropped: CoW-only looks go through the custom slots (TMAP-010).
 
 ## Summary
 
@@ -48,9 +48,9 @@ It also defines `HexWorldStyle` (the parameter file that holds every number, emb
 2. **Strata-driven look.** Ink weight, hatch coverage and ambient grade come from a per-stratum table (up to 4 strata, `StratumIndex` from DraoiHexWorld), filled by the game.
 3. **Rivers by flow state.** Dry, Low, Normal, Flood and Frozen change width and colour from the style's per-state table.
 4. **Custom slots.** Each of 4 slots binds to `{ technique: tint | overlay | emissive | hatch, colour, threshold, falloff, enabled }` in the style file. An unbound slot costs nothing visible.
-5. **`HexWorldStyle`** parameter file: every field documented and range-checked (DiaAttribute + DiaValueSchema sidecar); embeds DiaToonShading parameter groups.
+5. **`HexWorldStyle`** parameter file: every field documented and range-checked (DiaAttribute + DiaValueSchema sidecar); embeds DiaToonShading parameter groups. **Everything is live-tweakable (user 2026-11-24, TOON-006):** the style is an `AttributeSet`, so every field, including the per-stratum arrays, per-flow-state arrays and custom-slot bindings, can be changed at run time through the Inspector, DiaAPI or a parameter file, taking effect next frame with no rebuild or shader reload. The style is touched on the render thread only; edits from other PUs are marshalled over a stream by the game's module (Map Assembly goal 5b). **No look constant lives in the shaders:** every number that affects appearance (noise scales, drift and flow speeds, wave and foam size, crack density, cloud-shadow scale, relief tilt, the boil rate and so on) is a style field with a range and a neutral default. Only structural constants stay in code (array capacities, texture layouts).
 6. **Neutral defaults.** The defaults draw a plain, readable hex map with no game's identity (grey-green palette, one stratum, no season tint). CoW's look comes only from CoW's style file.
-7. **Shader root.** `Draoi/DraoiHexWorldRender3D/Shaders`, cooked by the standard pipeline, including DiaToonShading's root.
+7. **Shader root.** `Draoi/DraoiHexWorldRender3D/Shaders`, cooked by the standard pipeline, including DiaToonShading's root. This relies on the DiaCLI cook change that adds every `source_roots` entry as a `shaderc` include path (DiaToonShading Feature 1 task 1; sign-off given 2026-11-24).
 8. **Data views** for class, elevation, condition, stratum, temperature, margin, each standard channel and each custom slot.
 
 ## Non-Goals
@@ -70,18 +70,21 @@ It also defines `HexWorldStyle` (the parameter file that holds every number, emb
 | Group | Parameters |
 |---|---|
 | Geometry | `heightScale`, light (DiaToonShading `LightParams`) |
-| Ink | DiaToonShading `InkParams`, `BoilParams`; `inkColour`; per-stratum `inkWeight[4]` |
+| Ink | DiaToonShading `InkParams`, `BoilParams`; `boilHz` (the material derives `boilFrame = floor(timeSeconds * boilHz)`; boil itself stays off by default, TOON-005); `inkColour`; per-stratum `inkWeight[4]` |
 | Hatch | DiaToonShading `HatchParams`; per-stratum `hatchCoverage[4]` |
-| Lines | `formLinesOn`, `contoursOn`, `contourInterval` |
-| Season | `seasonWeights[4]` (uniform, set per frame by the game), DiaToonShading `GradePresetsParams` (up to 4 presets), per-stratum `ambient[4]` |
-| Condition | DiaToonShading `BandGradeParams` (thresholds, saturation per band), `bareColour`, `crackStrength` |
-| Water | `seaShallow`, `seaDeep`, `foamOn`, `lakeLevel`, `iceOn`, per flow state `riverWidth[5]`, `riverColour[5]`, `floodOn` |
+| Lines | DiaToonShading `LineParams`; `formLinesOn`, `contoursOn`, `contourInterval` |
+| Palette | DiaToonShading `PaletteParams` (band thresholds, noise scale) |
+| Season | `seasonWeights[4]` (uniform, set per frame by the game; used as given, not normalised), DiaToonShading `GradePresetsParams` (up to 4 presets), per-stratum `ambient[4]` |
+| Condition | DiaToonShading `BandGradeParams` (thresholds, saturation per band), `bareColour`, `crackStrength`, `crackScale` |
+| Water | `seaShallow`, `seaDeep`, `seaDepthRange`, `waveScale`, `waveSpeed`, `foamOn`, `foamWidth`, `lakeLevel`, `iceOn`, per flow state `riverWidth[5]`, `riverColour[5]`, `riverFlowSpeed[5]`, `streakScale`, `bankInkWeight`, `floodOn` |
 | Snow | DiaToonShading `OverlayParams` (colour, threshold, falloff), `snowLineBias`, `snowTempBias` |
-| Weather | `cloudShadowOn`, `cloudShadowStrength`, `wetStrength` |
-| Events | `burnColour`, `scarColour`, `scarFade` |
+| Weather | `cloudShadowOn`, `cloudShadowStrength`, `cloudShadowScale`, `cloudDriftSpeed`, `cloudThreshold`, `wetStrength` |
+| Events | `burnColour`, `scarColour`, `scarFade`, `burnGlowWidth` |
 | Custom | `slot[4] = { technique, colour, threshold, falloff, enabled }` |
 | Marks/grain | `marksOn`, DiaToonShading `MarkParams`, `GrainParams` |
 | Debug | `dataView` |
+
+The groups list the fields the prototype needs; the sidecar is the authoritative list, and any further look number found while building goes in as a field (goal 5), never as a shader literal.
 
 `HexWorldVisuals` (per class, from the game): `palette[class] = { primary, secondary, accent }`, per-season palette overrides, mark id and density, relief weights (passed to DraoiHexWorldRelief). Uploaded as a small uniform array or texture.
 
@@ -101,17 +104,18 @@ Draoi/DraoiHexWorldRender3D/Shaders/
 3. **Strata table.** Changing `hatchCoverage[s]` and `inkWeight[s]` changes only stratum `s` texels. Measured hatch coverage per stratum follows the table within DiaToonShading's tolerance (±5 points) for any table, not only CoW's.
 4. **Coast and lake ink.** Coast ink sits at land fraction 0.5 and lake ink at the lake level (within 1 px). No ink crosses a flat region of one class at any zoom or tilt.
 5. **Snow rule.** Snow cover is monotonic in pack, increasing with elevation and decreasing with temperature, and zero when pack is 0.
-6. **Rivers.** Each flow state uses its width and colour; flow streaks move in the flow direction; banks are inked at every state except Dry's lowest width.
+6. **Rivers.** Each flow state uses its width and colour; flow streaks move in the flow direction at that state's `riverFlowSpeed`; banks are inked wherever the river width is above 0 (so Dry draws no river unless the style gives it a width).
 7. **Weather and events.** Cloud shadow darkens only where the cloud value is above its threshold. Wet darkening scales with precipitation and is zero for snow. A burn of 1.0 is emissive; a scar of 1.0 is the scar colour; a scar fading to 0 returns the ground colour.
-8. **Season.** Season weights blend the grade presets (half-way equals the average of the two). Weights with all strengths at 0 are the identity.
-9. **Custom slots.** A slot bound to each technique draws it where its value passes the threshold. An unbound or disabled slot leaves the output byte-identical to no slot texture. Values in slot `k` never affect slot `j`.
-10. **Boil only on terrain ink** (TMAP-006). With boil on, ink lines change between boil frames; fills never change.
+8. **Season.** Season weights blend the grade presets (half-way equals the average of the two). Weights with all strengths at 0 are the identity. Weights are used as given, not normalised (DiaToonShading Feature 4).
+9. **Custom slots.** A slot bound to each technique draws it where its value passes the threshold. An unbound or disabled slot leaves the output byte-identical to no slot texture. Values in slot `k` never affect slot `j`. Technique choice is a uniform-driven branch (all four paths compiled in, no permutations, TOON-003).
+10. **Boil only on terrain ink** (TMAP-006). With boil on, ink lines change between boil frames, stepped at `boilHz`; fills never change.
 11. **Parameters.** Every `HexWorldStyle` field has a sidecar range and default; out-of-range values are clamped with a warning.
 12. **Neutral defaults.** The defaults render a readable map with no CoW data loaded (user taste check on a capture).
 13. **Prototype parity, through CoW.** With CoW's style and visuals files loaded (CoW Map Visual Data), a side-by-side capture against the approved prototype is signed off by the user. The GDD-number checks live in that CoW feature.
 14. **Data views.** Each view outputs its raw value in a documented colour mapping.
-15. **Performance (Debug, ballpark).** Fragment cost at 1080p is recorded. If Large with everything on misses 30 fps (GDD V-1 Test 7), a perf task is queued (cheaper noise, early water exit, a cached static layer), not silently accepted.
+15. **Performance (Debug, ballpark).** Fragment cost at 1080p is recorded (including the custom-slot branch). If Large with everything on misses 30 fps (GDD V-1 Test 7), a perf task is queued (cheaper noise, early water exit, a cached static layer), not silently accepted.
 16. **Observability.** Shader load failures log file and error (channel `HWR3D`); profile scope `HexTerrain.Material`; the style file hash is logged on `SetStyle`.
+17. **Live tweak, whole style.** Setting any `HexWorldStyle` field on the backing `AttributeSet` changes the next frame's output with no rebuild, shader reload or `SetStyle` call. A sweep test sets each field of the per-stratum tables, the per-flow-state tables and the custom-slot bindings in turn, and only that stratum, state or slot changes in the capture (no cross-talk). A scan test checks that the `hexterrain/` shaders contain no look literals outside a short allowlist of structural constants.
 
 ## Binding Decisions
 
@@ -122,7 +126,7 @@ Draoi/DraoiHexWorldRender3D/Shaders/
 | TMAP-006 | No boil on props | Boil applies to terrain ink only |
 | TMAP-010 | Hybrid channels | Standard channels mapped here; 4 custom slots bound in the style |
 | TMAP-012 | Neutral defaults only | AC 12; GDD numbers in CoW |
-| TOON-001..003 | DiaToonShading | Techniques come from its includes; this feature adds no technique maths |
+| TOON-001..006 | DiaToonShading | Techniques come from its includes; this feature adds no technique maths; `HexWorldStyle` is a live-tweakable `AttributeSet` with no look literals in shaders (goal 5, AC 17) |
 
 ## Open Design Questions
 
@@ -134,12 +138,13 @@ Draoi/DraoiHexWorldRender3D/Shaders/
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Shader root, cook config, varying defs, `HexWorldStyle` and sidecar | AC 1, 11 | Not Started | sonnet | |
+| 1 | Shader root, cook config, varying defs, `HexWorldStyle` as a live-tweakable `AttributeSet` with sidecar | AC 1, 11, 17 | Not Started | sonnet | needs the DiaToonShading cook include-path change |
 | 2 | Coast, lake and border ink; strata table (ink, hatch, ambient) | AC 3, 4, 10 | Not Started | sonnet | |
 | 3 | Hillshade, slope rock, form lines, contours; palette slots, season, marks, grain | AC 8 | Not Started | sonnet | |
 | 4 | Snow, ocean, lake, ice, rivers by flow state | AC 5, 6 | Not Started | sonnet | |
 | 5 | Weather, events, condition grade | AC 7 | Not Started | sonnet | |
 | 6 | Custom slots | AC 9 | Not Started | sonnet | |
 | 7 | Data views; neutral defaults capture | AC 12, 14 | Not Started | sonnet | user taste check |
-| 8 | Composition goldens; prototype parity with CoW data | AC 2, 13 | Not Started | sonnet | needs CoW Map Visual Data; user signs off |
+| 8 | Composition goldens; prototype parity with CoW data | AC 2, 13 | Not Started | sonnet | needs CoW Map Visual Data; user signs off; goldens gated on DiaBgfx3D Feature A readback |
 | 9 | Cost measurement and observability | AC 15, 16 | Not Started | haiku | |
+| 10 | Live-tweak sweep and literal scan | AC 17 | Not Started | sonnet | after tasks 2 to 6 |

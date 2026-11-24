@@ -110,9 +110,9 @@ namespace Draoi::HexWorldRender3D {
 | # | Feature | Summary | Spec | Status |
 |---|---|---|---|---|
 | 1 | Hex Terrain Surface | Field, class, coast, relief and river textures from the bake; per-cell class data; standard channel and custom slot textures; hosts DiaBgfx3D E | [hex-terrain-surface.md](hex-terrain-surface.md) | Approved 2026-11-23 |
-| 2 | Hex Terrain Material | Composition of DiaToonShading techniques with hex vocabulary; custom slots; data views; Draoi shader root; neutral default style | [hex-terrain-material.md](hex-terrain-material.md) | Draft |
-| 3 | Map Props and Emitters | Deterministic class-rule scatter scaled by condition, dynamic sprite layers, per-cell density into particles, fixed-frequency sway (no prop boil) | [map-props-and-emitters.md](map-props-and-emitters.md) | Draft |
-| 4 | Map Assembly | `HexWorldMap` facade, versioned uploads, draw order, data-view switch, `ScreenToWorld`/`WorldToCell`, bake-state query, observability | [map-assembly.md](map-assembly.md) | Draft |
+| 2 | Hex Terrain Material | Composition of DiaToonShading techniques with hex vocabulary; custom slots; data views; Draoi shader root; neutral default style | [hex-terrain-material.md](hex-terrain-material.md) | Approved 2026-11-24 |
+| 3 | Map Props and Emitters | Deterministic class-rule scatter scaled by condition, dynamic sprite layers, per-cell density into particles, fixed-frequency sway (no prop boil) | [map-props-and-emitters.md](map-props-and-emitters.md) | Approved 2026-11-24 |
+| 4 | Map Assembly | `HexWorldMap` facade, versioned uploads, draw order, data-view switch, `ScreenToWorld`/`WorldToCell`, bake-state query, observability | [map-assembly.md](map-assembly.md) | Approved 2026-11-24 |
 
 Build order: DiaCellFieldBake 1 → DraoiHexWorldRelief → DiaBgfx3D A, E → DiaToonShading 1–4 → 1 → 2 → 4 (first visible map, hosted by CoW Strategic Map Feature 4). Then 3, once DiaBgfx3D B and C exist.
 
@@ -132,6 +132,7 @@ Build order: DiaCellFieldBake 1 → DraoiHexWorldRelief → DiaBgfx3D A, E → D
 | TMAP-010 | Hybrid channels: fixed standard channels that mirror Draoi sim outputs, plus 4 custom overlay slots bound to DiaToonShading techniques in the game's style file; no runtime shader generation (user 2026-11-23) | Accepted | Yes |
 | TMAP-011 | Plain library: no module, streams, commands or PU affinity; the game's render-side module owns a `HexWorldMap` (Draoi PD-012) | Accepted | Yes |
 | TMAP-012 | Draoi ships neutral defaults only; every GDD number lives in game data (user 2026-11-23) | Accepted | Yes |
+| TMAP-013 | `HexWorldStyle` and the scalar fields of `HexWorldVisuals` are live-tweakable attributes (`AttributeSet`, TOON-006); the library is touched on the render thread only, and the game's module marshals edits from other PUs over a stream (user 2026-11-24) | Accepted | Yes |
 
 ## Inherited Binding Decisions
 
@@ -143,7 +144,7 @@ Build order: DiaCellFieldBake 1 → DraoiHexWorldRelief → DiaBgfx3D A, E → D
 | PD-005 | x64 / D3D11 | bgfx D3D11 path |
 | AD-003 | Namespaces | `Draoi::HexWorldRender3D::` |
 | CFB-001..005 | DiaCellFieldBake | Fields come only from the bake; no nearest-cell class lookups in the renderer |
-| TOON-001..005 | DiaToonShading | The material is composed from its includes; no Dia include learns hex vocabulary |
+| TOON-001..006 | DiaToonShading | The material is composed from its includes; no Dia include learns hex vocabulary; the style is a live-tweakable `AttributeSet` |
 
 ## Test Strategy
 
@@ -159,4 +160,4 @@ Build order: DiaCellFieldBake 1 → DraoiHexWorldRelief → DiaBgfx3D A, E → D
 
 ## Status
 
-`Approved` (2026-11-23, user). Created by moving DiaTerrainMap3D (Approved 2026-11-20) to Draoi in the layer split. Feature 1 Approved; Features 2–4 Draft. No AD-001 sign-off needed for the package itself (Draoi); the Dia pieces it depends on carry their own.
+`Approved` (2026-11-23, user). Created by moving DiaTerrainMap3D (Approved 2026-11-20) to Draoi in the layer split. **All four features Approved (Feature 1 2026-11-23; 2, 3 and 4 2026-11-24, after spec review).** No AD-001 sign-off needed for the package itself (Draoi); the Dia pieces it depends on carry their own.
