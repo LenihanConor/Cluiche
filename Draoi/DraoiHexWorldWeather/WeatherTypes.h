@@ -64,6 +64,18 @@ struct SeasonalBaselineInput
     Dia::Core::Containers::DynamicArray<float> temperature;
 };
 
+// Feature 7 influence snapshot: queried state before and after Step, to populate a cache for preview and commit.
+struct InfluenceSnapshot
+{
+    bool IsEmpty() const { return true; }
+};
+
+// Feature 8 climate offset arrays per zone: temperature, evaporation, and wind adjustments.
+struct ClimateOffsets
+{
+    Dia::Core::Containers::DynamicArray<float> tempOffset, evapMultiplier, windShift;
+};
+
 } // namespace Weather
 } // namespace HexWorld
 } // namespace Draoi

@@ -103,6 +103,16 @@
     <ClInclude Include="Testing\RegistryMapKeys.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="WeatherPipeline.h" />
+    <ClInclude Include="WindDirection.h" />
+    <ClInclude Include="WeatherForcing.h" />
+    <ClInclude Include="WeatherStepProfile.h" />
+    <ClInclude Include="Testing\WeatherTestExecutors.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\WeatherTestFixtures.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BiomeClassify.cpp" />
@@ -151,6 +161,8 @@
     <ClCompile Include="WeatherTypes.cpp" />
     <ClCompile Include="WeatherParameters.cpp" />
     <ClCompile Include="WeatherSimulation.cpp" />
+    <ClCompile Include="WeatherPipeline.cpp" />
+    <ClCompile Include="WindDirection.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.draoi.hexworldweather.architecture.module.md">

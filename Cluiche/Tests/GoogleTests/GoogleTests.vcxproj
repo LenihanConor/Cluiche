@@ -1380,6 +1380,13 @@
     <ClCompile Include="Draoi\TestWeatherTypes.cpp" />
     <ClCompile Include="Draoi\TestWeatherInitialise.cpp" />
     <ClCompile Include="CoW\Weather\TestWeatherSidecar.cpp" />
+    <ClCompile Include="Draoi\TestWindDirection.cpp" />
+    <ClCompile Include="Draoi\TestWeatherLifecycle.cpp" />
+    <ClCompile Include="Draoi\TestWeatherPasses.cpp" />
+    <ClCompile Include="Draoi\TestWeatherTransport.cpp" />
+    <ClCompile Include="Draoi\TestWeatherForcing.cpp" />
+    <ClCompile Include="Draoi\TestWeatherDeterminism.cpp" />
+    <ClCompile Include="Draoi\TestWeatherPerf.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

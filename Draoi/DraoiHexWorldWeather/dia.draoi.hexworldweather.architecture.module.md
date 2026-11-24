@@ -14,6 +14,7 @@ dependencies:
     - dia.core
     - dia.maths
     - dia.attribute
+    - dia.parallelexecutor
   forbidden: []
 public_api:
   headers:

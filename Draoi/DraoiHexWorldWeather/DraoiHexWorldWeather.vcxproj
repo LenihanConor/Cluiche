@@ -79,12 +79,20 @@
     <ClInclude Include="WeatherParameters.h" />
     <ClInclude Include="WeatherSimulation.h" />
     <ClInclude Include="Testing\RegistryMapKeys.h" />
+    <ClInclude Include="WeatherPipeline.h" />
+    <ClInclude Include="WindDirection.h" />
+    <ClInclude Include="WeatherForcing.h" />
+    <ClInclude Include="WeatherStepProfile.h" />
+    <ClInclude Include="Testing\WeatherTestExecutors.h" />
+    <ClInclude Include="Testing\WeatherTestFixtures.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DraoiHexWorldWeather.cpp" />
     <ClCompile Include="WeatherTypes.cpp" />
     <ClCompile Include="WeatherParameters.cpp" />
     <ClCompile Include="WeatherSimulation.cpp" />
+    <ClCompile Include="WeatherPipeline.cpp" />
+    <ClCompile Include="WindDirection.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.draoi.hexworldweather.architecture.module.md" />
@@ -120,6 +128,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DraoiHexWorld\DraoiHexWorld.vcxproj">
       <Project>{6B1C3E52-9A47-4D8F-B2E0-5C7A1F3D9E84}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaParallelExecutor\DiaParallelExecutor.vcxproj">
+      <Project>{128D9ECE-FA18-59D5-A396-FE51946E313A}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

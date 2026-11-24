@@ -3312,5 +3312,26 @@
     <ClCompile Include="CoW\Weather\TestWeatherSidecar.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="Draoi\TestWindDirection.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherLifecycle.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherPasses.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherTransport.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherForcing.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherDeterminism.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherPerf.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
