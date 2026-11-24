@@ -1,7 +1,7 @@
 # Feature Spec: Injectable terrain test rules (Draoi test helpers)
 
 **Parent:** @docs/specs/features/draoi/extract-hexworld-terrain.md (Follow-up 3, raised at its close-out 2026-11-22; plan task 7 left these files in CoW)
-**Status:** `Approved` (2026-11-23; user delegated both open questions: injection seam and forwarders chosen). Plan: @docs/specs/features/draoi/injectable-terrain-test-rules.plan.md
+**Status:** `Done` (2026-11-23). Plan: @docs/specs/features/draoi/injectable-terrain-test-rules.plan.md
 **Origin:** Backlog Task row "Terrain test helpers need injectable rules" (2026-11-22).
 **Depends on:** nothing unbuilt. Mirrors the existing `SetTestAssetPaths` seam in `DraoiHexWorld/Testing/BiomeTestRegistry.h` (host supplies repo-relative paths, `CoWTestAssetPaths.cpp` calls it).
 
