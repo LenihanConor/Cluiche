@@ -1,0 +1,17 @@
+{
+    "version": 3,
+    "processing_units": [
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                { "instance_id": "WorldGenerationModule", "type_id": "WorldGenerationModule", "stages": ["FixtureHostStage"], "dependencies": ["MessageBusHostModule", "RandomStreamModule", "SimQueryHostModule"], "channels": [] },
+                { "instance_id": "WeatherModule", "type_id": "WeatherModule", "stages": ["FixtureHostStage"], "dependencies": ["MessageBusHostModule", "WorldStepModule", "WorldGenerationModule", "SimQueryHostModule"], "requires_tick_after": ["WorldStepModule"], "config": { "spinup_weeks": 52 }, "channels": [] },
+                { "instance_id": "WorldStepModule", "type_id": "WorldStepModule", "stages": ["FixtureHostStage"], "dependencies": ["MessageBusHostModule", "SimQueryHostModule"], "channels": [] }
+            ]
+        }
+    ],
+    "stages": [],
+    "streams": []
+}

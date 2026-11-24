@@ -116,6 +116,7 @@ private:
 
     std::vector<bool> mClampLogged;        // [biome * 4 + season], sized by registry Count()
     bool mFallbackLogged = false;
+    bool mProviderLogged = false;
     bool mBaselineDegraded = false;
 
     mutable std::mutex mLock;
@@ -138,6 +139,7 @@ public:
     enum class LaunchMode : uint8_t { kThread, kSynchronous, kManual };
 
     WeatherStage();
+    ~WeatherStage() override { hooks.Invalidate(); }   // a running spin-up job sees it between weeks, so the base joins promptly
 
     void SetLaunchMode(LaunchMode mode) { mMode = mode; }
     size_t QueuedJobCount() const { return mQueued.size(); }
@@ -184,6 +186,8 @@ public:
     WeatherSnapshot GetSnapshot() const;
 
 protected:
+    // First step of Stop: cancels a running spin-up job (it checks between weeks) before the base joins it.
+    void UnregisterStage() override { hooks.Invalidate(); }
     void LaunchJob(uint32_t revision, uint32_t generation, const WorldStep::WorldView& world) override;
 
 private:

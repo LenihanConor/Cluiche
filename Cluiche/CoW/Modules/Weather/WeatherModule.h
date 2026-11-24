@@ -15,6 +15,7 @@
 #include <Shared/Weather/WeatherStage.h>
 
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace CoW {
@@ -37,6 +38,13 @@ public:
     void SetSidecarSource(Weather::IWeatherSidecarSource* source) { mSidecarSource = source; }
     void SetActivePacks(const std::vector<Json::Value>& packs) { mPacks = packs; }
     void SetSpinupWeeks(uint32_t weeks) { mStage.SetSpinupWeeks(weeks); }
+
+    // Config result (OnConfigure). A config error (key named) stops the module from starting: DoStart returns kFailed.
+    bool ConfigOk() const { return mConfigOk; }
+    const std::string& ConfigErrorKey() const { return mConfigErrorKey; }
+    const std::string& ConfigErrorReason() const { return mConfigErrorReason; }
+    uint32_t ConfiguredSpinupWeeks() const { return mSpinupWeeks; }
+    bool ClimateConfigIgnored() const { return mClimateIgnored; }
 
     // Queue API (SimPU, any time). Thin over the stage; see WeatherStage for the contracts.
     bool QueueParameterSet(const char* dottedKey, float value, Weather::ParamError& err) { return mStage.QueueParameterSet(dottedKey, value, err); }
@@ -78,8 +86,23 @@ private:
     Dia::MessageBus::BusSubscriptionHandle mSubscriptions[2];
     WorldGenerationModule* mWorldGen = nullptr;   // borrowed; null in test-hosts mode
 
-    Weather::IWeatherSidecarSource* mSidecarSource = nullptr;   // borrowed
-    std::vector<Json::Value> mPacks;
+    bool BuildActivePacks();   // injected + config packs; false (logged, stage Failing) when a config pack cannot be read
+
+    Weather::IWeatherSidecarSource* mSidecarSource = nullptr;   // borrowed (injected) or points at mOwnedSource
+    std::unique_ptr<Weather::IWeatherSidecarSource> mOwnedSource;
+    std::vector<Json::Value> mPacks;          // injected
+    std::vector<Json::Value> mActivePacks;    // injected + config packs, built per start
+
+    // Config (OnConfigure). `sidecar` and each string pack are a catalogue alias or a file path.
+    bool mConfigOk = true;
+    std::string mConfigErrorKey;
+    std::string mConfigErrorReason;
+    uint32_t mSpinupWeeks = Weather::kDefaultSpinupWeeks;
+    bool mSpinupConfigured = false;
+    std::string mSidecarRef = "json.weather_parameters_schema";
+    std::vector<Json::Value> mConfigPacks;   // objects (inline) or strings (alias/path)
+    bool mClimateIgnored = false;
+    bool mSidecarGiven = false;
     bool mParamsAttempted = false;
 
     Weather::WeatherStage mStage;

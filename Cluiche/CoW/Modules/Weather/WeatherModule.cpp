@@ -6,6 +6,10 @@
 #include <Modules/Weather/WeatherMessages.h>
 #include <Shared/Weather/WeatherTerrainBuilder.h>
 #include <Shared/World/WorldSimNames.h>
+#include <DiaCore/FilePath/PathStore.h>
+
+#include <fstream>
+#include <sstream>
 
 namespace CoW {
 
@@ -34,6 +38,44 @@ private:
     WorldGenerationModule& mWorldGen;
 };
 
+namespace {
+
+// `ref` is a catalogue alias (registered by AssetServiceModule::DoStart, after every OnConfigure) or a literal path.
+// The one sanctioned PathStore read, same precedent as WorldGenerationModule's rules sidecar. Resolved at read time.
+std::string ResolveRef(const std::string& ref)
+{
+    const Dia::Core::Path::Alias alias(ref.c_str());
+    if (Dia::Core::PathStore::IsPathAliasRegistered(alias))
+        return Dia::Core::PathStore::ResolvePathToCString(alias);
+    return ref;
+}
+
+bool ReadRef(const std::string& ref, std::string& text, std::string& error)
+{
+    const std::string path = ResolveRef(ref);
+    std::ifstream in(path, std::ios::binary);
+    if (!in.good())
+    {
+        error = "cannot read " + path + " ('" + ref + "')";
+        return false;
+    }
+    std::stringstream ss;
+    ss << in.rdbuf();
+    text = ss.str();
+    return true;
+}
+
+class RefSidecarSource : public Weather::IWeatherSidecarSource
+{
+public:
+    explicit RefSidecarSource(const std::string& ref) : mRef(ref) {}
+    bool Read(std::string& text, std::string& error) override { return ReadRef(mRef, text, error); }
+private:
+    std::string mRef;
+};
+
+} // namespace
+
 const Dia::Core::StringCRC WeatherModule::kTypeId("WeatherModule");
 
 WeatherModule::WeatherModule(const Dia::Core::StringCRC& instanceId)
@@ -48,13 +90,112 @@ Dia::Core::StringCRC WeatherModule::StageId() const
     return Dia::Core::StringCRC(World::StageId(World::kWeather).c_str());
 }
 
-void WeatherModule::OnConfigure(const char*) {}   // Task 5: spinup_weeks and parameters path
+void WeatherModule::OnConfigure(const char* configJson)
+{
+    mConfigOk = true;
+    mConfigErrorKey.clear();
+    mConfigErrorReason.clear();
+    mConfigPacks.clear();
+    mClimateIgnored = false;
+    mSidecarGiven = false;
+    mSidecarRef = "json.weather_parameters_schema";
+    mSpinupWeeks = Weather::kDefaultSpinupWeeks;
+
+    auto fail = [this](const char* key, const char* reason) {
+        mConfigOk = false;
+        mConfigErrorKey = key;
+        mConfigErrorReason = reason;
+        DIA_LOG_ERROR(Weather::kLogChannel, "WTH: WeatherModule config error at '%s': %s; the module will not start", key, reason);
+    };
+
+    if (configJson == nullptr || configJson[0] == '\0') { mStage.SetSpinupWeeks(mSpinupWeeks); return; }
+    Json::Value root;
+    Json::Reader reader;
+    if (!reader.parse(configJson, root) || !root.isObject()) { fail("config", "not a JSON object"); return; }
+
+    if (root.isMember("spinup_weeks"))
+    {
+        const Json::Value& v = root["spinup_weeks"];
+        const bool numeric = v.isNumeric();
+        const double d = numeric ? v.asDouble() : 0.0;
+        if (!numeric || d < 0.0 || d > 520.0 || d != static_cast<double>(static_cast<long long>(d)))
+        {
+            fail("spinup_weeks", "must be an integer in [0, 520]");
+            return;
+        }
+        mSpinupWeeks = static_cast<uint32_t>(d);
+    }
+    if (root.isMember("sidecar"))
+    {
+        if (!root["sidecar"].isString() || root["sidecar"].asString().empty())
+        {
+            fail("sidecar", "must be a non-empty string (catalogue alias or path)");
+            return;
+        }
+        mSidecarRef = root["sidecar"].asString();
+        mSidecarGiven = true;
+    }
+    if (root.isMember("packs"))
+    {
+        const Json::Value& packs = root["packs"];
+        if (!packs.isArray()) { fail("packs", "must be an array"); return; }
+        for (Json::ArrayIndex i = 0; i < packs.size(); ++i)
+        {
+            if (!packs[i].isObject() && !(packs[i].isString() && !packs[i].asString().empty()))
+            {
+                fail("packs", "each pack must be an object or a non-empty alias/path string");
+                return;
+            }
+            mConfigPacks.push_back(packs[i]);
+        }
+    }
+    if (root.isMember("climate"))
+    {
+        mClimateIgnored = true;
+        DIA_LOG_INFO(Weather::kLogChannel, "WTH: WeatherModule 'climate' config accepted and ignored (climate cycles are not built)");
+    }
+    mStage.SetSpinupWeeks(mSpinupWeeks);
+}
+
+bool WeatherModule::BuildActivePacks()
+{
+    mActivePacks = mPacks;
+    for (const Json::Value& pack : mConfigPacks)
+    {
+        if (pack.isObject()) { mActivePacks.push_back(pack); continue; }
+        std::string text, error;
+        Json::Value parsed;
+        Json::Reader reader;
+        if (!ReadRef(pack.asString(), text, error))
+        {
+            // error already set
+        }
+        else if (!reader.parse(text, parsed) || !parsed.isObject())
+        {
+            error = "pack '" + pack.asString() + "' is not a JSON object";
+        }
+        if (!error.empty())
+        {
+            DIA_LOG_ERROR(Weather::kLogChannel, "WTH: WeatherModule parameter pack failed: %s; stage is Failing", error.c_str());
+            mStage.FailStage("packs", static_cast<uint32_t>(Weather::CauseCode::kParameterFault));
+            return false;
+        }
+        mActivePacks.push_back(parsed);
+    }
+    return true;
+}
 
 Dia::ApplicationFlow::StartResult WeatherModule::DoStart()
 {
     using Dia::ApplicationFlow::StartResult;
     DIA_TRACE_ZONE("WeatherModule::DoStart", Dia::Observation::Trace::Category::kNone);
 
+    if (!mConfigOk)
+    {
+        DIA_LOG_ERROR(Weather::kLogChannel, "WTH: WeatherModule not starting, config error at '%s': %s",
+                      mConfigErrorKey.c_str(), mConfigErrorReason.c_str());
+        return StartResult::kFailed;
+    }
     WorldStepModule* worldStep = nullptr;
     Dia::MessageBus::Bus* bus = nullptr;
     if (mUseTestHosts)
@@ -80,6 +221,19 @@ Dia::ApplicationFlow::StartResult WeatherModule::DoStart()
     if (worldStep == nullptr)
         return StartResult::kLoading;
 
+    // The production sidecar source, created from config unless a source was injected. A test-hosts run without an
+    // explicit `sidecar` keeps the parameters the stage was handed.
+    if (mSidecarSource == nullptr && (!mUseTestHosts || mSidecarGiven))
+    {
+        mOwnedSource = std::make_unique<RefSidecarSource>(mSidecarRef);
+        mSidecarSource = mOwnedSource.get();
+    }
+    if (mSidecarSource != nullptr)
+    {
+        DIA_LOG_INFO(Weather::kLogChannel, "WTH: WeatherModule parameter source '%s', %u config pack(s), spin-up %u weeks",
+                     mOwnedSource ? mSidecarRef.c_str() : "<injected>", static_cast<unsigned>(mConfigPacks.size()),
+                     static_cast<unsigned>(mSpinupWeeks));
+    }
     mStage.Start();   // takes the generation hold
     if (!mUseTestHosts && mWorldGen != nullptr && mWorldGen->AreBiomesLoaded())
         mStage.SetRegistry(&mWorldGen->GetBiomeRegistry());
@@ -144,8 +298,9 @@ void WeatherModule::TryLoadParameters()
 {
     if (mParamsAttempted || mSidecarSource == nullptr || !mStage.HasRegistry()) { return; }
     mParamsAttempted = true;
+    if (!BuildActivePacks()) { return; }
     Weather::ParamError err;
-    mStage.LoadParameters(*mSidecarSource, mPacks, err);
+    mStage.LoadParameters(*mSidecarSource, mActivePacks, err);
 }
 
 void WeatherModule::OnWorldFailed()
@@ -174,6 +329,8 @@ Dia::ApplicationFlow::StopResult WeatherModule::DoStop()
     mStage.SetGenerationHold(nullptr);
     mWorldGen = nullptr;
     mAdapter.reset();
+    if (mOwnedSource) { mSidecarSource = nullptr; mOwnedSource.reset(); }
+    mActivePacks.clear();
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 

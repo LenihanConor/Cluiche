@@ -2,10 +2,12 @@
 
 #include <DraoiHexWorld/BiomeRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaParallelExecutor/SerialExecutor.h>
 #include <Shared/CoWCalendar.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 
@@ -54,6 +56,7 @@ std::shared_ptr<const SpinUpInput> WeatherHooks::Find(uint32_t revision) const
 bool WeatherHooks::InitialiseSim(WeatherSimulation& sim, const WorldStep::WorldView& world,
                                  WeatherStageBase::CauseCode& cause)
 {
+    DIA_TRACE_ZONE("WeatherStage::SpinUp", Dia::Observation::Trace::Category::kNone);
     cause = static_cast<uint32_t>(CauseCode::kNone);
     const std::shared_ptr<const SpinUpInput> input = Find(world.revision);
     if (input == nullptr || input->registry == nullptr)
@@ -76,6 +79,9 @@ bool WeatherHooks::InitialiseSim(WeatherSimulation& sim, const WorldStep::WorldV
         return false;
     }
 
+    DIA_LOG_INFO(kLogChannel, "WTH: spin-up start for world %u, %u weeks", static_cast<unsigned>(world.revision),
+                 static_cast<unsigned>(input->spinupWeeks));
+    const auto spinUpStart = std::chrono::steady_clock::now();
     Dia::ParallelExecutor::SerialExecutor executor;
     const Draoi::HexWorld::Weather::HydrologyInputs noHydro;
     const Draoi::HexWorld::Weather::InfluenceSnapshot noInfluences;
@@ -87,6 +93,8 @@ bool WeatherHooks::InitialiseSim(WeatherSimulation& sim, const WorldStep::WorldV
         if (onSpinUpWeek) { onSpinUpWeek(week); }
     }
     if (mLatestRevision.load(std::memory_order_acquire) != world.revision) { return false; }
+    const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - spinUpStart).count();
+    DIA_LOG_INFO(kLogChannel, "WTH: spin-up finished for world %u in %.1f ms", static_cast<unsigned>(world.revision), ms);
     return true;
 }
 
@@ -162,9 +170,15 @@ void WeatherHooks::BuildBaseline(const WeatherSimulation& sim, WeatherLatch& lat
 
 void WeatherHooks::CaptureSim(WeatherSimulation& working, WeatherLatch& latch)
 {
+    DIA_TRACE_ZONE("WeatherStage::Capture", Dia::Observation::Trace::Category::kNone);
     const Draoi::HexWorld::Weather::SeasonalBaselineInput* baseline = nullptr;
     if (baselineProvider != nullptr)
     {
+        if (mFallbackLogged || !mProviderLogged)
+        {
+            DIA_LOG_INFO(kLogChannel, "WTH: using the biome baseline provider");
+            mProviderLogged = true;
+        }
         mFallbackLogged = false;
         BuildBaseline(working, latch);
         baseline = &latch.baseline;
@@ -260,6 +274,7 @@ void WeatherHooks::RunStep(WeatherSimulation& working, const WeatherLatch&, Dia:
 
 void WeatherHooks::CommitSim(WeatherSimulation& sim, uint32_t stepDay)
 {
+    DIA_TRACE_ZONE("WeatherStage::Commit", Dia::Observation::Trace::Category::kNone);
     sim.Commit();
     sim.SetCommittedWeek(WeekOf(stepDay));
 }
@@ -442,6 +457,8 @@ void WeatherStage::OnWorldComplete(uint32_t revision)
         return;
     }
     view.revision = revision;
+    DIA_LOG_INFO(kLogChannel, "WTH: world %u announced (%ux%u)", static_cast<unsigned>(revision),
+                 static_cast<unsigned>(view.width), static_cast<unsigned>(view.height));
     hooks.SnapshotParameters(input->params);
     input->registry = hooks.registry;
     input->spinupWeeks = hooks.spinupWeeks;
