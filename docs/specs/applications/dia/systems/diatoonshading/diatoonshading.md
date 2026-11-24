@@ -16,7 +16,8 @@ DiaToonShading is a library of **stylised shading techniques**: illustrated-look
 It exists because an illustrated look with no artist is built from these rules, and they are not terrain-specific. Iso-line ink works on any scalar field, coverage-driven hatching on any surface with a coverage value, and a toon ramp on any normal. Keeping them in Dia, free of world vocabulary, means a map, a sprite and later a mesh can share one art style.
 
 **Dependency chain:**
-`DiaToonShading → DiaBgfx (ShaderProgram, shader cook), DiaValueSchema (parameter ranges), DiaObservation, DiaCore`
+`DiaToonShading → DiaBgfx (ShaderProgram, shader cook), DiaAttribute (ParamBinding, parameter files), DiaValueSchema (parameter ranges), DiaObservation, DiaCore`
+`DiaToonShading/Testing → DiaBgfx3D` (Feature A render-target readback, for the golden harness only; the shipped module does not depend on DiaBgfx3D)
 
 ## Responsibilities
 
@@ -49,19 +50,21 @@ Each include exposes functions with explicit inputs (`float field`, `vec2 gradie
 
 ### Parameter groups
 
-Each technique has a C++ parameter struct (for example `Dia::ToonShading::InkParams`) with a DiaValueSchema sidecar for ranges and defaults, and a matching uniform layout. Consumers embed these structs in their own style files.
+Each technique has a C++ parameter struct (for example `Dia::ToonShading::InkParams`) with a DiaValueSchema sidecar for ranges and defaults, and a matching uniform layout. Consumers embed these structs in their own style files. **Every field is a live-tweakable DiaAttribute** (user 2026-11-24): an `AttributeSet` backs each struct, so the Inspector, DiaAPI and parameter files can all change it at run time, and the look-dev panel needs no per-technique code.
 
 ## Features
 
 | # | Feature | Summary | Spec | Status |
 |---|---|---|---|---|
-| 1 | Shader Library Foundation | Shader root and cook config, noise and colour includes, parameter-block convention with schema sidecars, synthetic-input golden-capture harness | [shader-library-foundation.md](shader-library-foundation.md) | Draft |
-| 2 | Ink and Lines | Constant-width iso-line ink, margin-edge ink, weight and noise width, form lines, contours, line boil | [ink-and-lines.md](ink-and-lines.md) | Draft |
-| 3 | Light and Hatch | Toon ramp lighting, slope blend, coverage-driven hatching with zoom-aware spacing and cross-hatch | [light-and-hatch.md](light-and-hatch.md) | Draft |
-| 4 | Colour and Surface | Palette slots by noise bands, procedural marks, masked overlay, band saturation grade, weighted grade cross-fade, paper grain | [colour-and-surface.md](colour-and-surface.md) | Draft |
+| 1 | Shader Library Foundation | Shader root and cook config, noise and colour includes, parameter-block convention with schema sidecars, synthetic-input golden-capture harness | [shader-library-foundation.md](shader-library-foundation.md) | Approved |
+| 2 | Ink and Lines | Constant-width iso-line ink, margin-edge ink, weight and noise width, form lines, contours, line boil | [ink-and-lines.md](ink-and-lines.md) | Approved |
+| 3 | Light and Hatch | Toon ramp lighting, slope blend, coverage-driven hatching with zoom-aware spacing and cross-hatch | [light-and-hatch.md](light-and-hatch.md) | Approved |
+| 4 | Colour and Surface | Palette slots by noise bands, procedural marks, masked overlay, band saturation grade, weighted grade cross-fade, paper grain | [colour-and-surface.md](colour-and-surface.md) | Approved |
 | — | Sprite and mesh ink | Alpha-edge ink for sprites; outline ink for meshes | not specced | Spec once CoW decides how dragons are drawn (ODQ 1) |
 
 Build order: 1, then 2, 3 and 4 in any order. The DraoiHexWorldRender3D Hex Terrain Material needs all four.
+
+**Test gate (review 2026-11-24).** The shader code has almost no dependencies, but every golden capture (F1 AC 5, F2 AC 7, F3 AC 7, F4 AC 8) needs render-target readback from DiaBgfx3D Feature A, which is Draft and owes its AD-001 sign-off and a depth/RGBA16F spike. Until then the techniques can be written and checked through their CPU references and cook tests, but not goldened. **DiaCLI change owed (AD-001):** the shader cook passes only the bgfx include directories to `shaderc`, so `<toon/...>` includes from another root (Draoi, games) need the cook to add each `source_roots` entry as an include path (see Feature 1 task 1).
 
 ## Decisions
 
@@ -72,6 +75,7 @@ Build order: 1, then 2, 3 and 4 in any order. The DraoiHexWorldRender3D Hex Terr
 | TOON-003 | Shipped as shader includes plus parameter groups; consumers compose materials; no runtime shader generation (bgfx shaders cook offline) | Accepted | Yes |
 | TOON-004 | Style lives in shader code and parameter files; no technique may require per-state images (was TMAP-003) | Accepted | Yes |
 | TOON-005 | Boil is a per-call parameter, off by default; the consumer decides which layers boil (TMAP-006 stays a consumer rule) | Accepted | Yes |
+| TOON-006 | Every technique parameter is a live-tweakable attribute (`AttributeSet` + schema sidecar), no hard-coded look values in shaders (user 2026-11-24) | Accepted | Yes |
 
 ## Inherited Binding Decisions
 
@@ -80,7 +84,8 @@ Build order: 1, then 2, 3 and 4 in any order. The DraoiHexWorldRender3D Hex Terr
 | PD-005 | x64 / D3D11 | Every include compiles for dx11; dx12 and vulkan are cooked too |
 | AD-001 | Module docs; engine changes signed off | New module doc; module and `pipeline.toml` shader root **signed off 2026-11-23** |
 | AD-003 | `Dia::<Module>::` | `Dia::ToonShading::` |
-| Platform: DiaAttribute / DiaValueSchema | Parameters are data | Every parameter struct has a sidecar |
+| Platform: DiaAttribute / DiaValueSchema | Parameters are data | Every parameter struct has a sidecar, bound through `ParamBinding` (not a new binder) |
+| AD-001 (DiaCLI) | CLI changes signed off | Cook include paths (see Test gate): **sign-off owed** |
 
 ## Test Strategy
 
@@ -96,4 +101,4 @@ Build order: 1, then 2, 3 and 4 in any order. The DraoiHexWorldRender3D Hex Terr
 
 ## Status
 
-`Approved` (2026-11-23, user). Created by the layer split. **AD-001 signed off 2026-11-23 (user):** new module `Dia/DiaToonShading` and the shader root `Dia/DiaToonShading/Shaders` in `pipeline.toml`. Features 1–4 are Draft.
+`Approved` (2026-11-23, user). Created by the layer split. **AD-001 signed off 2026-11-23 (user):** new module `Dia/DiaToonShading` and the shader root `Dia/DiaToonShading/Shaders` in `pipeline.toml`. **Features 1–4 Approved 2026-11-24 (user, after spec review).** Still owed before build: AD-001 sign-off for the DiaCLI cook include-path change and the `Testing/Shaders` root (F1 task 1); golden harness (F1 task 4) is blocked on DiaBgfx3D Feature A.

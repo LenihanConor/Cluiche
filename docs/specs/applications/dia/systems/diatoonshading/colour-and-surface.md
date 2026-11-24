@@ -9,7 +9,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/shaders.js` (`GROUND_FS` palette, marks, snow, wet, scar, condition grade, season grade, grain)
 
 ## Status
-`Draft` (2026-11-23). Generic half of the former Style Shader Library goals 1.1, 1.6, 1.7, 1.10–1.14. Which world states use these techniques (snow, wet, burn, condition, season) moved to the DraoiHexWorldRender3D Hex Terrain Material. The GDD numbers (season tints, condition bands) moved to CoW Map Visual Data.
+`Approved` (2026-11-24, user, after spec review; cross-fade weights used as given). Drafted 2026-11-23. Generic half of the former Style Shader Library goals 1.1, 1.6, 1.7, 1.10–1.14. Which world states use these techniques (snow, wet, burn, condition, season) moved to the DraoiHexWorldRender3D Hex Terrain Material. The GDD numbers (season tints, condition bands) moved to CoW Map Visual Data.
 
 ## Summary
 
@@ -51,6 +51,8 @@ vec3  toonGradeCrossFade(vec3 base, vec4 weights, GradePresetsParams p);
 vec3  toonGrain(vec3 base, vec2 screenUv, GrainParams p);
 ```
 
+**Cross-fade weights** are used as given, not normalised: the output is `base` plus the weighted sum of each preset's change, so weights that sum to less than 1 give a partial grade and weights above 1 over-apply. Consumers pass weights that sum to 1 (AC 5 tests that case and the all-zero case).
+
 ## Acceptance Criteria
 
 1. **Palette slots.** On a flat patch, slot shares match the two band thresholds within ±3 percentage points. A fixed seed gives a stable pattern.
@@ -59,7 +61,7 @@ vec3  toonGrain(vec3 base, vec2 screenUv, GrainParams p);
 4. **Band grade.** Saturation at a value inside each band matches the band's change within 1/255. The output is continuous across thresholds. Bare blend at strength 0 is the identity.
 5. **Grade cross-fade.** For a known grey, a single preset at weight 1 gives the Screen or Multiply formula at its strength (within 1/255). Half-way between two presets equals the average of the two. All-zero strengths are the identity.
 6. **Grain** at strength 0 is the identity and is stable from frame to frame.
-7. **Neutral defaults.** Every function at its default parameters returns its input (within 1/255).
+7. **Neutral defaults.** Every function at its default parameters is the identity, defined per function (within 1/255): `toonPaletteSlots` returns `primary`; `toonMarks` returns 0 (density 0); `toonOverlay`, `toonBandGrade`, `toonGradeCrossFade` and `toonGrain` return `base`.
 8. **Goldens.** One golden per function (Feature 1 harness).
 
 ## Binding Decisions
@@ -68,6 +70,7 @@ vec3  toonGrain(vec3 base, vec2 screenUv, GrainParams p);
 |---|---|---|
 | TOON-001 | No world vocabulary | "Overlay", "band grade", "grade preset"; snow, condition and season are consumer words |
 | TOON-002 | Any surface | Inputs are colours, values and UVs |
+| TOON-003 | Includes plus parameter groups | One parameter group per function, sidecars (Feature 1 convention) |
 | TOON-004 | No per-state images | All procedural |
 
 ## Open Design Questions

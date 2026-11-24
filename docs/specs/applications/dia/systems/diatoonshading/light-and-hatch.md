@@ -9,7 +9,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/shaders.js` (`GROUND_FS` toon shade, hatch, slope rock)
 
 ## Status
-`Draft` (2026-11-23). Generic half of the former Style Shader Library goals 1.3 and 1.4. The per-stratum coverage numbers (GDD 15 / 40 / 70%) moved to CoW Map Visual Data.
+`Approved` (2026-11-24, user, after spec review; hatch formula option A chosen). Drafted 2026-11-23. Generic half of the former Style Shader Library goals 1.3 and 1.4. The per-stratum coverage numbers (GDD 15 / 40 / 70%) moved to CoW Map Visual Data.
 
 ## Summary
 
@@ -43,12 +43,14 @@ float toonSlope(vec3 normal, LightParams p);                        // 0 flat ..
 float toonHatch(vec2 worldUv, float coverage, float shade, float pixelScale, HatchParams p);
 ```
 
+**How coverage and shade combine.** `coverage` is the target ink fraction for the patch. `shade` (0 dark .. 1 lit, typically `toonRamp`) shifts the local target: `target = clamp(coverage + p.shadeGain * (0.5 - shade), 0, 1)`, with `shadeGain` defaulting to 0 (neutral: shade has no effect). Noise (`p.noiseAmount`, default 0) jitters stroke thresholds only, so mean coverage is unchanged. On a flat patch at `shade = 0.5` the output is exactly `coverage`, which is what AC 4 measures.
+
 ## Acceptance Criteria
 
 1. **Ramp.** With band count N and banding 1, a synthetic hemisphere shows exactly N flat bands. With banding 0, the shade equals Lambert within 1/255.
 2. **Gradient normal.** A planar ramp of known gradient gives the analytic normal (within 1e−3).
 3. **Slope.** `toonSlope` is 0 on flat ground, 1 at `slopeMax` and monotonic in between.
-4. **Coverage.** On a flat patch, measured ink coverage (ink pixels over patch pixels) is within ±5 percentage points of the target, for targets 0.10, 0.15, 0.40, 0.70 and 0.80.
+4. **Coverage.** On a flat patch, measured ink coverage (ink pixels over patch pixels) is within ±5 percentage points of the target, for targets 0.10, 0.15, 0.40, 0.70 and 0.80 (at shade 0.5, noise off). **Risk:** 0.70 and 0.80 rely on cross-hatch; if the first prototype cannot hold ±5 there, relax those two targets to ±8 and record it here.
 5. **Spacing.** Across a continuous zoom sweep, stroke spacing in pixels stays within its range and coverage stays within AC 4's tolerance (no pop beyond it).
 6. **Cross-hatch** appears only above its threshold.
 7. **Goldens.** One golden per function (Feature 1 harness).
@@ -59,6 +61,8 @@ float toonHatch(vec2 worldUv, float coverage, float shade, float pixelScale, Hat
 |---|---|---|
 | TOON-001 | No world vocabulary | Coverage is a number; strata and zones are consumer concepts |
 | TOON-002 | Any surface | Inputs are normals, values and a pixel scale |
+| TOON-003 | Includes plus parameter groups | `LightParams`, `HatchParams` with sidecars (Feature 1 convention) |
+| TOON-004 | No per-state images | Strokes are procedural |
 
 ## Tasks
 

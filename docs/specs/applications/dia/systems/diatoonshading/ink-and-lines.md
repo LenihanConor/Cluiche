@@ -9,7 +9,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/shaders.js` (`GROUND_FS` ink, form lines, contours, boil)
 
 ## Status
-`Draft` (2026-11-23). Generic half of the former Style Shader Library goals 1.2, 1.5 and 1.14 (ink); the coast, lake and border composition moved to the DraoiHexWorldRender3D Hex Terrain Material.
+`Approved` (2026-11-24, user, after spec review). Drafted 2026-11-23. Generic half of the former Style Shader Library goals 1.2, 1.5 and 1.14 (ink); the coast, lake and border composition moved to the DraoiHexWorldRender3D Hex Terrain Material.
 
 ## Summary
 
@@ -50,6 +50,8 @@ vec2  toonBoilOffset(vec2 uv, float boilFrame, BoilParams p);   // zero when p.o
 
 Each returns ink coverage in [0, 1]. The consumer mixes ink colour by it.
 
+**Derivatives are computed inside the include.** `toonIsoInk` and `toonEdgeInk` take no gradient argument; they use `fwidth` of `field` or `margin` themselves. They therefore run only in a fragment shader, and the field must be continuous across the surface (linear-filtered). A consumer that needs a precomputed gradient (a compute pass, or a CPU reference) is out of scope for v1. The CPU references in `Testing/` model the same maths on a pixel grid with finite differences.
+
 ## Acceptance Criteria
 
 1. **Width.** On a synthetic ramp, iso-line ink is the same pixel width at three zoom levels and two tilts (within 1 px).
@@ -65,7 +67,9 @@ Each returns ink coverage in [0, 1]. The consumer mixes ink colour by it.
 | ID | Decision | How this feature complies |
 |---|---|---|
 | TOON-001 | No world vocabulary | Functions take fields and levels, not coasts or borders |
-| TOON-002 | Any surface | Inputs are values and derivatives; no texture reads |
+| TOON-002 | Any surface | Inputs are values (derivatives taken inside); no texture reads |
+| TOON-003 | Includes plus parameter groups | `InkParams`, `LineParams`, `BoilParams` with sidecars (Feature 1 convention) |
+| TOON-004 | No per-state images | Lines are procedural |
 | TOON-005 | Boil is a parameter, off by default | `BoilParams.on` defaults to 0 |
 
 ## Open Design Questions
