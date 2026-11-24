@@ -125,6 +125,7 @@
     <ClInclude Include="Testing\TestProfiles.h" />
     <ClInclude Include="Testing\ValidationTestWorlds.h" />
     <ClInclude Include="TerrainFieldContribution.h" />
+    <ClInclude Include="Testing\TerrainTestHost.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BiomeClassify.cpp" />

@@ -85,6 +85,9 @@
     <ClInclude Include="TerrainFieldContribution.h">
       <Filter>TerrainFieldContribution</Filter>
     </ClInclude>
+    <ClInclude Include="Testing\TerrainTestHost.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BiomeClassify.cpp" />

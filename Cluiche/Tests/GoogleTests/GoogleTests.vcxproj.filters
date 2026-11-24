@@ -3297,5 +3297,8 @@
     <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\TriggerScriptModule.cpp">
       <Filter>CluicheTest</Filter>
     </ClCompile>
+    <ClCompile Include="Draoi\TestTerrainTestHost.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

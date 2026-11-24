@@ -12,6 +12,7 @@
 
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <DraoiHexWorldTerrain/Testing/TerrainRulesTestHelpers.h>
+#include <DraoiHexWorldTerrain/Testing/TerrainTestHost.h>
 #include <Shared/CoWNodeKinds.h>
 #include <Shared/CoWStepSeedNames.h>
 #include <DraoiHexWorld/WorldStructure.h>
@@ -33,70 +34,12 @@ namespace WorldGeneration {
 using namespace Draoi::HexWorld;
 
 
-namespace CoWTerrainRulesTestDetail
-{
-    inline std::string ReadSidecarFromSourceTree()
-    {
-        return ::Draoi::HexWorld::TerrainRulesTestDetail::ReadFileFromSourceTree("Cluiche/Assets/CoW/Global/WorldGen/Rules/terrain_rules.schema.json", __FILE__);
-    }
-}
-
-inline const std::string& TestSidecarText()
-{
-    static const std::string text = [] {
-        std::string t = CoWTerrainRulesTestDetail::ReadSidecarFromSourceTree();
-        if (t.empty())
-        {
-            ::Draoi::HexWorld::TerrainRulesTestDetail::Fail("terrain_rules.schema.json not found above ", __FILE__);
-        }
-        return t;
-    }();
-    return text;
-}
-
-inline const Dia::Attribute::ParameterFile& TestSidecarFile()
-{
-    static Dia::Attribute::ParameterFile* file = [] {
-        auto* f = new Dia::Attribute::ParameterFile();   // intentionally leaked: lives for the process
-        Dia::Attribute::ParamError err;
-        if (!f->Load(TestSidecarText().c_str(), "terrain_rules.schema.json", nullptr, err))
-        {
-            ::Draoi::HexWorld::TerrainRulesTestDetail::Fail("sidecar failed to load at key ", err.key.AsCStr());
-        }
-        return f;
-    }();
-    return *file;
-}
-
-inline TerrainRules TestRules()
-{
-    static const TerrainRules rules = [] {
-        TerrainRules r;
-        if (!TerrainRules::FromParameterFile(TestSidecarFile(), r))
-        {
-            ::Draoi::HexWorld::TerrainRulesTestDetail::Fail("sidecar does not match TerrainRules", "");
-        }
-        return r;
-    }();
-    return rules;
-}
-
-// A WorldGenSession whose constructor loads the sidecar rules (and aborts if that fails).
-struct TestSession : WorldGenSession
-{
-    TestSession()
-    {
-        SetStepSeedNames(CoWStepSeedNames());
-        SetNodeKinds(CoWNodeKindIds());
-        SetBiomeRegistry(&::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
-        SetGuaranteeSpec(CoW::WorldGeneration::Testing::ShippedGuaranteeSpec());
-        Dia::Attribute::ParamError err;
-        if (!LoadRules(TestSidecarText().c_str(), err))
-        {
-            ::Draoi::HexWorld::TerrainRulesTestDetail::Fail("LoadRules failed at key ", err.key.AsCStr());
-        }
-    }
-};
+// Forwarders to the neutral host (DraoiHexWorldTerrain/Testing/TerrainTestHost.h); the CoW values are installed by
+// SetTerrainTestConfig in the GoogleTests CoWTestAssetPaths.cpp.
+using ::Draoi::HexWorld::Testing::TestSidecarText;
+using ::Draoi::HexWorld::Testing::TestSidecarFile;
+using ::Draoi::HexWorld::Testing::TestRules;
+using ::Draoi::HexWorld::Testing::TestSession;
 
 } // namespace WorldGeneration
 } // namespace CoW

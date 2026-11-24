@@ -1375,6 +1375,7 @@
     <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\EntitySpawnerHealth.cpp" />
     <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\EntitySpawnerModule.cpp" />
     <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\TriggerScriptModule.cpp" />
+    <ClCompile Include="Draoi\TestTerrainTestHost.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
