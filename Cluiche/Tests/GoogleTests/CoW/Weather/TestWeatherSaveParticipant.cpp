@@ -2,6 +2,8 @@
 // AC 4 (ready:false), AC 7 (Validate mutates nothing), AC 8 (a failed Validate aborts the load), version 1, happy path.
 #include <gtest/gtest.h>
 
+#include <chrono>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -847,4 +849,116 @@ TEST(WeatherSaveRegistration, SchemaFromTheHostConfiguresTheParticipantAndAMissi
         EXPECT_TRUE(rig.module.GetSaveParticipant().IsConfigured());
         rig.module.CallStop();
     }
+}
+
+// ---- Task 15 / AC 20, AC 8: Large world through SaveLoadModule::CaptureState ----
+namespace
+{
+struct LargeCaptureRig
+{
+    LargeCaptureRig()
+        : harness(WsTest::Config("weather", 7, true))
+        , module(StringCRC("WeatherModule"))
+        , saveLoad(StringCRC("SaveLoadModule"))
+    {
+        source.columns = 104;
+        source.rows = 64;   // 6,656 cells (Large)
+        bus.Initialize();
+        bus.RegisterType<CoW::WorldGenerationComplete, 4>();
+        bus.RegisterType<CoW::WorldGenerationFailed, 4>();
+        bus.RegisterType<CoW::WeatherUpdated, 4>();
+        EXPECT_TRUE(PublishSidecar(layers, ReadShippedSidecar()));
+        CoW::WeatherModule::TestHosts hosts;
+        hosts.worldStep = &harness.module;
+        hosts.bus = &bus;
+        hosts.worldSource = &source;
+        hosts.generationHold = &hold;
+        hosts.saveLoad = &saveLoad;
+        hosts.schema = &layers;
+        module.UseTestHosts(hosts);
+        module.GetStage().SetRegistry(&Draoi::HexWorld::Weather::Testing::TestRegistry());
+        module.GetStage().SetParameters(Draoi::HexWorld::Weather::Testing::MakeTestParams());
+        module.GetStage().SetSpinupWeeks(1);
+        module.GetStage().SetLaunchMode(CoW::Weather::WeatherStage::LaunchMode::kSynchronous);
+        EXPECT_EQ(Dia::ApplicationFlow::StartResult::kReady, module.CallStart());
+    }
+    ~LargeCaptureRig() { module.CallStop(); }
+
+    void Prepare()
+    {
+        CoW::WorldGenerationComplete msg;
+        msg.worldRevision = 5;
+        ASSERT_TRUE(bus.Broadcast(msg));
+        bus.Update();
+        module.GetStage().Update();
+        Dia::ParallelExecutor::SerialExecutor executor;
+        for (uint32_t week = 1; week <= 2; ++week)
+        {
+            module.GetStage().Capture(static_cast<Dia::DeferredStep::StepKey>(week * 7));
+            module.GetStage().Run(executor);
+            module.GetStage().Commit();
+        }
+        // a third step in flight: Capture and Run, no Commit
+        module.GetStage().Capture(static_cast<Dia::DeferredStep::StepKey>(3 * 7));
+        module.GetStage().Run(executor);
+    }
+
+    WsTest::Harness harness;
+    WeatherProbe module;
+    CoW::SaveLoadModule saveLoad;
+    Dia::MessageBus::Bus bus;
+    OneWorldSource source;
+    NullHold hold;
+    Dia::ValueSchema::ValueSchemaRegistry layers;
+};
+}
+
+TEST(WeatherSaveSize, LargeWorldRecordPlusPendingBlobIsUnder5MBAndCaptureStateIsWithinTheBuffer)
+{
+    LargeCaptureRig rig;
+    rig.Prepare();
+    ASSERT_EQ(6656u, rig.module.GetStage().ReadableSim()->Fields().CellCount());
+
+    auto list = std::make_unique<CoW::CapturedStateList>();
+    const auto t0 = std::chrono::steady_clock::now();
+    rig.saveLoad.CaptureState(*list);
+    const auto t1 = std::chrono::steady_clock::now();
+    ASSERT_EQ(1u, list->Size());
+    ASSERT_EQ(StringCRC("cow.weather"), (*list)[0].id);
+    const size_t recordBytes = Draoi::HexWorld::Serialize((*list)[0].state).size();
+
+    Dia::SaveGame::SaveContext pendingCtx;
+    pendingCtx.BeginObject(StringCRC("stage_0"));
+    rig.module.GetStage().SerializePending(pendingCtx);
+    pendingCtx.EndObject();
+    const std::string pendingText = Draoi::HexWorld::Serialize(pendingCtx.Root());
+    ASSERT_TRUE(pendingCtx.Root()["stage_0"]["valid"].asBool());
+    const size_t pendingBytes = pendingText.size();
+
+    const double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+    std::printf("[WeatherSaveSize] record=%zu bytes, pending=%zu bytes, total=%zu bytes, CaptureState=%.2f ms (Debug)\n",
+                recordBytes, pendingBytes, recordBytes + pendingBytes, ms);
+    EXPECT_LT(recordBytes + pendingBytes, 5u * 1024u * 1024u);
+    EXPECT_LT(recordBytes + pendingBytes, static_cast<size_t>(Dia::SaveGame::SaveContext::kBufferSize));
+}
+
+TEST(WeatherSaveSize, ACorruptedCapturedRecordFailsValidateAndLiveStateIsUnchanged)
+{
+    LargeCaptureRig rig;
+    rig.Prepare();
+    auto list = std::make_unique<CoW::CapturedStateList>();
+    rig.saveLoad.CaptureState(*list);
+    ASSERT_EQ(1u, list->Size());
+    const Snap before = Take(rig.module.GetStage());
+    ASSERT_TRUE(before.hasSim);
+
+    {
+        Dia::SaveGame::LoadContext ctx((*list)[0].state);
+        EXPECT_TRUE(rig.module.GetSaveParticipant().Validate(ctx)) << "control";
+    }
+    Json::Value bad = (*list)[0].state;
+    bad["temperature"][0u] = 1.0e9;
+    Dia::SaveGame::LoadContext ctx(bad);
+    EXPECT_FALSE(rig.module.GetSaveParticipant().Validate(ctx));
+    EXPECT_EQ(before, Take(rig.module.GetStage()));
 }
