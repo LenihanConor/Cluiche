@@ -66,6 +66,13 @@ public:
     bool     AddForcing(const WeatherForcing& forcing);
     uint32_t ForcingCount() const { return mForcings.Size(); }
 
+    // Registers a region (ascending, de-duplicated, every index < cell count). Returns the handle (its index), or
+    // kNoCellSet for an empty, unsorted, duplicated or out-of-range list, a full store (kMaxCellSets) or before Initialise.
+    CellSetHandle RegisterCellSet(const Dia::Core::Containers::DynamicArray<uint32_t>& sortedCells);
+    // Removes every cell set AND every forcing that references one; per-cell forcings stay.
+    void          ClearCellSets();
+    uint32_t      CellSetCount() const { return mCellSets.used; }
+
     uint64_t GetCommittedWeek() const { return mCommittedWeek; }
     void     SetCommittedWeek(uint64_t week) { mCommittedWeek = week; }
 

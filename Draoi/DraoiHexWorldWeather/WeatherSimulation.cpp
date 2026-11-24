@@ -296,6 +296,34 @@ void WeatherSimulation::Step(const WeatherParameters& params, Season season, uin
     Commit();
 }
 
+CellSetHandle WeatherSimulation::RegisterCellSet(const Dia::Core::Containers::DynamicArray<uint32_t>& sortedCells)
+{
+    if (!mInitialised || mCellSets.used >= kMaxCellSets) return kNoCellSet;
+    const uint32_t n = mTables.cellCount;
+    const uint32_t count = sortedCells.Size();
+    if (count == 0 || count > n) return kNoCellSet;
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        if (sortedCells[i] >= n) return kNoCellSet;
+        if (i > 0 && sortedCells[i] <= sortedCells[i - 1]) return kNoCellSet;   // unsorted or duplicate
+    }
+    const uint32_t handle = mCellSets.used;
+    for (uint32_t i = 0; i < count; ++i) mCellSets.cells[handle * n + i] = sortedCells[i];
+    mCellSets.counts[handle] = count;
+    ++mCellSets.used;
+    return static_cast<CellSetHandle>(handle);
+}
+
+void WeatherSimulation::ClearCellSets()
+{
+    for (uint32_t s = 0; s < kMaxCellSets; ++s) mCellSets.counts[s] = 0;
+    mCellSets.used = 0;
+    uint32_t keep = 0;
+    for (uint32_t i = 0; i < mForcings.Size(); ++i)
+        if (mForcings[i].cellSet == kNoCellSet) mForcings[keep++] = mForcings[i];
+    while (mForcings.Size() > keep) mForcings.Remove();
+}
+
 bool WeatherSimulation::AddForcing(const WeatherForcing& forcing)
 {
     if (!mInitialised || mForcings.Size() >= kMaxForcings) return false;
@@ -303,7 +331,7 @@ bool WeatherSimulation::AddForcing(const WeatherForcing& forcing)
     {
         if (forcing.cell >= mTables.cellCount) return false;
     }
-    else if (forcing.cellSet >= kMaxCellSets)
+    else if (forcing.cellSet >= mCellSets.used)
     {
         return false;
     }

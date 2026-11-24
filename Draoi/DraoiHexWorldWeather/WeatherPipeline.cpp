@@ -20,6 +20,12 @@ namespace
     // Profile category: the weather run is a DiaDeferredStep job, so its zones group under that category.
     constexpr Dia::Observation::Profile::ProfileCategory kWeatherCategory = Dia::Observation::Profile::Category::kDiaDeferredStep;
 
+    // Winning record index + 1 for `kind` on `cell`, 0 when no forcing covers it (see ResolveForcings).
+    inline uint32_t Winner(const PassContext& context, ForcingKind kind, uint32_t cell)
+    {
+        return context.tables->claimed[static_cast<uint32_t>(kind) * context.tables->cellCount + cell];
+    }
+
     inline float Clamp01(float v) { return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v); }
 
     // Angle in [0, 2pi) from an on-screen counter-clockwise angle in any range.
@@ -29,6 +35,33 @@ namespace
         if (a < 0.0f) a += kTwoPiF;
         if (a >= kTwoPiF) a = 0.0f;
         return a;
+    }
+}
+
+void ResolveForcings(PassContext& context)
+{
+    GridTables& t = *context.tables;
+    const CapturedInputs& in = *context.inputs;
+    const uint32_t n = t.cellCount;
+    for (uint32_t i = 0; i < t.claimed.Size(); ++i) t.claimed[i] = 0;
+    for (uint32_t r = 0; r < in.forcings.Size(); ++r)
+    {
+        const WeatherForcing& f = in.forcings[r];
+        const uint32_t base = static_cast<uint32_t>(f.kind) * n;
+        const uint8_t id = static_cast<uint8_t>(r + 1);
+        if (f.cellSet == kNoCellSet)
+        {
+            if (f.cell < n && t.claimed[base + f.cell] == 0) t.claimed[base + f.cell] = id;
+        }
+        else if (f.cellSet < in.cellSets.used)
+        {
+            const uint32_t count = in.cellSets.counts[f.cellSet];
+            for (uint32_t i = 0; i < count; ++i)
+            {
+                const uint32_t c = in.cellSets.cells[f.cellSet * n + i];
+                if (c < n && t.claimed[base + c] == 0) t.claimed[base + c] = id;
+            }
+        }
     }
 }
 
@@ -89,8 +122,10 @@ void RunPressurePass(PassContext& context, Dia::ParallelExecutor::IParallelExecu
         for (uint32_t c = begin; c < end; ++c)
         {
             f.pressure[c] = Clamp01(0.5f - (f.temperature[c] - 0.5f) * sensitivity + f.pressureAnomaly[c]);
+            // Hook A: a pressure hold wins over the recomputed value.
+            if (const uint32_t w = Winner(context, ForcingKind::PressureHold, c))
+                f.pressure[c] = Clamp01(context.inputs->forcings[w - 1].value);
         }
-        // Hook A (pressure hold) is added by task 9: a hold overwrites pressure for its cells after this loop.
     });
 }
 
@@ -124,11 +159,17 @@ void RunWindPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor&
                 speed = mag > 1.0f ? 1.0f : mag;
             }
             angle = Wrap2Pi(angle);
+            // Hook B: a wind override replaces direction and speed; dirIndex is snapped from the replaced angle.
+            if (const uint32_t w = Winner(context, ForcingKind::WindOverride, c))
+            {
+                const WeatherForcing& o = in.forcings[w - 1];
+                angle = Wrap2Pi(o.value);
+                speed = Clamp01(o.value2);
+            }
             f.windDirection[c] = angle;
             f.windSpeed[c] = speed;
             context.tables->dirIndex[c] = SnapWindDirection(angle, c % width);
         }
-        // Hook B (wind override) is added by task 9: overrides replace the result and re-snap dirIndex.
     });
 }
 
@@ -158,9 +199,11 @@ void RunEvaporationPass(PassContext& context, Dia::ParallelExecutor::IParallelEx
                 if (fromGround > 0.0f) m += fromGround;
             }
             f.moisture[c] = Clamp01(m);
+            // Feature 7 hook: Influence dMoisture is added here (then clamped [0,1]).
+            // Hook C: a moisture hold is applied after the influence delta, so it wins.
+            if (const uint32_t w = Winner(context, ForcingKind::MoistureHold, c))
+                f.moisture[c] = Clamp01(in.forcings[w - 1].value);
         }
-        // Feature 7 hook: Influence dMoisture is added here (then clamped [0,1]).
-        // Hook C (moisture hold) is added by task 9, after the influence delta, so a hold wins.
     });
 }
 
@@ -353,9 +396,10 @@ void RunPrecipitationPass(PassContext& context, Dia::ParallelExecutor::IParallel
                 RouteCondensate(context, c, amount);
                 f.cloudCover[c] = f.moisture[c] * 0.8f;   // clouds dissipate as rain falls
             }
+            // Hook D: forced rain routes like natural condensate but consumes no moisture and leaves cloudCover alone.
+            if (const uint32_t w = Winner(context, ForcingKind::Rain, c))
+                RouteCondensate(context, c, context.inputs->forcings[w - 1].value);
         }
-        // Hook D (rain forcing) is added by task 9: one-week rain adds to precipitation and routes the same way
-        // through RouteCondensate, without consuming moisture.
     });
 }
 
@@ -454,6 +498,7 @@ void RunPipelineUntil(PassContext& context, Dia::ParallelExecutor::IParallelExec
 {
     // Pass 0 (Influence) is skipped until Feature 7.
     if (lastPass < PassId::Solar) return;
+    ResolveForcings(context);
     RunSolarPass(context, executor);
     if (lastPass < PassId::Pressure) return;
     RunPressurePass(context, executor);

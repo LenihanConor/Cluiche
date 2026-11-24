@@ -27,7 +27,7 @@ struct GridTables
     Array<float>    moistureOut, heatOut, anomalyOut; // stable-read scratch
     Array<uint8_t>  dirIndex;                         // snapped wind direction per cell
     Array<float>    dTemperature, dMoisture;          // pass 0 per-cell influence deltas
-    Array<uint8_t>  claimed;                          // kForcingKindCount * N, lowest-record-wins
+    Array<uint8_t>  claimed;                          // kForcingKindCount * N: winning record index + 1, 0 = none
     uint32_t        cellCount = 0;
 };
 
@@ -91,6 +91,11 @@ void RunPrecipitationPass(PassContext& context, Dia::ParallelExecutor::IParallel
 void RunSnowMeltPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);       // pass 9 (+ firn)
 // Clamps every field to its range, then the serial grid totals (into context.totals).
 void RunFinishPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);
+
+// Resolves the latched forcings into per-cell winners (serial, record order, no allocation): GridTables::claimed
+// [kind * cellCount + cell] = lowest covering record index + 1, 0 = none. RunPipelineUntil calls it first; passes run
+// alone (tests) call it after Capture. Reads only the latched forcings and cell sets.
+void ResolveForcings(PassContext& context);
 
 // Routes `amount` of condensate that fell on `cell` (passes 7 and 8): adds it to `precipitation`; below snowThreshold
 // it goes to `snowPack` (capped 1.0, CH-04; the excess goes to handoff glacierInput on latched glacierEligible cells
