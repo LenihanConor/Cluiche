@@ -353,6 +353,7 @@ def _validate_diagame(data: dict, file_path: Path | None = None) -> Tuple[List[s
         # requires_tick_after that is satisfied inside one .diaapp can still be broken by the composition.
         for pu in composed.get("processing_units", []):
             errors += [f"{e} (composed {file_path.name})" for e in _check_requires_tick_after(pu)]
+        errors += [f"{e} (composed {file_path.name})" for e in _check_dependencies_present(composed)]
 
     if file_path and isinstance(data.get("config"), dict):
         warnings += _check_world_records(data["config"], file_path)
@@ -463,6 +464,28 @@ def _check_requires_tick_after(pu: dict) -> List[str]:
             elif index_of[ref] >= idx:
                 errors.append(f"{where} (index {idx}): requires_tick_after '{ref}' is at index {index_of[ref]}; "
                               f"it must be listed earlier [REQUIRES_TICK_AFTER_ORDER]")
+    return errors
+
+
+def _check_dependencies_present(composed: dict) -> List[str]:
+    """Every module's declared `dependencies` must name a module instance present in the composed manifest
+    (any PU). `soft_dependencies` are never required. Run on the composed .diagame only: a single .diaapp
+    legitimately depends on modules supplied by sibling manifests."""
+    present = {m.get("instance_id") for pu in composed.get("processing_units", []) if isinstance(pu, dict)
+               for m in pu.get("modules", []) if isinstance(m, dict)}
+    errors: List[str] = []
+    for pu in composed.get("processing_units", []):
+        if not isinstance(pu, dict):
+            continue
+        for mod in pu.get("modules", []):
+            deps = mod.get("dependencies") if isinstance(mod, dict) else None
+            if not isinstance(deps, list):
+                continue
+            for dep in deps:
+                if isinstance(dep, str) and dep not in present:
+                    errors.append(f"PU '{pu.get('instance_id', '?')}' module '{mod.get('instance_id', '?')}': "
+                                  f"dependency '{dep}' is not in the composed module list "
+                                  f"[REQUIRES_DEPENDENCY_MISSING]")
     return errors
 
 
