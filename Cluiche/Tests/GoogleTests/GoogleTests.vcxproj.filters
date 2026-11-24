@@ -3153,8 +3153,8 @@
     <ClCompile Include="DiaValueSchema\TestValueSchemaValuesFrom.cpp">
       <Filter>DiaValueSchema</Filter>
     </ClCompile>
-    <ClCompile Include="CoW\TestBiomeRegistryEdge.cpp">
-      <Filter>CoW</Filter>
+    <ClCompile Include="Draoi\TestBiomeRegistryEdge.cpp">
+      <Filter>Draoi</Filter>
     </ClCompile>
     <ClCompile Include="..\..\CoW\Modules\WorldStep\WorldStepModule.cpp">
       <Filter>CoW</Filter>
@@ -3180,8 +3180,8 @@
     <ClCompile Include="CoW\WorldStep\TestWorldStepLoadReset.cpp">
       <Filter>CoW\WorldStep</Filter>
     </ClCompile>
-    <ClCompile Include="CoW\TestStratumTable.cpp">
-      <Filter>CoW</Filter>
+    <ClCompile Include="Draoi\TestStratumTable.cpp">
+      <Filter>Draoi</Filter>
     </ClCompile>
     <ClCompile Include="DiaDeferredStep\TestStepChain.cpp">
       <Filter>DiaDeferredStep</Filter>

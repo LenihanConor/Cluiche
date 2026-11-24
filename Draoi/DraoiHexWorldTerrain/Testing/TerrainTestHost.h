@@ -58,6 +58,9 @@ inline void ResetTerrainTestConfigForTest() { TerrainTestHostDetail::Config() = 
 // The node kind ids the host injected.
 inline const NodeKindIds& TestNodeKinds() { return TerrainTestHostDetail::RequireConfig().nodeKinds; }
 
+// The step seed names the host injected.
+inline const StepSeedNames& TestStepSeedNames() { return TerrainTestHostDetail::RequireConfig().stepSeedNames; }
+
 inline const std::string& TestSidecarText()
 {
     const TerrainTestConfig& config = TerrainTestHostDetail::RequireConfig();

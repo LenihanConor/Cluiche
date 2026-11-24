@@ -6,9 +6,7 @@
 #include <DraoiHexWorld/BiomeRegistry.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <DraoiHexWorld/StratumTable.h>
-#include <Shared/CoWStepSeedNames.h>
-#include <Shared/CoWNodeKinds.h>
-#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
+#include <DraoiHexWorldTerrain/Testing/TerrainTestHost.h>
 #include <DraoiHexWorldTerrain/DeriveSubSeed.h>
 #include <DraoiHexWorldTerrain/NodesCorridor.h>
 #include <DraoiHexWorldTerrain/RegionPartition.h>
@@ -24,7 +22,6 @@
 #include <vector>
 
 using namespace Draoi::HexWorld;
-using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld::Testing;
 
 namespace {
@@ -445,10 +442,11 @@ TEST(StratumTable, NStrataPlaceCorridorsOnTheNMinusOneBarriers)
         SCOPED_TRACE("strata " + std::to_string(n));
         StrataWorld sw;
         BuildStrataWorld(n, 42, sw);
-        CoWSiteRegistry sites;
+        SiteRegistry sites;
+        sites.SetNodeKinds(TestNodeKinds());
         RegionsAndSites::PlaceReport rep;
         Dia::Maths::RandomStream rng(1);
-        RegionsAndSites::Place(sw.world, sites, sw.rules, sw.registry, DeriveSubSeed(42, 0), 0, rng, CoWStepSeedNames(), &rep);
+        RegionsAndSites::Place(sw.world, sites, sw.rules, sw.registry, DeriveSubSeed(42, 0), 0, rng, TestStepSeedNames(), &rep);
 
         EXPECT_EQ(rep.limits.barrierCount, n - 1);
         for (int b = n - 1; b < static_cast<int>(kMaxBarriers); ++b)
@@ -457,7 +455,7 @@ TEST(StratumTable, NStrataPlaceCorridorsOnTheNMinusOneBarriers)
             EXPECT_EQ(rep.corridors.candidates[b], 0) << "barrier " << b + 1 << " does not exist";
         }
         int corridorSites = 0;
-        const uint32_t kind = SiteKindId(BuiltinNodeKinds::Corridor());
+        const uint32_t kind = SiteKindId(TestNodeKinds().corridor);
         for (const Site& s : sw.world.sites.All())
         {
             if (s.kindCrc != kind) { continue; }

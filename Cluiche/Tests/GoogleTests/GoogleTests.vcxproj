@@ -1327,7 +1327,7 @@
     <ClCompile Include="CoW\TestBiomeLiterals.cpp" />
     <ClCompile Include="CoW\TestTerrainProfile.cpp" />
     <ClCompile Include="DiaValueSchema\TestValueSchemaValuesFrom.cpp" />
-    <ClCompile Include="CoW\TestBiomeRegistryEdge.cpp" />
+    <ClCompile Include="Draoi\TestBiomeRegistryEdge.cpp" />
     <ClCompile Include="..\..\CoW\Modules\WorldStep\WorldStepModule.cpp" />
     <ClCompile Include="CoW\WorldStep\TestWorldStepModule.cpp" />
     <ClCompile Include="CoW\WorldStep\TestWorldStepCadence.cpp" />
@@ -1336,7 +1336,7 @@
     <ClCompile Include="CoW\WorldStep\TestWorldStepHistorySignal.cpp" />
     <ClCompile Include="CoW\WorldStep\TestWorldStepSaveEdge.cpp" />
     <ClCompile Include="CoW\WorldStep\TestWorldStepLoadReset.cpp" />
-    <ClCompile Include="CoW\TestStratumTable.cpp" />
+    <ClCompile Include="Draoi\TestStratumTable.cpp" />
     <ClCompile Include="DiaDeferredStep\TestStepChain.cpp" />
     <ClCompile Include="DiaDeferredStep\TestStepChainEdge.cpp" />
     <ClCompile Include="DiaDeferredStep\TestStepChainConfig.cpp" />
