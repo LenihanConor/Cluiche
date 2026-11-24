@@ -399,6 +399,16 @@ public:
 
     // ----- inspection ------------------------------------------------------------------------------
 
+    // The sim a reader may look at on SimPU: the active sim of the target revision, else the pending one (spun up, not
+    // yet promoted). Null before any sim exists for the target revision. Do not hold the pointer across a Capture.
+    const TSim* ReadableSim() const
+    {
+        if (mActive != nullptr && mActiveRevision == mTargetRevision) { return mActive; }
+        if (mPending != nullptr && mPendingRevision == mTargetRevision) { return mPending; }
+        return nullptr;
+    }
+    bool IsReadyForRevision(uint32_t revision) const { return IsReady() && revision == mTargetRevision; }
+
     bool HasActive() const { return mActive != nullptr; }
     bool HasPending() const { return mPending != nullptr; }
     bool SpinUpRunning() const { return mSpinUp.State() == SpinUpSlot<TSim>::kRunning; }

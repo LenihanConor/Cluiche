@@ -298,6 +298,9 @@
     <Filter Include="CoW\WorldSimKit">
       <UniqueIdentifier>{63ac5436-4ca7-4cba-be22-55b2f23eefed}</UniqueIdentifier>
     </Filter>
+    <Filter Include="CoWWeather">
+      <UniqueIdentifier>{5a4ec01e-ca10-4d72-acea-7c8ce9008ba3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1832,6 +1835,12 @@
       <Filter>CoW</Filter>
     </ClInclude>
     <ClInclude Include="..\..\CoW\Shared\Weather\WeatherStage.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherTerrainBuilder.h">
+      <Filter>CoWWeather</Filter>
+    </ClInclude>
+    <ClInclude Include="CoW\Weather\WeatherTestWorld.h">
       <Filter>CoW</Filter>
     </ClInclude>
   </ItemGroup>
@@ -3370,6 +3379,12 @@
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="..\..\CoW\Modules\Weather\WeatherModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherSpinUp.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\Weather\WeatherTerrainBuilder.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
   </ItemGroup>

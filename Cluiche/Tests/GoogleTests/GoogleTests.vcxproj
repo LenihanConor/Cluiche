@@ -158,6 +158,8 @@
     <ClInclude Include="..\..\CoW\Modules\Weather\WeatherModule.h" />
     <ClInclude Include="..\..\CoW\Modules\Weather\WeatherMessages.h" />
     <ClInclude Include="..\..\CoW\Shared\Weather\WeatherStage.h" />
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherTerrainBuilder.h" />
+    <ClInclude Include="CoW\Weather\WeatherTestWorld.h" />
   </ItemGroup>
   <!-- Source Files -->
   <ItemGroup>
@@ -1400,6 +1402,8 @@
     <ClCompile Include="CoW\Weather\TestHydrologyInputsProviderHeader.cpp" />
     <ClCompile Include="..\..\CoW\Shared\Weather\WeatherStage.cpp" />
     <ClCompile Include="..\..\CoW\Modules\Weather\WeatherModule.cpp" />
+    <ClCompile Include="CoW\Weather\TestWeatherSpinUp.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\Weather\WeatherTerrainBuilder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

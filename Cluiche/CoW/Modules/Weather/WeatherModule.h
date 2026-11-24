@@ -6,11 +6,15 @@
 #include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
+#include <DiaMessageBus/Bus.h>
+#include <DiaMessageBus/BusSubscriptionHandle.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <Modules/GameSpeed/GameSpeedMessages.h>
 #include <Modules/MessageBusHostModule.h>
 #include <Modules/WorldStep/WorldStepModule.h>
 #include <Shared/Weather/WeatherStage.h>
+
+#include <memory>
 
 namespace CoW {
 
@@ -31,6 +35,9 @@ public:
     struct TestHosts
     {
         WorldStepModule* worldStep = nullptr;
+        Dia::MessageBus::Bus* bus = nullptr;                    // null: no subscriptions
+        Weather::IWeatherWorldSource* worldSource = nullptr;    // hand-built terrain instead of WorldGenerationModule
+        WorldStep::IGenerationHold* generationHold = nullptr;
     };
     void UseTestHosts(const TestHosts& hosts) { mTestHosts = hosts; mUseTestHosts = true; }
 
@@ -41,7 +48,16 @@ protected:
     Dia::ApplicationFlow::StopResult DoStop() override;
 
 private:
+    class WorldGenAdapter;   // IWeatherWorldSource + IGenerationHold over WorldGenerationModule
+
     Dia::Core::StringCRC StageId() const;
+    void OnWorldComplete(const WorldGenerationComplete& msg);
+    void OnWorldFailed();
+    void Unsubscribe();
+
+    std::unique_ptr<WorldGenAdapter> mAdapter;
+    Dia::MessageBus::BusSubscriptionHandle mSubscriptions[2];
+    WorldGenerationModule* mWorldGen = nullptr;   // borrowed; null in test-hosts mode
 
     Weather::WeatherStage mStage;
     WorldStepModule* mWorldStep = nullptr;   // borrowed; set while registered

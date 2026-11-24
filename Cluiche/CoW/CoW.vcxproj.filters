@@ -136,6 +136,9 @@
     <ClCompile Include="Modules\Weather\WeatherModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\Weather\WeatherTerrainBuilder.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEnd\FrontEndModule.h">
@@ -290,6 +293,9 @@
     </ClInclude>
     <ClInclude Include="Modules\Weather\WeatherModule.h">
       <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherTerrainBuilder.h">
+      <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
