@@ -15,6 +15,8 @@ dependencies:
     - dia.maths
     - dia.attribute
     - dia.parallelexecutor
+    - dia.geometry2d
+    - dia.observation
   forbidden: []
 public_api:
   headers:
