@@ -230,7 +230,8 @@ TEST(WeatherForcing, HeldLowShapesNeighbourWindInTheSameRun)
         ++checked;
     }
     EXPECT_EQ(checked, 6u);
-    EXPECT_FALSE(SameWind(a, b, kMid));
+    // The held cell's own gradient is sum(dir_d * (self - nb_d)) / 6; the six hex direction vectors sum to zero, so its
+    // own pressure cancels and only a float rounding artefact could make its wind differ. Not asserted either way.
     EXPECT_TRUE(SameWind(a, b, 0)) << "a cell two rings away is untouched";
 }
 
