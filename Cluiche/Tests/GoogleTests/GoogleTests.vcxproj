@@ -1413,6 +1413,7 @@
     <ClCompile Include="CoW\Weather\TestWeatherParameters.cpp" />
     <ClCompile Include="CoW\Weather\TestWeatherQueue.cpp" />
     <ClCompile Include="..\..\CoW\Shared\Weather\WeatherParameterStore.cpp" />
+    <ClCompile Include="CoW\Weather\TestWeatherEdgeCases.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

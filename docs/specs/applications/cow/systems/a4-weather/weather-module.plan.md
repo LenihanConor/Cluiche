@@ -39,3 +39,50 @@ Absent (decisions):
 
 ## Deferred (waiting on other features)
 Spec Task 16 / AC 38, 39 (Features 7-9 types); AC 33, 34, 35, 37 and the `IWaterInputSource`/`IHydrologySpinUpHost` seams (A5 module, whose amendment replaces them); AC 33's A4-only half (deferred-vs-synchronous, 52 weeks, carried from ca-pipeline) is built in Task 3/2 against the real stage and manual launcher.
+
+## Task 6 gap audit
+
+Files: `Cluiche/Tests/GoogleTests/CoW/Weather/`: Stage=TestWeatherStage, Module=TestWeatherModule, SpinUp=TestWeatherSpinUp, Steps=TestWeatherSteps, Params=TestWeatherParameters, Queue=TestWeatherQueue, Sidecar=TestWeatherSidecar, Edge=TestWeatherEdgeCases (new, Task 6; 25 active + 1 DISABLED_). Deferred and out of scope: AC 33, 34, 35, 37, 38, 39 and spec Task 16.
+
+| AC | Covered by | Gap closed in Task 6 |
+|----|------------|----------------------|
+| 1 | Fixtures `Cluiche/Tests/Fixtures/WeatherManifest/{valid,negative_order}`; checked by hand with `dia validate manifest --path` (valid: 0 errors; weather before WorldStepModule: REQUIRES_TICK_AFTER_ORDER); `Dia/DiaCLI/tests/test_validate_requires_tick_after.py` covers the ordering rule with a generic chain | Open: no automated test consumes the fixtures (see findings) |
+| 2 | Module `WeatherModuleConfig.*` (range, non-integer, key named, malformed, config error stops start) | none |
+| 3 | Module `RegistersStageIdWeatherInDoStartAndUnregistersInDoStop`, `ModuleCanStartAgainAfterStop` | none |
+| 4 | SpinUp `ReadyForRevisionOnlyOnceItsSpinUpCompleted`; Steps `ReadyForRevisionOnlyForTheTargetOnceSpunUp` | Edge `ZeroSpinUpWeeks...`, `MaximumSpinUpOf520Weeks...` |
+| 5 | SpinUp `NoWaterSourceIsFailingWithCauseAndNoResult`, `NoWaterSourceThenWorldWithWaterRecovers` | Edge `OneCellWorldWithoutWaterFailsWithNoWaterSource` |
+| 6 | SpinUp `SecondCompletion...`, `FinishedResultOfOlderRevision...`, `SupersededMidSpinUp...` | Edge `ThreeRapidRegenerations...`, `RapidRegenerationsAfterEarlierJobsAlreadyRan...`, `PendingResultThenRegenerationInTheSameTick...`, `SynchronousSpinUpCompletingInTheSameTick...` |
+| 7 | SpinUp `SpunUpFieldsAreBitIdenticalToDirectStepLoop` (60 weeks), `SpinUpStartsAtCalendarOffsetZero...`; Steps `NoMessageDuringSpinUp`; Module `WorldGenerationCompleteOnTheBus...` (no WeatherUpdated) | Edge 520-week bit-identical loop |
+| 8 | SpinUp `SynchronousLauncherCompletesBeforeAnnouncementReturns` | Edge synchronous same-tick regeneration |
+| 9 | SpinUp `WorldGenerationFailedIs...`, `FailureWhileSpinningUp...`; Module `...FailedOnTheBus...` | Edge `FailureBeforeAnyWorldThenComplete...`, `TheSameRevisionAnnouncedAgainAfterAFailure...`, `FailureWhileJobQueuedThenNewRevision...`, `WorldFailureWhileAStepIsInFlight...` |
+| 10 | SpinUp `GenerationHoldTakenInStart...`; Module `HoldsGenerationThroughStart...` | none |
+| 11 | Steps `StepDaysMapToSeasonsAndPublishTheirWeek`, `FirstLiveStepSeasonComesFromItsStepDay` | none |
+| 12 | Steps `RetriedStepWithEarlierDay...` | none |
+| 13 | Steps `OneMessagePerAppliedStep...`; Edge `RegenerationBetweenCaptureAndRun...` (discard publishes nothing) | none |
+| 14 | Steps `WorldRegeneratedBeforeCommitDiscards...` | Edge `RegenerationBetweenCaptureAndRunDiscardsTheStepAndLeavesTheNewWorldClean`, `EntriesQueuedDuringADiscardedStep...`, `WorldFailureWhileAStepIsInFlight...` |
+| 15 | Steps `PromotionOnlyInsideCapture` | none |
+| 16 | Steps `RunIgnoresParametersQueueAndTerrainChangedAfterCapture` | none |
+| 17 | Steps `RunNeverCallsTheBaselineProvider` | none |
+| 18 (amended) | Params `MissingSidecar...`, `FaultedStageNeverBecomesReady...`, `BadValue...`, `BoundKeyMissing...`, `SidecarKeyWithNoBinding...`, `PackThatBreaksAConstraint...`; Params module tests; Sidecar suite | Edge `SidecarFaultIsNotRecoveredBy...`, `SidecarFaultThenStopAndStartLoadsAgain...` |
+| 19 | Queue `ValidSetAppliesAtNextCaptureAndNotBefore`, `InvalidSetReturnsFalseAtOnce...`, `TooLongKey...` | none |
+| 20 | Params `ReloadDiscardsSets...`, `FailedReloadKeepsThePreviousValues...`, `PackIsAtomic...`, `ValidPack...`, `NonObjectPack...` | none |
+| 21 | Queue `EntriesApplyInArrivalOrder...`, `FullQueueRefusesTheNextEntry...`, `SideStorePayloads...` | Edge `ExactlyOneHundredTwentyEightEntries...` (two rounds, five refused kinds, five warnings, drain frees the queue) |
+| 22 | Queue `PresetAndStateReplace...` (drained and logged only: Features 4 and 6 not built), `ForcingDoesNotChangeWhatAReaderSees...` | Apply-side of preset and state replace deferred with Features 4 and 6 |
+| 23 | Params `NoSidecarReadAfterInitExceptThroughAQueuedReload` | none |
+| 24 | Steps `NoBaselineProviderIsDegraded...`, `SettingTheBaselineProvider...` | none |
+| 25 | Steps `OutOfRangeBaselineIsClamped...` | Edge `NanBaseline...`, `InfiniteBaselineValuesClamp...` |
+| 26 | SpinUp `SnapshotCellCountIsZeroBeforeFirstWorld...`, `SnapshotIsZeroWhileANewerWorld...` | none |
+| 27 | Steps `ReaderInTheHandlerSeesThatStepsCommittedState` | none |
+| 28 | `JobSystemPlaceholderConsumerModule` has no tracked file (`git ls-files`), no `cow_main.diaapp` entry in source | none (no test needed) |
+| 29 | Module `NothingFromTheFirstVisitSurvives...`, `ASpinUpJobFinishingAfterExit...`, `RepeatedEnterExitCycles...` | Edge `CommitAfterStop...`, `CaptureRunCommitAfterStop...` |
+| 30 | Module `DoStopDuringARunningSpinUp...` (thread mode, 520 weeks) | none (sanitizer on request only) |
+| 31 | Steps `ProviderArraysAreLatchedOnce...` | Edge `HydrologyProviderWithWrongSizedArrays...`, `HydrologyProviderRemovedAfterUse...` |
+| 32 | Steps `NoHydrologyProviderIsNotDegraded...`, `HydrologyProviderWithNothingToGiveBehavesAsAbsent` (provider returns false) | none |
+| 36 | Steps `ReadyForRevisionOnlyForTheTargetOnceSpunUp`; SpinUp AC 4 test | none |
+| 40 | `TestHydrologyInputsProviderHeader` | none |
+| Amendments | 1 (base stage) Stage suite, 2 (parameters) Params, 3 (health) Steps/Queue/Params, 4 (message) Module `WeatherMessages.*`, 5 (blackboard writes) not built | Not covered: amendment 5 (`Blackboard::Set` from PublishCommit) and amendment 6 (save id `cow.weather`, Feature 4); both deferred with their features |
+
+### Task 6 findings (production code untouched)
+1. **Stop leaves `mStepValid` set (WorldStepStageBase.h).** `Capture`, then `Stop`, then `Run` or `Commit` dereferences the null active sim (Teardown calls DropSims but never clears the step state). Production is protected only by DoStop order (unregister from the coordinator first). Test `EdgeTest.DISABLED_RunAndCommitAfterStopWithAStepInFlightAreHarmless` is written and disabled; enable when the base clears `mStepValid`/`mInFlight` in Teardown. Low severity.
+2. **A parameter fault is permanent for the stage object.** A queued reload, a successful second `LoadParameters`, and a new world do not clear Failing; only `Stop` then `Start` does (asserted by `SidecarFaultIsNotRecoveredBy...` and `SidecarFaultThenStopAndStartLoadsAgain...`). Matches the amended AC 18 and the `FailStage` contract, recorded so nobody expects live recovery. `QueueReload` on a faulted stage returns true but the entry is dropped at the next Capture.
+3. **AC 1 has no automated consumer** of the `Tests/Fixtures/WeatherManifest` fixtures; verified by hand this session with `dia validate manifest --path`. Promote to a pytest in the DiaCLI tests if wanted.
