@@ -10,7 +10,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/alive.js` (`PostFX`, `POST_FS`)
 
 ## Status
-`Draft` (2026-11-20). Drafted from the approved prototype; awaiting user review. **Needs AD-001 sign-off before build.** Revises the DiaBgfx3D module rule "post-processing: out of scope (RB-001)" (see below).
+`Approved` (2026-11-24, user, after spec review: bgfx depth range, `wobbleHz`, tweakable params with sidecar). Drafted 2026-11-20 from the approved prototype. **Needs AD-001 sign-off before build.** Revises the DiaBgfx3D module rule "post-processing: out of scope (RB-001)" (see below).
 
 ## Summary
 
@@ -48,10 +48,11 @@ It is one shader with per-effect strengths, not four passes, so the cost is one 
 ```cpp
 namespace Dia::Bgfx3D {
     struct TiltShiftParams { float strength = 0; float focusY = 0.42f; float bandHalfWidth = 0.12f; float maxBlurPx = 7; };
-    struct HazeParams      { float strength = 0; float startDistance = 0; float scaleDistance = 1; uint32_t colour = 0; };
-    struct SkyParams       { bool enabled = false; uint32_t horizon = 0, zenith = 0, cloud = 0; float cloudAmount = 0.5f; float time = 0; };
+    struct HazeParams      { float strength = 0; float startDistance = 0; float scaleDistance = 1; uint32_t colour = 0; float maxBlend = 0.85f; };
+    struct SkyParams       { bool enabled = false; uint32_t horizon = 0, zenith = 0, cloud = 0; float cloudAmount = 0.5f;
+                             float cloudScale = 3.0f, cloudDriftSpeed = 0.02f, cloudEdgeInk = 0.5f; float depthThreshold = 0.99999f; };   // time comes from Draw
     struct SilhouetteParams{ bool enabled = false; uint32_t inkColour = 0xFF20242A; float threshold = 0.025f; float softness = 0.035f;
-                             float wobblePx = 0.8f; uint32_t wobbleFrame = 0; };
+                             float wobblePx = 0.8f; float wobbleHz = 12.0f; };   // wobbleHz 0 = no wobble steps; frame = floor(timeSeconds * wobbleHz)
     struct CompositeParams { TiltShiftParams tilt; HazeParams haze; SkyParams sky; SilhouetteParams silhouette; float vignette = 0; };
 
     class IPostPass { public: virtual ~IPostPass() {}
@@ -65,9 +66,11 @@ namespace Dia::Bgfx3D {
 }
 ```
 
-- **Depth linearisation.** Perspective: `z = 2nf / (f + n − (2d − 1)(f − n))`. Orthographic: `z = n + d(f − n)`.
+- **Depth linearisation.** The prototype (WebGL) had depth in [−1, 1]; bgfx on D3D11 has [0, 1] (`caps->homogeneousDepth` false), so the shader takes the convention from the caps. D3D11 perspective: `z = n·f / (f − d(f − n))`; orthographic: `z = n + d(f − n)`. The GL-range forms (`z = 2nf / (f + n − (2d − 1)(f − n))`, ortho `z = n + (d·0.5 + 0.5)(f − n)`) are used only when the caps say so.
+- **Tweakable params.** `CompositeParams` and its parts are plain structs with a DiaValueSchema sidecar (ranges and defaults) shipped with DiaBgfx3D, bound by the consumer with `ParamBinding` from its own `AttributeSet`; no look number lives in the shader (the haze cap, sky cloud scale, drift speed and edge ink, and the sky depth threshold are fields above). Structural constants stay: the 16 blur taps and the 1/z silhouette formula.
+- **Wobble clock.** `wobbleFrame = floor(timeSeconds × wobbleHz)` is derived inside `Draw` from the `timeSeconds` it already takes, so captures are deterministic from time alone (consistent with DraoiHexWorldRender3D's `boilHz`).
 - **Tilt-shift.** The blur radius grows with distance of the pixel's vertical position from `focusY`, outside the band half-width, up to `maxBlurPx`. 16 golden-angle disc taps, sampling only inside the viewport rect.
-- **Haze.** `t = 1 − exp(−max(0, z − startDistance) / scaleDistance)`; `colour = mix(colour, hazeColour, clamp(t × strength, 0, 0.85))`. Not applied to sky pixels.
+- **Haze.** `t = 1 − exp(−max(0, z − startDistance) / scaleDistance)`; `colour = mix(colour, hazeColour, clamp(t × strength, 0, maxBlend))`. Not applied to sky pixels.
 - **Sky.** Pixels with depth ≥ 0.99999 get a gradient from horizon to zenith by screen height, plus fBm cloud bands (value noise) and thin ink edges on the bands. Perspective only.
 - **Silhouettes.** For each pixel, with `w = 1/z` of the pixel and `w₁`, `w₂` of the two pixels one step along an axis on either side: `lap = (2w − w₁ − w₂) / w`. A pixel *in front of* its neighbours gives `lap > 0`; the ink amount is `smoothstep(threshold, threshold + softness, lap)`, taken as the maximum over the horizontal and vertical axes. Because `1/z` is linear across any flat surface in screen space, `lap` is zero on water, plains and any plane at any angle. Sky neighbours count as `w = 0` (infinitely far). A per-frame wobble moves the sample offsets by up to `wobblePx` so ink redraws "on twos" (the caller increments `wobbleFrame` at 12 Hz). The ink is reduced where tilt-shift blur is strong.
 - **Vignette.** `colour × (1 − strength × |uv − 0.5|²)`.
@@ -77,18 +80,20 @@ namespace Dia::Bgfx3D {
 
 1. **Identity.** With every effect off, the composite output equals the scene colour (every pixel within 1/255).
 2. **Tilt-shift.** Pixels inside the focus band are unchanged (within 1/255); pixels far from it differ from the scene (blur), and a one-pixel-wide test line fades with distance from the band, up to `maxBlurPx`. Blur never samples outside the viewport rect.
-3. **Haze.** For pixels of increasing depth, blend toward the haze colour is monotonic non-decreasing, zero at or before `startDistance`, capped at 0.85. Sky pixels are unaffected.
+3. **Haze.** For pixels of increasing depth, blend toward the haze colour is monotonic non-decreasing, zero at or before `startDistance`, capped at `maxBlend` (default 0.85). Sky pixels are unaffected.
 4. **Sky.** Only pixels with no geometry change, and the horizon-to-zenith gradient is monotonic with screen height. Orthographic cameras skip it by default.
 5. **Flat surfaces get no ink.** A large flat plane viewed at 30°, 55° and 80° from the horizontal produces zero silhouette pixels (regression for the false water lines). Same for a gently sloped heightfield mesh.
 6. **Real edges get ink.** A cube in front of a plane, and a hill ridge in front of far terrain, produce a continuous silhouette on the near object's outline, with ink only on the near side.
 7. **Sky edge.** A hill in front of sky is outlined; the sky side is not.
-8. **Wobble.** Changing `wobbleFrame` moves the silhouette by at most `wobblePx` and by zero when `wobblePx = 0`; the same frame always gives the same result.
+8. **Wobble.** The silhouette moves by at most `wobblePx` between wobble frames and by zero when `wobblePx = 0` or `wobbleHz = 0`; two draws at times within the same `1/wobbleHz` step give identical output, and the same time always gives the same result.
 9. **Vignette.** With strength > 0 corners are darker than the centre; with 0 nothing changes.
 10. **Viewport rect.** Two composites in adjacent half-width rects (split screen) do not bleed into each other.
 11. **UI untouched.** Views 4–7 (entity, debug 2D, UI, ImGui) draw unmodified on top of the composite.
 12. **Custom pass.** An `IPostPass` added after the composite receives the composite's output and the same depth, runs after it, and can be removed.
 13. **Cost (Debug, ballpark).** The composite with tilt-shift and silhouettes on at 1080p is recorded in the plan notes; if it is a large share of a frame, a half-resolution blur option is queued as a perf task (not a gate).
 14. **Observability.** Log channel `BGFX`; profile scope `Post.Composite`; metric `bgfx.post_ms` (CPU submit).
+15. **Depth convention.** A test depth buffer with known values (near plane 0, far plane 1, a mid value) linearises to the expected `z` within 1e-3 for perspective and orthographic cameras on the D3D11 path; the shader's convention switch follows `caps->homogeneousDepth`.
+16. **Tweakable params.** Every `CompositeParams` field has a sidecar range and default; out-of-range values are clamped with one warning; changing `haze.maxBlend` or `sky.cloudScale` changes the next frame with no rebuild.
 
 ## Binding Decisions
 
@@ -116,3 +121,4 @@ namespace Dia::Bgfx3D {
 | 4 | Silhouettes (1/z second difference) and wobble | AC 5, 6, 7, 8 | Not Started | sonnet | the false-line regression test is mandatory |
 | 5 | Vignette, `IPostPass`, ordering | AC 9, 12 | Not Started | sonnet | |
 | 6 | Module doc revision, metrics, cost note | AC 13, 14 | Not Started | haiku | |
+| 7 | Depth convention from caps, `CompositeParams` sidecar and clamping | AC 15, 16 | Not Started | sonnet | do with task 1 |

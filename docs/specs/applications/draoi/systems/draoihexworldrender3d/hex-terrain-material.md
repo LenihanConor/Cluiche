@@ -84,6 +84,8 @@ It also defines `HexWorldStyle` (the parameter file that holds every number, emb
 | Marks/grain | `marksOn`, DiaToonShading `MarkParams`, `GrainParams` |
 | Debug | `dataView` |
 
+Other `HexWorldStyle` groups belong to the other features and sit in the same `AttributeSet`: **Props and Particles** (Feature 3: scatter, sway, density gains; DiaBgfx3D `SpriteStyle` and `ParticleKindParams`) and **Layers and Post** (Feature 4: `layers.*` toggles, DiaBgfx3D `CompositeParams` including `wobbleHz`). DiaBgfx3D's param structs are plain; `HexWorldMap` snapshots them from the style with `ParamBinding` each frame.
+
 The groups list the fields the prototype needs; the sidecar is the authoritative list, and any further look number found while building goes in as a field (goal 5), never as a shader literal.
 
 `HexWorldVisuals` (per class, from the game): `palette[class] = { primary, secondary, accent }`, per-season palette overrides, mark id and density, relief weights (passed to DraoiHexWorldRelief). Uploaded as a small uniform array or texture.

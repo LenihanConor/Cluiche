@@ -4,12 +4,13 @@
 @docs/specs/applications/dia/systems/diabgfx3d/diabgfx3d.md (Amendment 2026-11-20)
 
 **Gameplay Domains:** rendering
+**Depends on:** Render Targets (A) only when a scene target is set; with none, sprites draw to the backbuffer
 **Needed by:** DraoiHexWorldRender3D Map Props and Emitters; Particles (C) reuses the quad pipeline
 **Research:** docs/research/tile_renderin_art_pipeline/summary.md
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/shaders.js` (`PROP_VS`, `PROP_FS`), `js/props.js` (atlas build, palette masks), `js/app.js` (`setPropAttribs`, instance buffers)
 
 ## Status
-`Draft` (2026-11-20). Drafted from the approved prototype; awaiting user review. **Needs AD-001 sign-off before build.**
+`Approved` (2026-11-24, user, after spec review: palette-table flag, tweakable style with sidecar, no-sRGB atlas). Drafted 2026-11-20 from the approved prototype. **Needs AD-001 sign-off before build.**
 
 ## Summary
 
@@ -51,10 +52,13 @@ namespace Dia::Bgfx3D {
         float    x, y, z;                    // foot position, world
         float    scale;                      // world units tall
         uint16_t atlasIndex;                 // cell in the atlas grid
-        uint16_t flags;                      // bit0 rigid (no sway), bit1 flipX
+        uint16_t flags;                      // bit0 rigid (no sway), bit1 flipX, bit2 usePaletteTable
         float    phaseSeed;                  // 0..1: sway phase, aux value
-        uint32_t primary, secondary, accent; // RGBA8 palette slots
+        uint32_t primary, secondary, accent; // RGBA8 palette slots; with bit2, `primary` is a palette-table index and the other two are ignored
     };
+    // Palette table: N entries of 3 x RGBA8, set by the caller (for example class x season). Changing it recolours
+    // every instance that uses it with no instance re-upload (DraoiHexWorldRender3D stores class ids, not colours).
+    // class SpriteInstanceRenderer { void SetPaletteTable(const uint32_t* rgba3PerEntry, uint32_t entryCount); }
     enum class SpriteLayer : uint8_t { Cutout, Translucent };
 
     struct SpriteAtlasDesc { uint16_t cols, rows; uint16_t cellPx; };
@@ -63,6 +67,7 @@ namespace Dia::Bgfx3D {
     struct SpriteStyle {
         uint32_t inkColour = 0xFF20242A; float alpha = 1.0f;
         float swayFreq = 1.6f, swayBaseAmp = 0.0f, swayGustAmp = 0.0f;
+        float swayPhaseScale = 40.0f, swayFalloffPower = 2.0f;   // formerly literals in the sway formula
         float uprightBlend = 0.35f;          // lean toward world-up when the camera tilts
         float cutoff = 0.5f;
     };
@@ -80,8 +85,9 @@ namespace Dia::Bgfx3D {
 
 - **Billboard.** A unit quad (width 1, height 1, foot at bottom centre) expanded as `foot + right × x·scale + up × y·scale`. `right` is the camera right vector; `up` is `normalize(mix(cameraUp, worldUp, uprightBlend))`, so props stand up on slopes yet face the viewer.
 - **Palette decode.** `m = texel.rgb` (the mask); `ink = clamp(1 − (m.r + m.g + m.b), 0, 1)`; `colour = primary·m.r + secondary·m.g + accent·m.b`; `final = mix(colour, ink, ink)`; alpha from the texel alpha.
-- **Atlas mips.** The atlas is uploaded with a generated mip chain (bimg), because the mask must filter correctly when sprites are small. Premultiplied alpha is *not* used (the mask channels are data, not colour).
-- **Sway.** `x offset = sin(time × swayFreq + phaseSeed × 40) × (swayBaseAmp + gust × swayGustAmp) × y²`, skipped when the rigid flag is set. The frequency is a constant, so a changing gust only changes amplitude.
+- **Atlas mips.** The atlas is uploaded with a generated mip chain (bimg), because the mask must filter correctly when sprites are small. Premultiplied alpha is *not* used, and the atlas is uploaded **without sRGB decode** (no `BGFX_TEXTURE_SRGB`): the mask channels are data, not colour, and must average linearly in the mips.
+- **Sway.** `x offset = sin(time × swayFreq + phaseSeed × swayPhaseScale) × (swayBaseAmp + gust × swayGustAmp) × y^swayFalloffPower`, skipped when the rigid flag is set. The frequency is one fixed value for all instances, so a changing gust only changes amplitude.
+- **Tweakable style.** `SpriteStyle` is a plain struct (no new DiaAttribute dependency) with a DiaValueSchema sidecar of ranges and defaults shipped with DiaBgfx3D. A consumer binds it with `ParamBinding` from its own `AttributeSet` and passes it to `Draw` each frame (DraoiHexWorldRender3D does this for its live-tweakable style). No look number lives in the shaders.
 - **Depth.** Cutout draws with depth test and depth write, after the mesh pass in the scene target. Translucent draws with test and no write, after cutout and before the post pass.
 - **Instancing.** Static sets live in a `bgfx` vertex buffer used as instance data; dynamic sets use `allocInstanceDataBuffer` (transient). D3D11 hardware instancing.
 
@@ -100,6 +106,9 @@ namespace Dia::Bgfx3D {
 11. **Dynamic reuse.** Submitting dynamic instances every frame for 1,000 frames leaks nothing and stays within the transient buffer limits (a submit that cannot allocate logs a warning and skips the draw, never asserts).
 12. **Atlas mips.** The atlas has a full mip chain and a minified sprite (drawn at 1/8 size) still shows its colour regions without shimmering (mask channels average, not alias).
 13. **Observability.** Metrics `bgfx.sprites_drawn` and `bgfx.sprite_draws`; a profile scope per layer; log channel `BGFX`.
+14. **Palette table.** An instance with `usePaletteTable` takes its three colours from table entry `primary`; changing the table recolours it on the next draw with no instance upload (counter); an index outside the table draws the ink colour and logs once; instances without the flag are unaffected.
+15. **Atlas is linear.** A mask atlas sampled at mip 0 and at a minified mip decodes red, green and blue regions to the same slot shares (no gamma shift beyond 2/255).
+16. **Tweakable style.** Every `SpriteStyle` field has a sidecar range and default; out-of-range values are clamped with one warning; changing `swayPhaseScale` or `swayFalloffPower` changes the sway on the next frame with no rebuild.
 
 ## Binding Decisions
 
@@ -128,3 +137,5 @@ namespace Dia::Bgfx3D {
 | 5 | Dynamic instances (transient buffer) | AC 3, 11 | Not Started | sonnet | |
 | 6 | Gust texture binding | AC 10 | Not Started | sonnet | |
 | 7 | Metrics, profile, docs | AC 13 | Not Started | haiku | |
+| 8 | Palette table (`usePaletteTable`, `SetPaletteTable`) | AC 14, 15 | Not Started | sonnet | |
+| 9 | `SpriteStyle` sidecar and clamping | AC 16 | Not Started | haiku | |

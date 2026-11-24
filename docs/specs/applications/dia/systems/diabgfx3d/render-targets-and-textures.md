@@ -9,7 +9,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/alive.js` (`PostFX.ensure`), `lookdev/js/glutil.js` (`glTexture`), per-frame `texSubImage2D` of the weather and event textures in `app.js`
 
 ## Status
-`Draft` (2026-11-20). Drafted from the approved prototype; awaiting user review. **Needs AD-001 sign-off before build** (DiaBgfx and DiaBgfx3D API additions).
+`Approved` (2026-11-24, user, after spec review: blocking test readback, headless AC). Drafted 2026-11-20 from the approved prototype. **Needs AD-001 sign-off before build** (DiaBgfx and DiaBgfx3D API additions).
 
 ## Summary
 
@@ -55,7 +55,13 @@ namespace Dia::Bgfx {
         uint16_t Width() const;  uint16_t Height() const;
         uint16_t ColourTextureIdx() const;  uint16_t DepthTextureIdx() const;   // renderer-internal, like BgfxTextureHandle
         uint16_t FramebufferIdx() const;
-        bool ReadColour(uint8_t* rgba, size_t bytes);  // via bgfx::readTexture; completes next frames
+        // Asynchronous: bgfx::readTexture completes a couple of frames later. Returns a ticket (the frame number
+        // the data is ready on), or 0 on failure; the caller polls IsReadReady(ticket) once per frame.
+        uint32_t ReadColour(uint8_t* rgba, size_t bytes);
+        bool     IsReadReady(uint32_t ticket) const;
+        // For tests and the DiaToonShading golden harness: submits the read and pumps frames until it is ready
+        // (or a frame limit passes, returning false). Never for use in a game loop.
+        bool     ReadColourBlocking(uint8_t* rgba, size_t bytes);
     };
 }
 namespace Dia::Bgfx3D {
@@ -85,6 +91,8 @@ bool Update(unsigned x, unsigned y, unsigned w, unsigned h, const void* data, si
 9. **Capability failure.** On a device without RGBA16F or depth sampling, `Create` / `CreateDynamic` return false with a specific log message, and `Canvas3D` keeps rendering to the backbuffer.
 10. **Lifetime.** Resizing the window with a target set recreates it with no leak (bgfx resource counters are equal before and after 100 resizes).
 11. **Observability.** Log channel `BGFX` for create/resize/failure; metrics `bgfx.rt_bytes` and `bgfx.dyn_tex_updates_per_frame`.
+12. **Headless test configuration.** In the configuration the tests use (hidden window or the existing headless capture setup), a `RenderTarget` can be created, drawn into and read back with `ReadColourBlocking`, so DiaToonShading's golden harness can run. If the GoogleTests process cannot create a device, the spike (task 1) records that and the harness runs as a CluicheTest stage instead (DiaToonShading Feature 1 ODQ 1).
+13. **Async readback.** `ReadColour` returns a ticket; `IsReadReady` is false before it and true on or after it; the buffer holds the pixels once ready; a failed read returns 0 and logs.
 
 ## Binding Decisions
 
@@ -105,11 +113,11 @@ bool Update(unsigned x, unsigned y, unsigned w, unsigned h, const void* data, si
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Spike: depth-as-texture on bgfx D3D11, RGBA16F caps | Open Q1 answered in plan notes | Not Started | sonnet | gates the rest |
+| 1 | Spike: depth-as-texture on bgfx D3D11, RGBA16F caps, and can the test process create a device and read a target back | Open Q1 and AC 12 answered in plan notes | Not Started | sonnet | gates the rest; also unblocks DiaToonShading Feature 1 task 4 |
 | 2 | `RenderTarget` create/resize/destroy | AC 2, 10 | Not Started | sonnet | |
 | 3 | `Canvas3D::SetSceneTarget` + view routing | AC 1, 3, 4 | Not Started | sonnet | |
 | 4 | Depth sampling test pass | AC 5 | Not Started | sonnet | |
 | 5 | `BgfxTextureHandle::CreateDynamic` / `Update` | AC 6, 7 | Not Started | sonnet | |
-| 6 | Readback and capture integration | AC 8 | Not Started | sonnet | |
+| 6 | Readback (async ticket and blocking test variant) and capture integration | AC 8, 12, 13 | Not Started | sonnet | |
 | 7 | Capability failure paths, logs, metrics | AC 9, 11 | Not Started | haiku | |
 | 8 | Module docs (`dia.bgfx.architecture.module.md`, `dia.bgfx3d...`) | `dia check deps` | Not Started | haiku | |

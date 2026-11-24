@@ -10,7 +10,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/weather.js` (`Precip`, `spawnSmoke`, `PRECIP_VS`/`PRECIP_FS`)
 
 ## Status
-`Draft` (2026-11-20). Drafted from the approved prototype; awaiting user review. **Needs AD-001 sign-off before build.**
+`Approved` (2026-11-24, user, after spec review: area-based spawn rate, `spawnAbsolute`, tweakable params with sidecar). Drafted 2026-11-20 from the approved prototype. **Needs AD-001 sign-off before build.**
 
 ## Summary
 
@@ -54,8 +54,11 @@ namespace Dia::Bgfx3D {
                          virtual float HeightAt(float x, float y) const = 0; };
 
     struct ParticleKindParams {
-        uint32_t maxLive = 4096;  uint32_t spawnPerStep = 64;
-        float spawnHeight[2] = {2.0f, 6.0f};       // above ground, min/max
+        uint32_t maxLive = 4096;  uint32_t spawnPerStep = 64;   // spawnPerStep is a per-step CAP
+        float spawnRate = 8.0f;                    // particles per world unit^2 per second at density 1
+        float spawnHeight[2] = {2.0f, 6.0f};       // min/max; above ground, or absolute altitude when spawnAbsolute
+        bool  spawnAbsolute = false;               // true: spawnHeight is an altitude (rain from a cloud layer)
+        float wobbleAmount = 0.15f;                // flake lateral wobble, world units (formerly "small")
         float fallSpeed = 9.0f;  float riseSpeed = 0.0f;   // flakes fall slowly; puffs rise
         float windScale = 1.0f;  float sizeStart = 0.05f, sizeEnd = 0.05f;
         float lifeMax = 8.0f;                      // seconds, upper bound; ground contact ends earlier
@@ -69,6 +72,7 @@ namespace Dia::Bgfx3D {
         void SetDensity(ParticleKind, const DensityField&);   // null values = none
         void SetWind(float x, float y);                        // world units per second
         void SetGround(const IGroundQuery*);
+        void SetSpawnRect(float x0, float y0, float x1, float y1);   // the camera footprint plus margin; default: the density rect
         void SetSeed(uint32_t);
         void Update(float dtSeconds);                          // fixed internal step 1/60, accumulates
         void Draw(const Camera3D&, float timeSeconds);
@@ -78,15 +82,18 @@ namespace Dia::Bgfx3D {
 ```
 
 - **Step.** `Update` accumulates `dt` and runs fixed `1/60 s` steps (at most 5 per call). Each step per kind: spawn up to `spawnPerStep` candidates, advance live particles, remove dead ones.
-- **Spawn.** Candidate `(x, y)` is drawn uniformly over the density field's rect; accepted when `rng() < density(x, y)` and the live count is under `maxLive`. For efficiency the caller may restrict spawn to a sub-rect via `SetSpawnRect` (the map passes the camera footprint plus margin).
-- **Advance.** `pos += (wind × windScale + (0, 0, −fallSpeed + riseSpeed)) × dt`, with a small deterministic lateral wobble for flakes. A particle dies when `z <= HeightAt(x, y)` or its age exceeds `lifeMax`.
+- **Spawn.** Per step, the candidate count is `spawnRate × spawnRectArea × dt`, rounded with a Bernoulli on the fraction and capped at `spawnPerStep`. This makes rain per unit area independent of the spawn rect, so zooming out does not thin it. Candidate `(x, y)` is drawn uniformly over the spawn rect (default: the density field's rect; `SetSpawnRect` narrows it, and the map passes the camera footprint plus margin); accepted when `rng() < density(x, y)` and the live count is under `maxLive`. When the cap truncates the count, the effective rate is lower and a metric counts the truncation.
+- **Advance.** `pos += (wind × windScale + (0, 0, −fallSpeed + riseSpeed)) × dt`, with a deterministic lateral wobble of amplitude `wobbleAmount` for flakes.
+- **Determinism and captures.** State is the history of `Update` calls (seed, density, wind and the dt sequence). A capture that must be byte-identical (DraoiHexWorldRender3D Map Assembly AC 7) drives `Update` with a fixed dt sequence.
+- **Tweakable params.** `ParticleKindParams` is a plain struct with a DiaValueSchema sidecar (ranges and defaults) shipped with DiaBgfx3D; a consumer binds it with `ParamBinding` from its own `AttributeSet` and calls `Configure` when it changes. Changing a parameter never resets live particles. A particle dies when `z <= HeightAt(x, y)` or its age exceeds `lifeMax`.
 - **Draw.** Instances are built per frame in a transient buffer: Streak = quad stretched along velocity by `streakLength`; Flake = camera-facing quad with a shader disc plus ink ring; Puff = quad with radial alpha, size and colour interpolated start→end over life. One draw per kind.
 
 ## Acceptance Criteria
 
 1. **Budget.** `LiveCount(kind) ≤ maxLive` over 10,000 steps with spawn saturated; spawn per step ≤ `spawnPerStep`.
 2. **Local spawning.** With density 0 everywhere except a 10 × 10 world-unit square, every spawned particle's spawn position lies inside that square (checked over 100,000 candidates).
-3. **Density scaling.** Spawn rate is proportional to density: density 1.0 yields about 2× the particles of density 0.5 (within 15%) over a long run.
+3. **Density scaling.** Spawn rate is proportional to density: density 1.0 yields about 2× the particles of density 0.5 (within 15%) over a long run, with `maxLive` and `spawnPerStep` set high enough that neither saturates.
+3a. **Rate independent of the spawn rect.** With the same density and `spawnRate`, spawn rects of area A and 4A give the same particle count per unit area (within 15%), until the `spawnPerStep` cap truncates (which is counted).
 4. **No density, no particles.** A null/empty density spawns nothing; `SetDensity` with all zeros drains the system within `lifeMax`.
 5. **Ground.** Rain over a ramp-shaped `IGroundQuery` dies at the ground height (no live particle is more than one step below ground); with no ground set, particles use `z = 0`.
 6. **Wind.** A particle falling for t seconds under wind `w × windScale` has moved by `w × windScale × t` (±5%).
@@ -95,7 +102,9 @@ namespace Dia::Bgfx3D {
 9. **Draw.** One draw per kind with live particles; zero draws for an empty kind. Particles behind the terrain are hidden by depth; they do not write depth.
 10. **Culling.** Particles outside the camera frustum (plus a margin) are not submitted (counter).
 11. **No point sprites.** All three kinds render on D3D11 (golden-image check on streak, flake, puff).
-12. **Observability.** Metrics `bgfx.particles_live` and `bgfx.particles_spawned_per_step`; log channel `BGFX`; a profile scope in `Update`.
+12. **Observability.** Metrics `bgfx.particles_live`, `bgfx.particles_spawned_per_step` and `bgfx.particles_spawn_truncated`; log channel `BGFX`; a profile scope in `Update`.
+13. **Absolute altitude.** With `spawnAbsolute`, particles spawn at the given altitude regardless of ground height (checked over a ramp ground), and still die at the ground.
+14. **Tweakable params.** Every `ParticleKindParams` field has a sidecar range and default; out-of-range values are clamped with one warning; reconfiguring does not reset live particles.
 
 ## Binding Decisions
 
@@ -109,15 +118,17 @@ namespace Dia::Bgfx3D {
 ## Open Design Questions
 
 1. **Spawn sampling cost.** Random uniform candidates waste work when density is sparse (one storm on a large map). The prototype sampled around storm centres. The generic fix is a coarse max-density grid to sample from, or `SetSpawnRect` by the caller. v1 uses `SetSpawnRect`; revisit if spawn efficiency shows in profiles.
-2. **Particle height above terrain.** Starting height is relative to ground at spawn. Rain from a cloud layer at a fixed altitude would look more like weather. A per-kind `spawnAltitude` mode (absolute vs relative) may be needed for the map.
+2. ~~Particle height above terrain.~~ Answered 2026-11-24: `spawnAbsolute` per kind (AC 13).
+3. **Density field shape.** `DensityField` is an axis-aligned grid with nearest sampling, so a hex world's per-cell values arrive as cell-sized squares and rain edges follow them. Fine for weather; if the edges look blocky, the consumer upsamples (DraoiHexWorldRender3D Feature 3 builds the field).
 
 ## Tasks
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | 1 | `DensityField`, `ParticleKindParams`, pools, fixed step | AC 1, 7 | Not Started | sonnet | |
-| 2 | Spawning from density, spawn rect | AC 2, 3, 4 | Not Started | sonnet | |
+| 2 | Spawning from density, area-based rate, spawn rect, absolute altitude | AC 2, 3, 3a, 4, 13 | Not Started | sonnet | |
 | 3 | Advance, wind, ground, life | AC 5, 6, 8 | Not Started | sonnet | |
 | 4 | Quad shaders and instance build (streak, flake, puff) | AC 9, 11 | Not Started | sonnet | needs Feature B |
 | 5 | Culling and draw counts | AC 9, 10 | Not Started | sonnet | |
 | 6 | Metrics, profile, docs | AC 12 | Not Started | haiku | |
+| 7 | `ParticleKindParams` sidecar and clamping | AC 14 | Not Started | haiku | |
