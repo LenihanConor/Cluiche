@@ -7,7 +7,8 @@
 // "actual" values from the failure messages.
 #include <gtest/gtest.h>
 #include <DraoiHexWorldTerrain/TerrainGenerator.h>
-#include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
+#include <DraoiHexWorldTerrain/Testing/TerrainSliderDriver.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <cstdio>
 #include <cstring>
@@ -17,6 +18,7 @@
 using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using namespace Draoi::HexWorld::Testing;
 
 namespace {

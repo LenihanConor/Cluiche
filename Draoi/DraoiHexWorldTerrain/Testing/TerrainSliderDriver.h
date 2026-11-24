@@ -4,18 +4,16 @@
 #pragma once
 
 #include <DraoiHexWorldTerrain/TerrainGenerator.h>
-#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
+#include <DraoiHexWorldTerrain/Testing/TerrainTestHost.h>
 
 #include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
 
-namespace CoW {
-namespace WorldGeneration {
+namespace Draoi {
+namespace HexWorld {
 namespace Testing {
-using namespace Draoi::HexWorld;
-using namespace Draoi::HexWorld::Testing;
 
 
 // The 18 terrain sliders, in ShapeParam order (LandFraction .. LatitudeSouth).
@@ -205,7 +203,7 @@ inline std::vector<std::string> DiffSnapshots(const TerrainSnapshot& a, const Te
 class TerrainRunner
 {
 public:
-    TerrainRunner() : mRules(TestRules()), mGen(mRules, &::Draoi::HexWorld::Testing::ShippedBiomeRegistry()), mRng(1) {}
+    TerrainRunner() : mRules(TestRules()), mGen(mRules, &ShippedBiomeRegistry()), mRng(1) {}
 
     TerrainSnapshot Run(uint64_t seed, const WorldShapeParams& shape, GridDimensions dims)
     {
@@ -232,5 +230,5 @@ private:
 };
 
 } // namespace Testing
-} // namespace WorldGeneration
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

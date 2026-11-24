@@ -11,7 +11,7 @@
 #include <DraoiHexWorldTerrain/RegionsAndSites.h>
 #include <DraoiHexWorldTerrain/WorldGenSession.h>
 #include <DraoiHexWorldTerrain/WorldShapePreset.h>
-#include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
+#include <DraoiHexWorldTerrain/Testing/TerrainSliderDriver.h>
 #include <DraoiHexWorldTerrain/Testing/TestGuarantees.h>
 #include <DraoiHexWorldTerrain/Testing/SessionDrive.h>
 #include <DraoiHexWorldTerrain/Testing/TestPlacers.h>
@@ -27,6 +27,7 @@
 using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using namespace Draoi::HexWorld::Testing;
 using Dia::Core::StringCRC;
 using Dia::Maths::RandomStream;

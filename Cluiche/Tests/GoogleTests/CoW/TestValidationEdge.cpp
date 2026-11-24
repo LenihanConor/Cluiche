@@ -8,7 +8,8 @@
 #include <DraoiHexWorldTerrain/SiteRules.h>
 #include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
 #include <DraoiHexWorldTerrain/TerrainGenerator.h>
-#include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
+#include <DraoiHexWorldTerrain/Testing/TerrainSliderDriver.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 #include <DraoiHexWorldTerrain/Testing/TestGuarantees.h>
 #include <DraoiHexWorldTerrain/Testing/TestProfiles.h>
 #include <DraoiHexWorldTerrain/Testing/ValidationTestWorlds.h>
@@ -24,6 +25,7 @@
 using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using namespace Draoi::HexWorld::Testing;
 using Dia::Core::StringCRC;
 

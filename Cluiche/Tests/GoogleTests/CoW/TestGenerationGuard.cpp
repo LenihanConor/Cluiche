@@ -6,7 +6,7 @@
 #include <Shared/CoWNodeKinds.h>
 #include <DraoiHexWorldTerrain/GenerationGuard.h>
 #include <DraoiHexWorldTerrain/GenerationRun.h>
-#include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
+#include <DraoiHexWorldTerrain/Testing/TerrainSliderDriver.h>
 #include <DraoiHexWorldTerrain/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
@@ -23,6 +23,7 @@
 using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using namespace Draoi::HexWorld::Testing;
 using Dia::Maths::RandomStream;
 using Level = Dia::CellLayers::Testing::LogCapture::Level;

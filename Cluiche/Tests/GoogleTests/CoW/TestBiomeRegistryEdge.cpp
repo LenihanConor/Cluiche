@@ -3,7 +3,8 @@
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/BiomeRegistry.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/Testing/BiomeTestGrids.h>
+#include <DraoiHexWorldTerrain/Testing/BiomeTestGrids.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <fstream>
 #include <sstream>
@@ -15,6 +16,7 @@ using namespace Draoi::HexWorld;
 using namespace Draoi::HexWorld::Testing;
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Core::StringCRC;
 
 namespace

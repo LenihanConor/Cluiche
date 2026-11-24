@@ -88,6 +88,12 @@
     <ClInclude Include="Testing\TerrainTestHost.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="Testing\BiomeTestGrids.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\TerrainSliderDriver.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BiomeClassify.cpp" />

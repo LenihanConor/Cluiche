@@ -228,12 +228,6 @@
     <ClInclude Include="Shared\CoWCalendar.h">
       <Filter>Shared</Filter>
     </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\Testing\BiomeTestGrids.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\Testing\TerrainSliderDriver.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\Testing\WorldJsonTestWorlds.h">
       <Filter>Shared</Filter>
     </ClInclude>

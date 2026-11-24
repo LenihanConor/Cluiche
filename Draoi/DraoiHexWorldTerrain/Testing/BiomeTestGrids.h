@@ -5,18 +5,16 @@
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <DraoiHexWorldTerrain/BiomeClassify.h>
 #include <DraoiHexWorldTerrain/TerrainTypes.h>
-#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
+#include <DraoiHexWorldTerrain/Testing/TerrainTestHost.h>
 
 #include <cstdint>
 #include <vector>
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 #include <DraoiHexWorld/WorldStructure.h>
 
-namespace CoW {
-namespace WorldGeneration {
+namespace Draoi {
+namespace HexWorld {
 namespace Testing {
-using namespace Draoi::HexWorld;
-using namespace Draoi::HexWorld::Testing;
 
 
 struct ClimateGrid
@@ -73,7 +71,7 @@ struct BiomeGrid
     std::vector<uint32_t> terrainType, stratum, terrainFlags, waterSource;
     BarrierForm           barrierForm = BarrierForm::Plateau;
     float                 barrier = 0.0f;
-    const ::Draoi::HexWorld::BiomeRegistry* registry = &::Draoi::HexWorld::Testing::ShippedBiomeRegistry();   // swap for a fixture
+    const BiomeRegistry* registry = &ShippedBiomeRegistry();   // swap for a fixture
 
     BiomeGrid(int w, int h, float t = 0.6f, float m = 0.35f)
         : dims{w, h},
@@ -135,7 +133,7 @@ struct BiomeResult
     std::vector<uint32_t> pin, biome, fixup;
     Stage14Debug          debug;
 
-    ::Draoi::HexWorld::BiomeIndex At(int c) const { return static_cast<::Draoi::HexWorld::BiomeIndex>(biome[c]); }
+    BiomeIndex At(int c) const { return static_cast<BiomeIndex>(biome[c]); }
 };
 
 inline BiomeResult RunBiomes(const BiomeGrid& g, const TerrainRules& rules)
@@ -161,5 +159,5 @@ inline BiomeResult RunBiomes(const BiomeGrid& g)
 }
 
 } // namespace Testing
-} // namespace WorldGeneration
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

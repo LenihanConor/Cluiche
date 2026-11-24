@@ -8,8 +8,8 @@
 #include <DraoiHexWorldTerrain/TerrainGenerator.h>
 #include <DraoiHexWorldTerrain/WorldGenSession.h>
 #include <DraoiHexWorldTerrain/Testing/BiomeChecks.h>
-#include <Shared/WorldGeneration/Testing/BiomeTestGrids.h>
-#include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
+#include <DraoiHexWorldTerrain/Testing/BiomeTestGrids.h>
+#include <DraoiHexWorldTerrain/Testing/TerrainSliderDriver.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <cmath>
@@ -21,6 +21,7 @@
 using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using namespace Draoi::HexWorld::Testing;
 
 namespace

@@ -1,7 +1,7 @@
 // S-1 Biome Classification task 3: Stage 12 (Temperature) and Stage 13 (Moisture); AC8, AC9 parts.
 #include <gtest/gtest.h>
 #include <DraoiHexWorldTerrain/BiomeClimate.h>
-#include <Shared/WorldGeneration/Testing/BiomeTestGrids.h>
+#include <DraoiHexWorldTerrain/Testing/BiomeTestGrids.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <algorithm>
@@ -12,6 +12,7 @@
 using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using namespace Draoi::HexWorld::Testing;
 
 namespace
