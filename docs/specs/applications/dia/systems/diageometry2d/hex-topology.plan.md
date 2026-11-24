@@ -1,7 +1,7 @@
 # Plan: Hex Topology move (DiaGeometry2D)
 
 **Spec:** @docs/specs/applications/dia/systems/diageometry2d/hex-topology.md
-**Status:** In Progress (implemented 2026-11-23; close-out checks remain)
+**Status:** Done
 
 Moves `HexTopology` and `CellCoord` from `DiaPathfinding` to `DiaGeometry2D`. Mechanical, no behaviour change. Models are sonnet or haiku; **ask before using opus** (feedback_confirm_opus). C++ changes, so every row builds and runs scoped tests.
 
@@ -31,7 +31,7 @@ Moves `HexTopology` and `CellCoord` from `DiaPathfinding` to `DiaGeometry2D`. Me
 | 3 | **Migrate `DiaCellLayers`** (`CellPicker`, `SelectionOutline`, `SelectionTools` and headers). Drop `dia.pathfinding` from the package's dependencies, add `dia.geometry2d` | build; `*CellLayers*`; `dia check arch` must no longer list `celllayers -> pathfinding` | Done | sonnet | **This is the row that clears the arch violation.** Quote the arch output Done 2026-11-23. Done as one sweep with no aliases (one build and test at the end) instead of the planned two-step. Cleared celllayers -> pathfinding. |
 | 4 | **Migrate Draoi and the apps:** `DraoiHexWorld`, `DraoiHexWorldTerrain` (and any other Draoi package), CoW and CluicheTest, and the GoogleTests that include the header (about 14 files) | build; `*HexWorld*`, `*Terrain*`, `*Biome*`, `*Strata*`; the CoW world-gen goldens | Done | sonnet | Largest row (about 30 files). Goldens must not change: if any differ, stop and report, do not regenerate Done 2026-11-23. Done as one sweep with no aliases (one build and test at the end) instead of the planned two-step. 68 files. |
 | 5 | **Remove the aliases and old files.** Delete the forwarding headers in `DiaPathfinding`. Move `TestHexTopology.cpp` to `Tests/GoogleTests/Geometry2D/`. Update module docs (`dia.geometry2d` public headers, `dia.pathfinding` dependencies), regenerate the registry. `grep -rn "Pathfinding::HexTopology\|Pathfinding::CellCoord"` in code must return nothing | build; `*Hex*`; `dia check deps`; `dia check arch` | Done | sonnet | Aliases are temporary (AC 7) Done 2026-11-23. Done as one sweep with no aliases (one build and test at the end) instead of the planned two-step. No aliases were ever added. |
-| 6 | **Close-out.** Gap audit (comments or docs naming the old location: update `hex-rectangular-grid.md` with a "moved" note, leave the other CoW specs). Compare against row 0: same pass counts, golden hashes identical. One full sharded GoogleTest run, one Release build. Update the backlog (CI-gate row now lists the remaining arch violations) | full suite sharded; Release build | In Progress | sonnet | Each remaining gap ends as fix-now, a backlog row, or dropped Full sharded GoogleTests green; arch 0. Not done: Release build, hex-rectangular-grid.md "moved" note. |
+| 6 | **Close-out.** Gap audit (comments or docs naming the old location: update `hex-rectangular-grid.md` with a "moved" note, leave the other CoW specs). Compare against row 0: same pass counts, golden hashes identical. One full sharded GoogleTest run, one Release build. Update the backlog (CI-gate row now lists the remaining arch violations) | full suite sharded; Release build | Done | sonnet | Done 2026-11-23: full sharded GoogleTests green, goldens unchanged, hex-rectangular-grid.md carries a "moved" note. Release build dropped by user decision (not scheduled). |
 
 ## Close-out checklist
 

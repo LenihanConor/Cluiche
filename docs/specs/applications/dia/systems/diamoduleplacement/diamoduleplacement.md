@@ -1,7 +1,7 @@
 # System Spec: DiaModulePlacement
 
 **Parent:** @docs/specs/applications/dia/dia.md
-**Status:** `In Progress`
+**Status:** `Done`
 **Plan:** @docs/specs/applications/dia/systems/diamoduleplacement/diamoduleplacement.plan.md
 **Origin:** 2026-11-23 architecture cleanup. `dia check arch` reported `dia.messagebus -> dia.application`; tracing it showed the cause is a module wrapper inside a service package, and that 14 module classes in `Dia/` break PD-012.
 
@@ -101,6 +101,6 @@ All three were answered 2026-11-23; kept here as the record.
 
 ## Status
 
-In Progress. Implemented 2026-11-23 (all moves, the deletion, the rename and the guard; `dia check arch` is at 0). Layer re-review and stale docs done 2026-11-23 (dia.deferredstep relabelled to foundation/services). Open: Release build and E2E for the moved modules.
+Done 2026-11-23. All moves, the deletion, the rename and the guard are in (`dia check arch` is at 0), the layer re-review and stale docs are done, and the full sharded GoogleTests pass. A Release build and E2E for the moved modules were dropped by user decision (not scheduled).
 
 Was Draft. Plan written 2026-11-23. Approval gate: the user approves this spec, then `/implement`.

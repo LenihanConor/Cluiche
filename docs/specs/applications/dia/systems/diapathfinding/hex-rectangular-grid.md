@@ -4,6 +4,8 @@
 
 **Gameplay Domains:** pathfinding
 
+**Moved 2026-11-23:** `HexTopology`, `CellCoord`, `kNoCell` and `kHexDirections` now live in `DiaGeometry2D/Grid/` (namespace `Dia::Geometry2D`), so visual and Draoi code can use them without depending on pathfinding. See @docs/specs/applications/dia/systems/diageometry2d/hex-topology.md. This spec still describes the design of the types; `HexPathGrid` and the neighbour policy stay in `DiaPathfinding`.
+
 ## Summary
 
 `HexPathGrid` today is a hexagon-shaped, radius-based axial grid with a fixed capacity of 1,681 bounding-box entries (1,261 real cells at the maximum radius of 20). That cannot hold a game map. This feature extends the same class with a second layout: a **rectangular `width × height` hex grid** in **flat-top odd-q** offset coordinates, with storage sized to the grid. It also adds `HexTopology`, the single place that knows hex neighbours, directions, distances and cell geometry, so every consumer of a rectangular hex map (the pathfinding grid, world generation, weather, renderers) uses one definition.
