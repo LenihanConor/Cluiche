@@ -77,6 +77,12 @@ class WeatherHooks : public WeatherStageBase::Hooks
 public:
     bool InitialiseSim(Draoi::HexWorld::Weather::WeatherSimulation& sim, const WorldStep::WorldView& world,
                        WeatherStageBase::CauseCode& cause) override;
+    // A restore overwrites the sim with the saved record, so it skips the spin-up weeks (no wasted warm-up).
+    bool InitialiseSimForRestore(Draoi::HexWorld::Weather::WeatherSimulation& sim, const WorldStep::WorldView& world,
+                                 WeatherStageBase::CauseCode& cause) override
+    {
+        return InitialiseImpl(sim, world, cause, false);
+    }
     bool LatchInputs(WeatherLatch& latch, Dia::DeferredStep::StepKey key) override;
     void ApplyEntry(Draoi::HexWorld::Weather::WeatherSimulation& working, WeatherLatch& latch,
                     const WeatherEntry& entry) override;
@@ -129,6 +135,8 @@ public:
     std::function<void(uint32_t)> onSpinUpWeek;
 
 private:
+    bool InitialiseImpl(Draoi::HexWorld::Weather::WeatherSimulation& sim, const WorldStep::WorldView& world,
+                        WeatherStageBase::CauseCode& cause, bool spinUp);
     std::shared_ptr<const SpinUpInput> Find(uint32_t revision) const;
 
     void BuildBaseline(const Draoi::HexWorld::Weather::WeatherSimulation& sim, WeatherLatch& latch);

@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include <atomic>
+#include <cstdio>
 #include <chrono>
 #include <string>
 #include <thread>
@@ -78,6 +79,9 @@ public:
         virtual ~Hooks() {}
         // Build the sim for the world. false + cause -> health Failing, not ready. Runs on the spin-up job thread.
         virtual bool InitialiseSim(TSim& sim, const WorldView& world, CauseCode& cause) = 0;
+        // Restore (step 4): build the sim for a restore. The committed record overwrites it, so a system may skip any warm-up
+        // here. Default: the same as InitialiseSim.
+        virtual bool InitialiseSimForRestore(TSim& sim, const WorldView& world, CauseCode& cause) { return InitialiseSim(sim, world, cause); }
         virtual bool ExtraReady() const { return true; }
         virtual bool LatchInputs(TLatch& latch, Dia::DeferredStep::StepKey key) = 0;   // false -> step invalid
         virtual void ApplyEntry(TSim& working, TLatch& latch, const TEntry& entry) = 0;
@@ -525,14 +529,23 @@ private:
         // 3. dimension or extra-count mismatch
         const bool dimsMatch = record["width"].isUInt() && record["height"].isUInt()
             && record["width"].asUInt() == mWorld.width && record["height"].asUInt() == mWorld.height;
-        if (!dimsMatch || !mHooks.ExtraCountMatches(record, mWorld))
+        if (!dimsMatch)
         {
-            return DiscardRestore("saved dimensions or counts do not match the world");
+            char why[160];
+            snprintf(why, sizeof(why), "saved dimensions %ux%u do not match the world %ux%u",
+                     record["width"].isUInt() ? record["width"].asUInt() : 0u,
+                     record["height"].isUInt() ? record["height"].asUInt() : 0u,
+                     static_cast<unsigned>(mWorld.width), static_cast<unsigned>(mWorld.height));
+            return DiscardRestore(why);
+        }
+        if (!mHooks.ExtraCountMatches(record, mWorld))
+        {
+            return DiscardRestore("saved counts do not match the world");
         }
         // 4. Init, then the committed record
         TSim* sim = new TSim();
         CauseCode cause = 0;
-        if (!mHooks.InitialiseSim(*sim, mWorld, cause))
+        if (!mHooks.InitialiseSimForRestore(*sim, mWorld, cause))
         {
             delete sim;
             return DiscardRestore("sim initialisation failed");

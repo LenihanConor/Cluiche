@@ -11,6 +11,7 @@
 
 #include <Modules/Weather/WeatherModule.h>   // first: pulls WorldGenerationModule.h before windows.h
 #include "../WorldStep/WorldStepSaveRig.h"
+#include <DiaCellLayers/Testing/LogCapture.h>
 #include <DiaMessageBus/Bus.h>
 #include <DiaParallelExecutor/SerialExecutor.h>
 #include <DiaValueSchema/ValueSchemaLoader.h>
@@ -77,13 +78,16 @@ public:
     bool GetWorld(CoW::WorldStep::WorldView& view, Draoi::HexWorld::Weather::WeatherTerrain& terrain) override
     {
         Draoi::HexWorld::Weather::Testing::HexTerrainOptions o;
-        o.waterColumns = 1;
-        WeatherTestWorld::CopyTerrain(Draoi::HexWorld::Weather::Testing::MakeHexTerrain(6, 5, o), terrain);
+        o.waterColumns = waterColumns;
+        WeatherTestWorld::CopyTerrain(Draoi::HexWorld::Weather::Testing::MakeHexTerrain(columns, rows, o), terrain);
         view.present = true;
-        view.width = 6;
-        view.height = 5;
+        view.width = columns;
+        view.height = rows;
         return true;
     }
+    uint32_t columns = 6;
+    uint32_t rows = 5;
+    uint32_t waterColumns = 1;
 };
 
 struct NullHold : public CoW::WorldStep::IGenerationHold
@@ -407,4 +411,161 @@ TEST(WeatherSaveParticipant, AFailedValidateAbortsTheRealLoadAndLiveStateIsUntou
     EXPECT_FALSE(result.Ok());
     EXPECT_EQ(Dia::SaveGame::LoadResultCode::DeserializeError, result.code);
     EXPECT_EQ(before, Take(b.module.GetStage()));
+}
+
+// ---- Task 10: A4's restore outcomes (AC 5, 6, 9, 10, 12, 14) --------------------------------------------------------
+
+namespace
+{
+typedef Dia::CellLayers::Testing::LogCapture RestoreLog;
+
+// Saves a world stepped to week 3 (revision 5) and returns what it held.
+Snap SaveSteppedWorld(const std::string& slot)
+{
+    SaveWorld a(slot);
+    a.Announce(5);
+    a.StepWeeks(1, 3);
+    const Snap saved = Take(a.module.GetStage());
+    EXPECT_EQ(3u, saved.week);
+    EXPECT_TRUE(a.Save().Ok());
+    return saved;
+}
+}
+
+TEST(WeatherSaveParticipant, RestoredWorldStepsBitIdenticalToAnUninterruptedRun)
+{
+    const uint32_t kExtraWeeks[] = { 1, 13, 52 };
+    for (uint32_t extra : kExtraWeeks)
+    {
+        SCOPED_TRACE(extra);
+        const std::string slot = WsTest::UniqueSlot();
+        WsTest::SlotFile file(slot);
+        SaveSteppedWorld(slot);
+
+        SaveWorld control(WsTest::UniqueSlot());
+        control.Announce(5);
+        control.StepWeeks(1, 3);
+        control.StepWeeks(4, extra);
+        const Snap expected = Take(control.module.GetStage());
+        ASSERT_EQ(3u + extra, expected.week);
+
+        SaveWorld b(slot);
+        b.Announce(5);
+        ASSERT_TRUE(b.Load().Ok());
+        b.StepWeeks(4, extra);
+        EXPECT_EQ(expected, Take(b.module.GetStage()));
+    }
+}
+
+TEST(WeatherSaveParticipant, SuccessfulRestoreStartsNoSpinUpAndIsReadyAtOnce)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    const Snap saved = SaveSteppedWorld(slot);
+
+    SaveWorld b(slot);
+    uint32_t spinWeeks = 0;
+    b.module.GetStage().SetSpinUpWeekObserver([&spinWeeks](uint32_t) { ++spinWeeks; });
+    b.module.GetStage().SetLaunchMode(CoW::Weather::WeatherStage::LaunchMode::kManual);
+    b.Announce(5);
+    ASSERT_EQ(1u, b.module.GetStage().QueuedJobCount());
+    ASSERT_TRUE(b.module.GetStage().RunNextJob());
+    b.module.GetStage().Update();
+    ASSERT_TRUE(b.module.GetStage().IsReadyForRevision(5));
+    const uint32_t weeksBefore = spinWeeks;
+    ASSERT_GT(weeksBefore, 0u);
+
+    ASSERT_TRUE(b.Load().Ok());
+    EXPECT_EQ(0u, b.module.GetStage().QueuedJobCount());
+    EXPECT_FALSE(b.module.GetStage().SpinUpRunning());
+    EXPECT_EQ(weeksBefore, spinWeeks) << "the restore must not run a spin-up";
+    EXPECT_TRUE(b.module.GetStage().IsReadyForRevision(5));   // no Update needed
+    EXPECT_EQ(saved, Take(b.module.GetStage()));
+}
+
+TEST(WeatherSaveParticipant, DimensionMismatchDiscardsTheSavedStateWithOneWarningAndSpinsUp)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    const Snap saved = SaveSteppedWorld(slot);
+
+    SaveWorld b(slot);
+    b.source.columns = 7;
+    b.Announce(5);
+    RestoreLog log("WTH");
+    const Dia::SaveGame::LoadResult result = b.Load();
+    EXPECT_TRUE(result.Ok()) << static_cast<int>(result.code);
+    EXPECT_EQ(1u, log.Warnings());
+    EXPECT_EQ(1u, log.Warnings("6x5"));
+    EXPECT_EQ(1u, log.Warnings("7x5"));
+    b.module.GetStage().Update();
+    EXPECT_TRUE(b.module.GetStage().IsReadyForRevision(5));
+    const Snap now = Take(b.module.GetStage());
+    EXPECT_EQ(35u, now.cells);
+    EXPECT_NE(saved.cells, now.cells);
+}
+
+TEST(WeatherSaveParticipant, SaveRestoredIntoAWorldWithNoWaterSourceIsDiscardedWithoutACrash)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    SaveSteppedWorld(slot);
+
+    SaveWorld b(slot);
+    b.source.waterColumns = 0;
+    b.Announce(5);
+    ASSERT_FALSE(b.module.GetStage().IsReady());
+    RestoreLog log("WTH");
+    const Dia::SaveGame::LoadResult result = b.Load();
+    EXPECT_TRUE(result.Ok()) << static_cast<int>(result.code);
+    EXPECT_GE(log.Warnings("discarded"), 1u);
+    b.module.GetStage().Update();
+    EXPECT_FALSE(b.module.GetStage().IsReady());
+    EXPECT_EQ(nullptr, b.module.GetStage().ReadableSim());
+    // A later world with water spins up normally.
+    b.source.waterColumns = 1;
+    b.Announce(6);
+    EXPECT_TRUE(b.module.GetStage().IsReadyForRevision(6));
+}
+
+TEST(WeatherSaveParticipant, ReAnnounceOfTheRestoredRevisionIsIgnoredAndAGreaterRevisionSpinsUp)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    const Snap saved = SaveSteppedWorld(slot);
+
+    SaveWorld b(slot);
+    uint32_t spinWeeks = 0;
+    b.module.GetStage().SetSpinUpWeekObserver([&spinWeeks](uint32_t) { ++spinWeeks; });
+    b.Announce(5);
+    ASSERT_TRUE(b.Load().Ok());
+    const uint32_t afterLoad = spinWeeks;
+    b.Announce(5);   // the completion caused by the load
+    EXPECT_EQ(afterLoad, spinWeeks);
+    EXPECT_TRUE(b.module.GetStage().IsReadyForRevision(5));
+    EXPECT_EQ(saved, Take(b.module.GetStage()));
+
+    b.Announce(6);
+    EXPECT_GT(spinWeeks, afterLoad);
+    EXPECT_TRUE(b.module.GetStage().IsReadyForRevision(6));
+    EXPECT_NE(saved, Take(b.module.GetStage()));
+}
+
+TEST(WeatherSaveParticipant, RestoredWeekIsTheSavedWeekAndTheFirstStepPublishesItsOwnWeek)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    SaveSteppedWorld(slot);
+
+    SaveWorld b(slot);
+    std::vector<uint64_t> published;
+    b.module.GetStage().SetPublishSeam([&published](uint64_t week, Draoi::HexWorld::Weather::Season) { published.push_back(week); });
+    b.Announce(5);
+    ASSERT_TRUE(b.Load().Ok());
+    EXPECT_EQ(3u, Take(b.module.GetStage()).week);
+    EXPECT_EQ(3u, b.module.GetStage().GetSnapshot().week);
+    b.StepWeeks(4, 1);   // stepDay 28
+    ASSERT_EQ(1u, published.size());
+    EXPECT_EQ(4u, published[0]);
+    EXPECT_EQ(4u, Take(b.module.GetStage()).week);
 }

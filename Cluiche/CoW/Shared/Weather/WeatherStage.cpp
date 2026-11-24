@@ -62,6 +62,12 @@ std::shared_ptr<const SpinUpInput> WeatherHooks::Find(uint32_t revision) const
 bool WeatherHooks::InitialiseSim(WeatherSimulation& sim, const WorldStep::WorldView& world,
                                  WeatherStageBase::CauseCode& cause)
 {
+    return InitialiseImpl(sim, world, cause, true);
+}
+
+bool WeatherHooks::InitialiseImpl(WeatherSimulation& sim, const WorldStep::WorldView& world,
+                                  WeatherStageBase::CauseCode& cause, bool spinUp)
+{
     DIA_TRACE_ZONE("WeatherStage::SpinUp", Dia::Observation::Trace::Category::kNone);
     cause = static_cast<uint32_t>(CauseCode::kNone);
     const std::shared_ptr<const SpinUpInput> input = Find(world.revision);
@@ -85,6 +91,7 @@ bool WeatherHooks::InitialiseSim(WeatherSimulation& sim, const WorldStep::WorldV
         return false;
     }
 
+    if (!spinUp) { return true; }   // restore: the saved record replaces the sim state
     DIA_LOG_INFO(kLogChannel, "WTH: spin-up start for world %u, %u weeks", static_cast<unsigned>(world.revision),
                  static_cast<unsigned>(input->spinupWeeks));
     const auto spinUpStart = std::chrono::steady_clock::now();
