@@ -55,8 +55,8 @@ Row number = feature number. Recommended build order: **1, 2, 6, 3, 4, 5** (see 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | 1 | **Feature 1 — Weather data & parameters.** @weather-data.plan.md | Its final task | Done | — | Pure logic. Root of A4. Done 2026-11-24 in package `DraoiHexWorldWeather` (11 tasks, 66 Weather tests). F2 needs a re-plan against the Draoi amendment before it starts |
-| 2 | **Feature 2 — CA pipeline.** @ca-pipeline.plan.md | Its final task | Not Started | — | Holds the design risk (10 GDD steps, determinism, region forcings). Start here after F1 |
-| 3 | **Feature 3 — WeatherModule & deferred step.** @weather-module.plan.md | Its final task | Not Started | — | Deletes `JobSystemPlaceholderConsumerModule`. Needs World Step F1-F2 and DiaDeferredStep F1-F4 |
+| 2 | **Feature 2 — CA pipeline.** @ca-pipeline.plan.md | Its final task | Done | — | Holds the design risk (10 GDD steps, determinism, region forcings). Start here after F1; Done 2026-11-24 (ca-pipeline plan closed; Draoi package DraoiHexWorldWeather) |
+| 3 | **Feature 3 — WeatherModule & deferred step.** @weather-module.plan.md | Its final task | Done | — | Deletes `JobSystemPlaceholderConsumerModule`. Needs World Step F1-F2 and DiaDeferredStep F1-F4; Done 2026-11-24 buildable scope (aab693439..). Deferred: AC 33-35, 37-39 + Task 16 (F7-9, A5); production manifest waits for S-2.5; preset/state-replace apply = F6/F4 |
 | 4 | **Feature 4 — Weather save / load.** @weather-save.plan.md | Its final task | Not Started | — | Its first task is the E1 + S-1 load event-order integration test |
 | 5 | **Feature 5 — Weather debug.** @weather-debug.plan.md | Its final task | Not Started | — | 8 sim-hosted names (7 + `cow.weather.influence`), 8 scalar layers + 2 wind layers, wind overlay, events, 14-entry profile (amended 2026-11-17, row 6d). Pure parts can start after F2 |
 | 6 | **Feature 6 — Presets & regression.** @presets-and-regression.plan.md | Its final task | Not Started | — | Its regression tests decide whether defaults hold; may change the default baseline table and `cloud_decay` (tuning log) |
