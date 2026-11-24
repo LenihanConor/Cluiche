@@ -28,7 +28,7 @@ namespace
         p.initialMoistureWater  = kWaterMois;
         p.initialMoistureLand   = kLandMois;
         for (uint32_t s = 0; s < kSeasonCount; ++s)
-            for (uint32_t b = 0; b < BiomeRegistry::kMaxBiomes; ++b) p.seasonalBaseline[s][b] = TableValue(s, b);
+            for (uint32_t b = 0; b < BiomeRegistry::kMaxBiomes; ++b) p.BaselineRow(Season(s))[b] = TableValue(s, b);
         return p;
     }
 

@@ -4,6 +4,7 @@
 // Spec: docs/specs/applications/cow/systems/a4-weather/weather-data.md (Feature 1, world-sim review amendment 1)
 #pragma once
 
+#include <DiaAttribute/ParamBinding.h>
 #include <DraoiHexWorldWeather/WeatherTypes.h>
 
 #include <cstdint>
@@ -44,10 +45,32 @@ struct WeatherParameters
     float   influencePreviewFadeDays = 0.0f, pressureAnomalyDecay = 0.0f, pressureAnomalyMax = 0.0f, influenceCapWater = 0.0f;
     int32_t influenceMaxRadius = 0, influenceMaxSetCells = 0;
     float   influenceGroundWaterFactor = 0.0f;
-    // Fallback seasonal baseline temperature per biome, [season][BiomeIndex]; only the first registry Count() entries
-    // of each row are meaningful. Used when no SeasonalBaselineInput is supplied.
-    float seasonalBaseline[kSeasonCount][kMaxBaselineBiomes] = {};
+    // Fallback seasonal baseline temperature per biome, indexed by BiomeIndex; only the first registry Count() entries
+    // of each row are meaningful. Used when no SeasonalBaselineInput is supplied. One member per season because
+    // ParamBinding binds a 1D array member (capacity form); read through BaselineRow.
+    float baselineSpring[kMaxBaselineBiomes] = {};
+    float baselineSummer[kMaxBaselineBiomes] = {};
+    float baselineAutumn[kMaxBaselineBiomes] = {};
+    float baselineWinter[kMaxBaselineBiomes] = {};
+
+    const float* BaselineRow(Season s) const
+    {
+        switch (s)
+        {
+        case Season::Spring: return baselineSpring;
+        case Season::Summer: return baselineSummer;
+        case Season::Autumn: return baselineAutumn;
+        default:             return baselineWinter;
+        }
+    }
+    float* BaselineRow(Season s) { return const_cast<float*>(static_cast<const WeatherParameters*>(this)->BaselineRow(s)); }
 };
+
+// Binds every sidecar parameter (cow.weather_params) to its WeatherParameters member: scalars by their dotted key and
+// the four baseline season columns (`baseline.<season>`, one value per registry biome) with a run-time count. Call
+// once, then ParamBinding::Resolve against the loaded schema, then Snapshot once per step at Capture.
+// `biomeCount` must equal the number of map keys the sidecar was loaded with (BiomeRegistry::Count()).
+void BindWeatherParameters(Dia::Attribute::ParamBinding<WeatherParameters>& binding, uint32_t biomeCount);
 
 } // namespace Weather
 } // namespace HexWorld

@@ -100,6 +100,9 @@
     <ClInclude Include="WeatherTypes.h" />
     <ClInclude Include="WeatherParameters.h" />
     <ClInclude Include="WeatherSimulation.h" />
+    <ClInclude Include="Testing\RegistryMapKeys.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BiomeClassify.cpp" />

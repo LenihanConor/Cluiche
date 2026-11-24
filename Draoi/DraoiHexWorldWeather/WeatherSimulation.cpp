@@ -33,7 +33,7 @@ void WeatherSimulation::SeedFields(Season season, const WeatherTerrain& terrain,
     // One lookup per biome, built once: per-cell work is then an index, with no registry call.
     uint32_t count = registry.Count();
     if (count > kMaxBaselineBiomes) count = kMaxBaselineBiomes;
-    const float* row = params.seasonalBaseline[static_cast<uint32_t>(season)];
+    const float* row = params.BaselineRow(season);
     const BiomeIndex fallback = registry.Role(BiomeRole::Fallback);
     const float fallbackValue = (fallback != kNoBiome && fallback < count) ? row[fallback] : 0.5f;
 

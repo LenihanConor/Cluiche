@@ -1,0 +1,486 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "cow.weather_params",
+  "entries": [
+    {
+      "key": "solar.latitude_cooling_factor",
+      "kind": "parameter",
+      "label": "solar.latitude_cooling_factor",
+      "description": "Poles are this fraction cooler than the equator (0.3 = 30% cooler). Raise if the poles feel too warm; lower if the equator/pole difference is too extreme.",
+      "type": "float",
+      "min": 0.0,
+      "max": 0.5,
+      "default": 0.3
+    },
+    {
+      "key": "solar.cloud_albedo",
+      "kind": "parameter",
+      "label": "solar.cloud_albedo",
+      "description": "Clouds reduce solar heating by this fraction (0.4 = 40% reduction). Raise if cloudy regions stay too warm.",
+      "type": "float",
+      "min": 0.2,
+      "max": 0.6,
+      "default": 0.4
+    },
+    {
+      "key": "solar.water_heat_capacity",
+      "kind": "parameter",
+      "label": "solar.water_heat_capacity",
+      "description": "How fast oceans change temperature (lower = slower). Lower it if ocean temperatures change too slowly across seasons.",
+      "type": "float",
+      "min": 0.1,
+      "max": 0.5,
+      "default": 0.3
+    },
+    {
+      "key": "solar.land_heat_capacity",
+      "kind": "parameter",
+      "label": "solar.land_heat_capacity",
+      "description": "How fast land changes temperature (higher = faster). Raise it if inland regions lack a seasonal swing.",
+      "type": "float",
+      "min": 0.6,
+      "max": 1.0,
+      "default": 0.8
+    },
+    {
+      "key": "solar.cloud_decay",
+      "kind": "parameter",
+      "label": "solar.cloud_decay",
+      "description": "Share of cloud cover lost each week (Feature 2 pass 1); an A4 extension, not in the GDD section 14 table.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "key": "pressure.pressure_sensitivity",
+      "kind": "parameter",
+      "label": "pressure.pressure_sensitivity",
+      "description": "How strongly temperature deviation drives pressure (higher = stronger storms). Lower it if pressure fluctuates wildly and wind turns chaotic.",
+      "type": "float",
+      "min": 0.3,
+      "max": 0.9,
+      "default": 0.6
+    },
+    {
+      "key": "wind.prevailing_strength",
+      "kind": "parameter",
+      "label": "wind.prevailing_strength",
+      "description": "Baseline prevailing wind strength (higher = more consistent trade winds and westerlies). Keep the sum with pressure_strength near 1.0.",
+      "type": "float",
+      "min": 0.4,
+      "max": 0.8,
+      "default": 0.6
+    },
+    {
+      "key": "wind.pressure_strength",
+      "kind": "parameter",
+      "label": "wind.pressure_strength",
+      "description": "Local pressure perturbation strength (higher = storms pull wind harder). Raise it if storms do not visibly move wind.",
+      "type": "float",
+      "min": 0.2,
+      "max": 0.6,
+      "default": 0.4
+    },
+    {
+      "key": "evaporation.ocean_evap_rate",
+      "kind": "parameter",
+      "label": "evaporation.ocean_evap_rate",
+      "description": "Moisture an ocean cell generates per week at maximum temperature. Raise it if coasts get too little rain; lower it if the world is too wet.",
+      "type": "float",
+      "min": 0.2,
+      "max": 0.5,
+      "default": 0.3
+    },
+    {
+      "key": "evaporation.ground_evap_rate",
+      "kind": "parameter",
+      "label": "evaporation.ground_evap_rate",
+      "description": "Ground water evaporated per week (much slower than oceans). Lower it if droughts never form; raise it if inland dries out too fast after rain.",
+      "type": "float",
+      "min": 0.02,
+      "max": 0.1,
+      "default": 0.05
+    },
+    {
+      "key": "transport.moisture_transport_rate",
+      "kind": "parameter",
+      "label": "transport.moisture_transport_rate",
+      "description": "Fraction of moisture blown downwind per week at full wind speed. Raise it if moisture does not reach inland; lower it if everywhere is equally wet.",
+      "type": "float",
+      "min": 0.2,
+      "max": 0.6,
+      "default": 0.4
+    },
+    {
+      "key": "transport.heat_transport_rate",
+      "kind": "parameter",
+      "label": "transport.heat_transport_rate",
+      "description": "Fraction of heat blown downwind per week at full wind speed; below the moisture rate because heat diffuses slower.",
+      "type": "float",
+      "min": 0.1,
+      "max": 0.4,
+      "default": 0.2
+    },
+    {
+      "key": "orographic.cooling_rate",
+      "kind": "parameter",
+      "label": "orographic.cooling_rate",
+      "description": "Air cools by this much per unit of elevation gain.",
+      "type": "float",
+      "min": 0.2,
+      "max": 0.5,
+      "default": 0.3
+    },
+    {
+      "key": "orographic.condensation_temp",
+      "kind": "parameter",
+      "label": "orographic.condensation_temp",
+      "description": "Below this temperature moisture condenses to rain or snow. Adjust if rain triggers too early or late relative to cold air; it sets the seasonal-storm pattern together with the baseline table.",
+      "type": "float",
+      "min": 0.3,
+      "max": 0.5,
+      "default": 0.4
+    },
+    {
+      "key": "orographic.precip_rate",
+      "kind": "parameter",
+      "label": "orographic.precip_rate",
+      "description": "Fraction of moisture wrung out when air rises over mountains. Raise it if rain shadows are too weak; lower it if the windward side gets a deluge.",
+      "type": "float",
+      "min": 0.4,
+      "max": 0.8,
+      "default": 0.6
+    },
+    {
+      "key": "precipitation.rain_threshold",
+      "kind": "parameter",
+      "label": "precipitation.rain_threshold",
+      "description": "Moisture must exceed this before rain can fall. Raise it if it rains too often; lower it if droughts are too common.",
+      "type": "float",
+      "min": 0.5,
+      "max": 0.8,
+      "default": 0.6
+    },
+    {
+      "key": "precipitation.snow_threshold",
+      "kind": "parameter",
+      "label": "precipitation.snow_threshold",
+      "description": "Below this temperature precipitation falls as snow. Must not exceed snow.melt_threshold. Higher moves the snow line to more regions.",
+      "type": "float",
+      "min": 0.2,
+      "max": 0.4,
+      "default": 0.3
+    },
+    {
+      "key": "precipitation.precip_rate",
+      "kind": "parameter",
+      "label": "precipitation.precip_rate",
+      "description": "Fraction of excess moisture converted to rain per week. Raise it if moisture lingers; lower it if rain dumps too fast.",
+      "type": "float",
+      "min": 0.3,
+      "max": 0.7,
+      "default": 0.5
+    },
+    {
+      "key": "snow.melt_threshold",
+      "kind": "parameter",
+      "label": "snow.melt_threshold",
+      "description": "Snow melts when temperature rises above this. Must be at least precipitation.snow_threshold. Raise it if snow melts too early in spring.",
+      "type": "float",
+      "min": 0.3,
+      "max": 0.45,
+      "default": 0.35
+    },
+    {
+      "key": "snow.melt_rate",
+      "kind": "parameter",
+      "label": "snow.melt_rate",
+      "description": "Fraction of the snow pack that melts per week above the melt threshold. Raise it if spring floods feel too gradual; lower it if they are too sudden.",
+      "type": "float",
+      "min": 0.2,
+      "max": 0.5,
+      "default": 0.3
+    },
+    {
+      "key": "snow.melt_cooling",
+      "kind": "parameter",
+      "label": "snow.melt_cooling",
+      "description": "Melting snow cools the air by this much per unit melted (latent heat).",
+      "type": "float",
+      "min": 0.05,
+      "max": 0.2,
+      "default": 0.1
+    },
+    {
+      "key": "init.initial_moisture_water",
+      "kind": "parameter",
+      "label": "init.initial_moisture_water",
+      "description": "Week-0 moisture of water-source cells. An A4 extension; Feature 6 regression tests may tune it.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.8
+    },
+    {
+      "key": "init.initial_moisture_land",
+      "kind": "parameter",
+      "label": "init.initial_moisture_land",
+      "description": "Week-0 moisture of land cells. An A4 extension; Feature 6 regression tests may tune it.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.3
+    },
+    {
+      "key": "boundary.edge_inflow",
+      "kind": "parameter",
+      "label": "boundary.edge_inflow",
+      "description": "Whether moisture and heat flow in from outside the map edge. An A4 extension.",
+      "type": "bool",
+      "default": true
+    },
+    {
+      "key": "influence.max_strength",
+      "kind": "parameter",
+      "label": "influence.max_strength",
+      "description": "Cap on one influence strength (GDD 10a).",
+      "type": "float",
+      "min": 0.5,
+      "max": 2.0,
+      "default": 1.0
+    },
+    {
+      "key": "influence.max_delta_pressure",
+      "kind": "parameter",
+      "label": "influence.max_delta_pressure",
+      "description": "Cap on the summed pressure change per cell per week from overlapping influences (GDD 10a).",
+      "type": "float",
+      "min": 0.05,
+      "max": 0.5,
+      "default": 0.3
+    },
+    {
+      "key": "influence.max_delta_moisture",
+      "kind": "parameter",
+      "label": "influence.max_delta_moisture",
+      "description": "Cap on the summed moisture change per cell per week from overlapping influences (GDD 10a).",
+      "type": "float",
+      "min": 0.05,
+      "max": 0.5,
+      "default": 0.3
+    },
+    {
+      "key": "influence.max_delta_temperature",
+      "kind": "parameter",
+      "label": "influence.max_delta_temperature",
+      "description": "Cap on the summed temperature change per cell per week from overlapping influences (GDD 10a).",
+      "type": "float",
+      "min": 0.05,
+      "max": 0.5,
+      "default": 0.15
+    },
+    {
+      "key": "influence.max_lifetime_weeks",
+      "kind": "parameter",
+      "label": "influence.max_lifetime_weeks",
+      "description": "Longest one influence can last, in weeks (one season) (GDD 10a).",
+      "type": "int",
+      "min": 1,
+      "max": 52,
+      "default": 13
+    },
+    {
+      "key": "influence.max_active",
+      "kind": "parameter",
+      "label": "influence.max_active",
+      "description": "Hard cap on live influences; extra requests are rejected with a reason (GDD 10a).",
+      "type": "int",
+      "min": 8,
+      "max": 256,
+      "default": 64
+    },
+    {
+      "key": "influence.preview_fade_days",
+      "kind": "parameter",
+      "label": "influence.preview_fade_days",
+      "description": "Preview overlay fade-in in days (visual only) (GDD 10a).",
+      "type": "float",
+      "min": 0.25,
+      "max": 3.0,
+      "default": 1.0
+    },
+    {
+      "key": "influence.pressure_anomaly_decay",
+      "kind": "parameter",
+      "label": "influence.pressure_anomaly_decay",
+      "description": "Share of the pressure anomaly kept each week (0.7 is about a 2-week half-life). Used by Feature 2 whether or not Feature 7 is built (GDD 10a).",
+      "type": "float",
+      "min": 0.5,
+      "max": 0.9,
+      "default": 0.7
+    },
+    {
+      "key": "influence.pressure_anomaly_max",
+      "kind": "parameter",
+      "label": "influence.pressure_anomaly_max",
+      "description": "Clamp on the pressure anomaly, plus or minus. Used by Feature 2 whether or not Feature 7 is built (GDD 10a).",
+      "type": "float",
+      "min": 0.2,
+      "max": 0.5,
+      "default": 0.5
+    },
+    {
+      "key": "influence.cap_water",
+      "kind": "parameter",
+      "label": "influence.cap_water",
+      "description": "Cap on the signed water weight an influence adds (Cluiche addition, provisional, Feature 7).",
+      "type": "float",
+      "min": 0.0,
+      "max": 2.0,
+      "default": 1.0
+    },
+    {
+      "key": "influence.max_radius",
+      "kind": "parameter",
+      "label": "influence.max_radius",
+      "description": "Largest influence radius in cells (Cluiche addition, provisional, Feature 7).",
+      "type": "int",
+      "min": 0,
+      "max": 64,
+      "default": 32
+    },
+    {
+      "key": "influence.max_set_cells",
+      "kind": "parameter",
+      "label": "influence.max_set_cells",
+      "description": "Largest cell-set influence in cells (Cluiche addition, provisional, Feature 7).",
+      "type": "int",
+      "min": 64,
+      "max": 65536,
+      "default": 8192
+    },
+    {
+      "key": "influence.ground_water_factor",
+      "kind": "parameter",
+      "label": "influence.ground_water_factor",
+      "description": "Share of a WETTER/DRIER influence that reaches A5 as ground water (Cluiche addition, provisional, Feature 7).",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.05
+    },
+    {
+      "key": "baseline.spring",
+      "kind": "parameter",
+      "label": "Baseline spring",
+      "description": "Normalised mean air temperature per biome in [0, 1], used as the week-0 baseline when no biome provider (A1) is present. Anchors: snow_threshold 0.3, melt_threshold 0.35, condensation_temp 0.4. The biomes.json climate centres (Grassland 0.6, TemperateForest 0.5, Desert 0.8, Tundra 0.12, Rainforest 0.85) set the annual mean; the seasonal swing is about 0.17 for continental land, 0.06 for rainforest (steady warmth) and 0.14 for water. Temperate forest winters sit at the snow line; tundra and alpine stay below it except in summer; desert and desertified plain run hot; scrub and burned ashland are warmer than the grassland they replace (dry, dark ground); wetland and lakes sit between land and ocean. This is the spring column.",
+      "type": "map",
+      "keyRef": "cow.biomes/biomes[].id",
+      "valueType": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": {
+        "Biome.Ocean": 0.5,
+        "Biome.Lake": 0.46,
+        "Biome.Grassland": 0.55,
+        "Biome.TemperateForest": 0.48,
+        "Biome.Wetland": 0.5,
+        "Biome.Desert": 0.78,
+        "Biome.Alpine": 0.22,
+        "Biome.Tundra": 0.12,
+        "Biome.Rainforest": 0.85,
+        "Biome.Volcanic": 0.7,
+        "Biome.Scrub": 0.6,
+        "Biome.BurnedAshland": 0.62,
+        "Biome.DesertifiedPlain": 0.7
+      }
+    },
+    {
+      "key": "baseline.summer",
+      "kind": "parameter",
+      "label": "Baseline summer",
+      "description": "Normalised mean air temperature per biome in [0, 1], used as the week-0 baseline when no biome provider (A1) is present. Anchors: snow_threshold 0.3, melt_threshold 0.35, condensation_temp 0.4. The biomes.json climate centres (Grassland 0.6, TemperateForest 0.5, Desert 0.8, Tundra 0.12, Rainforest 0.85) set the annual mean; the seasonal swing is about 0.17 for continental land, 0.06 for rainforest (steady warmth) and 0.14 for water. Temperate forest winters sit at the snow line; tundra and alpine stay below it except in summer; desert and desertified plain run hot; scrub and burned ashland are warmer than the grassland they replace (dry, dark ground); wetland and lakes sit between land and ocean. This is the summer column.",
+      "type": "map",
+      "keyRef": "cow.biomes/biomes[].id",
+      "valueType": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": {
+        "Biome.Ocean": 0.58,
+        "Biome.Lake": 0.6,
+        "Biome.Grassland": 0.72,
+        "Biome.TemperateForest": 0.64,
+        "Biome.Wetland": 0.66,
+        "Biome.Desert": 0.95,
+        "Biome.Alpine": 0.4,
+        "Biome.Tundra": 0.3,
+        "Biome.Rainforest": 0.88,
+        "Biome.Volcanic": 0.8,
+        "Biome.Scrub": 0.8,
+        "Biome.BurnedAshland": 0.8,
+        "Biome.DesertifiedPlain": 0.88
+      }
+    },
+    {
+      "key": "baseline.autumn",
+      "kind": "parameter",
+      "label": "Baseline autumn",
+      "description": "Normalised mean air temperature per biome in [0, 1], used as the week-0 baseline when no biome provider (A1) is present. Anchors: snow_threshold 0.3, melt_threshold 0.35, condensation_temp 0.4. The biomes.json climate centres (Grassland 0.6, TemperateForest 0.5, Desert 0.8, Tundra 0.12, Rainforest 0.85) set the annual mean; the seasonal swing is about 0.17 for continental land, 0.06 for rainforest (steady warmth) and 0.14 for water. Temperate forest winters sit at the snow line; tundra and alpine stay below it except in summer; desert and desertified plain run hot; scrub and burned ashland are warmer than the grassland they replace (dry, dark ground); wetland and lakes sit between land and ocean. This is the autumn column.",
+      "type": "map",
+      "keyRef": "cow.biomes/biomes[].id",
+      "valueType": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": {
+        "Biome.Ocean": 0.54,
+        "Biome.Lake": 0.5,
+        "Biome.Grassland": 0.58,
+        "Biome.TemperateForest": 0.5,
+        "Biome.Wetland": 0.52,
+        "Biome.Desert": 0.8,
+        "Biome.Alpine": 0.24,
+        "Biome.Tundra": 0.14,
+        "Biome.Rainforest": 0.85,
+        "Biome.Volcanic": 0.72,
+        "Biome.Scrub": 0.62,
+        "Biome.BurnedAshland": 0.64,
+        "Biome.DesertifiedPlain": 0.72
+      }
+    },
+    {
+      "key": "baseline.winter",
+      "kind": "parameter",
+      "label": "Baseline winter",
+      "description": "Normalised mean air temperature per biome in [0, 1], used as the week-0 baseline when no biome provider (A1) is present. Anchors: snow_threshold 0.3, melt_threshold 0.35, condensation_temp 0.4. The biomes.json climate centres (Grassland 0.6, TemperateForest 0.5, Desert 0.8, Tundra 0.12, Rainforest 0.85) set the annual mean; the seasonal swing is about 0.17 for continental land, 0.06 for rainforest (steady warmth) and 0.14 for water. Temperate forest winters sit at the snow line; tundra and alpine stay below it except in summer; desert and desertified plain run hot; scrub and burned ashland are warmer than the grassland they replace (dry, dark ground); wetland and lakes sit between land and ocean. This is the winter column.",
+      "type": "map",
+      "keyRef": "cow.biomes/biomes[].id",
+      "valueType": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": {
+        "Biome.Ocean": 0.44,
+        "Biome.Lake": 0.34,
+        "Biome.Grassland": 0.38,
+        "Biome.TemperateForest": 0.3,
+        "Biome.Wetland": 0.34,
+        "Biome.Desert": 0.58,
+        "Biome.Alpine": 0.08,
+        "Biome.Tundra": 0.02,
+        "Biome.Rainforest": 0.82,
+        "Biome.Volcanic": 0.6,
+        "Biome.Scrub": 0.42,
+        "Biome.BurnedAshland": 0.42,
+        "Biome.DesertifiedPlain": 0.5
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "a": "precipitation.snow_threshold",
+      "op": "<=",
+      "b": "snow.melt_threshold"
+    }
+  ]
+}

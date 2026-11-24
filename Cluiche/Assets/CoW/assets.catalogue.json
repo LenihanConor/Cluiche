@@ -203,6 +203,19 @@
         },
         {
             "content_hash": 0,
+            "id": "json.weather_parameters_schema",
+            "references": [],
+            "scope": "global",
+            "source_path": "Global/Weather/weather_parameters.schema.json",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "json"
+        },
+        {
+            "content_hash": 0,
             "id": "json.worldshape_archipelago",
             "references": [],
             "scope": "global",

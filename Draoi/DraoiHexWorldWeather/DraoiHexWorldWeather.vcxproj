@@ -78,6 +78,7 @@
     <ClInclude Include="WeatherTypes.h" />
     <ClInclude Include="WeatherParameters.h" />
     <ClInclude Include="WeatherSimulation.h" />
+    <ClInclude Include="Testing\RegistryMapKeys.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DraoiHexWorldWeather.cpp" />
