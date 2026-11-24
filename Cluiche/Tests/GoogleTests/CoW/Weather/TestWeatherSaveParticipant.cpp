@@ -1095,3 +1095,139 @@ TEST(WeatherSaveLoadOrder, LoadBeforeAnyWorldIsAnnounced_RecordStashed_NextCompl
     EXPECT_TRUE(b.module.GetStage().IsReadyForRevision(5));
     EXPECT_EQ(saved, Take(b.module.GetStage()));
 }
+
+// ---- Task 16: a record with no influences/climate, and one that carries them, through the real participant ----
+TEST(WeatherSaveParticipant, RecordWithoutInfluencesOrClimateLoadsCleanAndOneThatCarriesThemLoadsWithOneInfo)
+{
+    SaveWorld a(WsTest::UniqueSlot());
+    a.Announce(5);
+    a.StepWeeks(1, 3);
+    const Snap saved = Take(a.module.GetStage());
+    const Json::Value plain = a.Record();
+    ASSERT_FALSE(plain.isMember("influences"));
+    ASSERT_FALSE(plain.isMember("climate"));
+
+    {   // no blocks: clean load, no weather-channel output
+        SaveWorld b(WsTest::UniqueSlot());
+        b.Announce(5);
+        RestoreLog log("WTH");
+        Dia::SaveGame::LoadContext validateCtx(plain);
+        ASSERT_TRUE(b.module.GetSaveParticipant().Validate(validateCtx));
+        Dia::SaveGame::LoadContext ctx(plain);
+        b.module.GetSaveParticipant().Deserialize(ctx);
+        EXPECT_EQ(0u, log.Count(RestoreLog::Level::kInfo, "influences"));
+        EXPECT_EQ(0u, log.Warnings());
+        EXPECT_EQ(0u, log.Errors());
+        EXPECT_EQ(saved, Take(b.module.GetStage()));
+    }
+    {   // both blocks present: ignored, one Info, same state
+        Json::Value carrying = plain;
+        carrying["influences"] = Json::Value(Json::objectValue);
+        carrying["climate"] = Json::Value(Json::objectValue);
+        SaveWorld b(WsTest::UniqueSlot());
+        b.Announce(5);
+        RestoreLog log("WTH");
+        Dia::SaveGame::LoadContext validateCtx(carrying);
+        ASSERT_TRUE(b.module.GetSaveParticipant().Validate(validateCtx));
+        EXPECT_EQ(1u, log.Count(RestoreLog::Level::kInfo, "influences"));   // one per decode: Validate's
+        Dia::SaveGame::LoadContext ctx(carrying);
+        b.module.GetSaveParticipant().Deserialize(ctx);
+        EXPECT_EQ(2u, log.Count(RestoreLog::Level::kInfo, "influences"));   // plus Restore's own decode
+        EXPECT_EQ(0u, log.Warnings());
+        EXPECT_EQ(saved, Take(b.module.GetStage()));
+    }
+}
+
+// ---- Task 17: edge cases through the real SaveManager ----
+TEST(WeatherSaveEdge, OneAndTwoCellWorldsSaveLoadAndContinueBitIdentically)
+{
+    const uint32_t shapes[][2] = { { 1, 1 }, { 2, 1 }, { 1, 2 } };
+    for (const auto& shape : shapes)
+    {
+        SCOPED_TRACE(std::to_string(shape[0]) + "x" + std::to_string(shape[1]));
+        const std::string slot = WsTest::UniqueSlot();
+        WsTest::SlotFile file(slot);
+        Snap continued;
+        {
+            SaveWorld a(slot);
+            a.source.columns = shape[0];
+            a.source.rows = shape[1];
+            a.Announce(5);
+            ASSERT_TRUE(a.module.GetStage().IsReadyForRevision(5));
+            a.StepWeeks(1, 2);
+            ASSERT_TRUE(a.Save().Ok());
+            a.StepWeeks(3, 3);
+            continued = Take(a.module.GetStage());
+        }
+        SaveWorld b(slot);
+        b.source.columns = shape[0];
+        b.source.rows = shape[1];
+        b.Announce(5);
+        ASSERT_TRUE(b.Load().Ok());
+        ASSERT_EQ(2u, Take(b.module.GetStage()).week);
+        b.StepWeeks(3, 3);
+        EXPECT_EQ(continued, Take(b.module.GetStage()));
+        EXPECT_EQ(shape[0] * shape[1], continued.cells);
+    }
+}
+
+TEST(WeatherSaveEdge, LoadingTwiceInARowRestoresTheSavedStateBothTimes)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    const Snap saved = SaveSteppedWorld(slot);
+
+    SaveWorld b(slot);
+    b.Announce(5);
+    ASSERT_TRUE(b.Load().Ok());
+    EXPECT_EQ(saved, Take(b.module.GetStage()));
+    b.StepWeeks(4, 2);   // drift away from the save
+    ASSERT_NE(saved, Take(b.module.GetStage()));
+    ASSERT_TRUE(b.Load().Ok());
+    EXPECT_EQ(saved, Take(b.module.GetStage()));
+    ASSERT_TRUE(b.Load().Ok());
+    EXPECT_EQ(saved, Take(b.module.GetStage()));
+    EXPECT_FALSE(b.module.GetStage().HasStashedRecord());
+}
+
+TEST(WeatherSaveEdge, SaveDuringSpinUpWritesReadyFalseAndLoadsIntoAReadyWorldAsANoOp)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    {
+        SaveWorld a(slot);
+        a.module.GetStage().SetLaunchMode(CoW::Weather::WeatherStage::LaunchMode::kManual);
+        a.Announce(5);
+        ASSERT_EQ(1u, a.module.GetStage().QueuedJobCount());   // the spin-up has not run
+        const Json::Value record = a.Record();
+        EXPECT_EQ(1u, record.size());
+        EXPECT_FALSE(record["ready"].asBool());
+        ASSERT_TRUE(a.Save().Ok());
+        ASSERT_TRUE(a.module.GetStage().RunNextJob());   // let it finish so teardown is clean
+        a.module.GetStage().Update();
+    }
+    SaveWorld b(slot);
+    b.Announce(5);
+    b.StepWeeks(1, 2);
+    const Snap before = Take(b.module.GetStage());
+    ASSERT_TRUE(b.Load().Ok());
+    EXPECT_EQ(before, Take(b.module.GetStage()));
+    EXPECT_TRUE(b.module.GetStage().IsReadyForRevision(5));
+}
+
+TEST(WeatherSaveEdge, SaveWhileANewRevisionSpinsUpStillWritesALoadableRecord)
+{
+    SaveWorld a(WsTest::UniqueSlot());
+    a.Announce(5);
+    a.StepWeeks(1, 2);
+    a.module.GetStage().SetLaunchMode(CoW::Weather::WeatherStage::LaunchMode::kManual);
+    a.Announce(6);   // a regeneration: spin-up for revision 6 queued, not run
+    const Json::Value record = a.Record();
+    Dia::SaveGame::LoadContext ctx(record);
+    EXPECT_TRUE(a.module.GetSaveParticipant().Validate(ctx));
+    if (a.module.GetStage().QueuedJobCount() > 0)
+    {
+        a.module.GetStage().RunNextJob();
+        a.module.GetStage().Update();
+    }
+}

@@ -699,3 +699,44 @@ TEST(WeatherPendingSaveDfs005, CoordinatorDiscardPathLogsAnErrorTheChannelApplie
     EXPECT_GE(b.harness.module.ApplyCount(), 1u);
     EXPECT_GE(b.world.published.size(), 1u);
 }
+
+// ---- Task 17: a pending blob without a usable committed record ----
+
+TEST(WeatherPendingSave, AValidBlobWithNoCommittedRecordOrAReadyFalseOneIsRejectedAndChangesNothing)
+{
+    PendWorld a;
+    a.Announce(5);
+    a.CommitWeeks(1, 2);
+    a.RunInFlight(3 * 7);
+    const Json::Value save = a.PendingSave();
+    ASSERT_TRUE(save["stage_0"]["valid"].asBool());
+
+    {   // no committed record was ever noted
+        PendWorld b;
+        b.Announce(5);
+        const std::vector<uint32_t> before = Bits(Committed(b));
+        EXPECT_FALSE(b.ValidatePending(save));
+        EXPECT_EQ(before, Bits(Committed(b)));
+        EXPECT_TRUE(b.stage.IsReady());
+    }
+    {   // the committed record is ready:false (the saving world was not ready) but a step is claimed in flight
+        Json::Value readyFalse(Json::objectValue);
+        readyFalse["ready"] = false;
+        PendWorld b;
+        b.Announce(5);
+        const std::vector<uint32_t> before = Bits(Committed(b));
+        {   // the SaveManager order: Validate every block, then ValidatePending, before any Deserialize
+            Dia::SaveGame::LoadContext validateCtx(readyFalse);
+            ASSERT_TRUE(b.participant.Validate(validateCtx));
+        }
+        EXPECT_FALSE(b.ValidatePending(save));
+        EXPECT_EQ(before, Bits(Committed(b)));
+        EXPECT_TRUE(b.stage.IsReady());
+        // a valid:false blob needs no committed record and is accepted
+        Json::Value none = save;
+        none["stage_0"] = Json::Value(Json::objectValue);
+        none["stage_0"]["pending_version"] = 1;
+        none["stage_0"]["valid"] = false;
+        EXPECT_TRUE(b.ValidatePending(none));
+    }
+}

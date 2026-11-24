@@ -863,6 +863,109 @@ TEST_F(WeatherSaveRecordTest, IncomingInfluencesAndClimateBlocksAreIgnoredWithOn
     EXPECT_TRUE(WT::SameFields(sim.Fields(), rec.fields));
 }
 
+// ---- A4 weather-save Task 17: edge cases of the weather record ----
+namespace
+{
+// A hand-built ready record of w x h cells: zero arrays, every cell biome 0, the registry's own palette.
+Json::Value BigRecord(uint32_t w, uint32_t h, const BiomeRegistry& reg)
+{
+    const uint32_t n = w * h;
+    Json::Value root(Json::objectValue);
+    Draoi::HexWorld::SaveHeader hd;
+    hd.width = w; hd.height = h; hd.cellCount = n; hd.stepDay = 7; hd.paramsHash = 11; hd.basinCount = 0; hd.worldHash = 0;
+    Draoi::HexWorld::WriteHeader(root, hd);
+    WeatherFields f;
+    f.Resize(n);
+    CoW::Weather::WriteWeatherFieldArrays(root, f);
+    std::vector<BiomeIndex> cells(n, static_cast<BiomeIndex>(0));
+    Draoi::HexWorld::WriteBiomeCells(root, reg, cells.data(), n);
+    return root;
+}
+}
+
+TEST_F(WeatherSaveRecordTest, CellCountAtTheCapIsAcceptedAndOneOverIsRejectedNamingTheCount)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+    ASSERT_TRUE(Decode(ThroughText(BigRecord(256, 256, reg)), reg, rec, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+    EXPECT_EQ(65536u, rec.fields.CellCount());
+    EXPECT_EQ(65536u, rec.biomes.Size());
+
+    CoW::Weather::WeatherRecord over;
+    EXPECT_FALSE(Decode(ThroughText(BigRecord(65537, 1, reg)), reg, over, err));
+    EXPECT_STREQ("cell_count", err.field.AsCStr());
+    EXPECT_EQ(0u, over.fields.CellCount());
+    EXPECT_EQ(0u, over.biomes.Size());
+}
+
+TEST_F(WeatherSaveRecordTest, OneAndTwoCellRecordsRoundTrip)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    const uint32_t shapes[][2] = { { 1, 1 }, { 2, 1 }, { 1, 2 } };
+    for (const auto& shape : shapes)
+    {
+        SCOPED_TRACE(std::to_string(shape[0]) + "x" + std::to_string(shape[1]));
+        CoW::Weather::WeatherRecord rec;
+        SaveError err;
+        ASSERT_TRUE(Decode(ThroughText(BigRecord(shape[0], shape[1], reg)), reg, rec, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+        EXPECT_EQ(shape[0] * shape[1], rec.fields.CellCount());
+        EXPECT_EQ(shape[0] * shape[1], rec.biomes.Size());
+    }
+}
+
+TEST_F(WeatherSaveRecordTest, APaletteOfOneIdLoadsAndEveryCellIsThatBiome)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    WeatherSimulation sim;
+    MakeSim(sim, reg, 1, 1);
+    Json::Value parsed = EncodeParsed(sim, reg);
+    const Json::Value first = parsed["biome_palette"][1u];
+    Json::Value palette(Json::arrayValue);
+    palette.append(first);
+    parsed["biome_palette"] = palette;
+    for (uint32_t i = 0; i < kN; ++i) { parsed["biome"][i] = 0; }
+
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+    ASSERT_TRUE(Decode(parsed, reg, rec, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+    const BiomeIndex expected = reg.ResolveOrFallback(Dia::Core::StringCRC(first.asCString()));
+    ASSERT_EQ(kN, rec.biomes.Size());
+    for (uint32_t i = 0; i < kN; ++i) { EXPECT_EQ(expected, rec.biomes[i]) << "cell " << i; }
+
+    // An index of 1 is now past the one-entry palette.
+    parsed["biome"][3u] = 1;
+    EXPECT_FALSE(Decode(parsed, reg, rec, err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+}
+
+TEST_F(WeatherSaveRecordTest, APaletteLargerThanTheRegistryLoadsUpToTheKitLimitAndNoFurther)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    WeatherSimulation sim;
+    MakeSim(sim, reg, 1, 1);
+    Json::Value parsed = EncodeParsed(sim, reg);
+    const uint32_t original = parsed["biome_palette"].size();
+    ASSERT_LT(original, BiomeRegistry::kMaxBiomes);
+
+    Json::Value filled = parsed;
+    for (uint32_t i = original; i < BiomeRegistry::kMaxBiomes; ++i)
+    {
+        filled["biome_palette"].append("Biome.RemovedLater" + std::to_string(i));   // unused by any cell
+    }
+    ASSERT_EQ(BiomeRegistry::kMaxBiomes, filled["biome_palette"].size());
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+    ASSERT_TRUE(Decode(filled, reg, rec, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+    for (uint32_t i = 0; i < kN; ++i) { EXPECT_EQ(sim.Terrain().biome[i], rec.biomes[i]) << "cell " << i; }
+
+    filled["biome_palette"].append("Biome.OneTooMany");
+    CoW::Weather::WeatherRecord over;
+    EXPECT_FALSE(Decode(filled, reg, over, err));
+    EXPECT_STREQ("biome_palette", err.field.AsCStr());
+    EXPECT_EQ(0u, over.biomes.Size());
+}
+
 // ---- A4 weather-save Task 8: the cow.weather_state export file ----
 namespace
 {
