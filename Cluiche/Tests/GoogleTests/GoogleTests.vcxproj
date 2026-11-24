@@ -155,6 +155,9 @@
     <ClInclude Include="..\..\CoW\Modules\WorldStep\WorldStepModule.h" />
     <ClInclude Include="CoW\WorldStep\WorldStepTestRig.h" />
     <ClInclude Include="CoW\WorldStep\WorldStepSaveRig.h" />
+    <ClInclude Include="..\..\CoW\Modules\Weather\WeatherModule.h" />
+    <ClInclude Include="..\..\CoW\Modules\Weather\WeatherMessages.h" />
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherStage.h" />
   </ItemGroup>
   <!-- Source Files -->
   <ItemGroup>
@@ -1392,6 +1395,11 @@
     <ClCompile Include="Draoi\TestWeatherIntegration.cpp" />
     <ClCompile Include="Draoi\TestWeatherGoldens.cpp" />
     <ClCompile Include="Draoi\TestWeatherEdges.cpp" />
+    <ClCompile Include="CoW\Weather\TestWeatherStage.cpp" />
+    <ClCompile Include="CoW\Weather\TestWeatherModule.cpp" />
+    <ClCompile Include="CoW\Weather\TestHydrologyInputsProviderHeader.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\Weather\WeatherStage.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\Weather\WeatherModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

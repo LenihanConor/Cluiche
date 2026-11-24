@@ -50,6 +50,8 @@
     <ClCompile Include="Shared\Debug\SimCommandSet.cpp" />
     <ClCompile Include="Shared\Debug\ParamCommandHelper.cpp" />
     <ClCompile Include="Shared\Debug\RecordsCommandHelper.cpp" />
+    <ClCompile Include="Shared\Weather\WeatherStage.cpp" />
+    <ClCompile Include="Modules\Weather\WeatherModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEnd\FrontEndModule.h" />
@@ -96,6 +98,13 @@
     <ClInclude Include="Shared\WorldStep\HoldGenerationToken.h" />
     <ClInclude Include="Shared\Debug\Testing\FakeSimCommandHost.h" />
     <ClInclude Include="Shared\Debug\RecordsCommandHelper.h" />
+    <ClInclude Include="Shared\Weather\HydrologyInputsProvider.h" />
+    <ClInclude Include="Shared\Weather\WeatherCause.h" />
+    <ClInclude Include="Shared\Weather\WeatherEntry.h" />
+    <ClInclude Include="Shared\Weather\WeatherLatch.h" />
+    <ClInclude Include="Shared\Weather\WeatherStage.h" />
+    <ClInclude Include="Modules\Weather\WeatherMessages.h" />
+    <ClInclude Include="Modules\Weather\WeatherModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

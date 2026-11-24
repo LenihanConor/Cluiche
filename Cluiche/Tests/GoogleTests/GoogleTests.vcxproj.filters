@@ -1825,6 +1825,15 @@
     <ClInclude Include="CoW\WorldStep\WorldStepSaveRig.h">
       <Filter>CoW\WorldStep</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\CoW\Modules\Weather\WeatherModule.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Modules\Weather\WeatherMessages.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherStage.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
@@ -3347,6 +3356,21 @@
     </ClCompile>
     <ClCompile Include="Draoi\TestWeatherEdges.cpp">
       <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherStage.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestHydrologyInputsProviderHeader.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\Weather\WeatherStage.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\Weather\WeatherModule.cpp">
+      <Filter>CoW</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -130,6 +130,12 @@
     <ClCompile Include="Shared\Debug\RecordsCommandHelper.cpp">
       <Filter>Debug</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\Weather\WeatherStage.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Weather\WeatherModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEnd\FrontEndModule.h">
@@ -263,6 +269,27 @@
     </ClInclude>
     <ClInclude Include="Shared\Debug\RecordsCommandHelper.h">
       <Filter>Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\HydrologyInputsProvider.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherCause.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherEntry.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherLatch.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherStage.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Weather\WeatherMessages.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Weather\WeatherModule.h">
+      <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
