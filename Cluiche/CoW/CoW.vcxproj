@@ -107,6 +107,7 @@
     <ClInclude Include="Modules\Weather\WeatherMessages.h" />
     <ClInclude Include="Modules\Weather\WeatherModule.h" />
     <ClInclude Include="Shared\Weather\WeatherTerrainBuilder.h" />
+    <ClInclude Include="Shared\Weather\BiomeSeasonalBaseline.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

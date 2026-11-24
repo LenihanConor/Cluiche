@@ -4,6 +4,8 @@
 #pragma once
 
 #include <DraoiHexWorldWeather/WeatherSimulation.h>
+#include <Shared/Weather/BiomeSeasonalBaseline.h>
+#include <Shared/Weather/HydrologyInputsProvider.h>
 #include <Shared/Weather/WeatherCause.h>
 #include <Shared/Weather/WeatherEntry.h>
 #include <Shared/Weather/WeatherLatch.h>
@@ -64,6 +66,19 @@ public:
     void RunStep(Draoi::HexWorld::Weather::WeatherSimulation& working, const WeatherLatch& latch,
                  Dia::ParallelExecutor::IParallelExecutor& executor) override;
     void PublishCommit(const Draoi::HexWorld::Weather::WeatherSimulation& committed, uint32_t stepDay) override;
+    void CaptureSim(Draoi::HexWorld::Weather::WeatherSimulation& working, WeatherLatch& latch) override;
+    void CommitSim(Draoi::HexWorld::Weather::WeatherSimulation& sim, uint32_t stepDay) override;
+
+    // Task 4 swaps this for a ParamBinding snapshot; until then a copy of the current parameters.
+    void SnapshotParameters(Draoi::HexWorld::Weather::WeatherParameters& out) const { out = params; }
+
+    IBiomeSeasonalBaseline* baselineProvider = nullptr;
+    IHydrologyInputsProvider* hydrologyProvider = nullptr;
+
+    // Seams the stage wires: health cause set/clear and the WeatherUpdated publisher (week, season).
+    std::function<void(const char*)> reportDegraded;
+    std::function<void()> clearDegraded;
+    std::function<void(uint64_t, Draoi::HexWorld::Weather::Season)> publishWeather;
 
     // SimPU: the input for a revision becomes current (older ones are dropped beyond a short history), or none is.
     void Publish(uint32_t revision, std::shared_ptr<const SpinUpInput> input);
@@ -79,6 +94,12 @@ public:
 
 private:
     std::shared_ptr<const SpinUpInput> Find(uint32_t revision) const;
+
+    void BuildBaseline(const Draoi::HexWorld::Weather::WeatherSimulation& sim, WeatherLatch& latch);
+
+    std::vector<bool> mClampLogged;        // [biome * 4 + season], sized by registry Count()
+    bool mFallbackLogged = false;
+    bool mBaselineDegraded = false;
 
     mutable std::mutex mLock;
     std::vector<std::pair<uint32_t, std::shared_ptr<const SpinUpInput>>> mInputs;
@@ -110,6 +131,11 @@ public:
     void SetParameters(const Draoi::HexWorld::Weather::WeatherParameters& params) { hooks.params = params; }
     void SetRegistry(const Draoi::HexWorld::BiomeRegistry* registry) { hooks.registry = registry; }
     void SetSpinupWeeks(uint32_t weeks) { hooks.spinupWeeks = weeks; }
+    // Providers are borrowed (null = none); read only inside Capture on SimPU.
+    void SetBaselineProvider(IBiomeSeasonalBaseline* provider) { hooks.baselineProvider = provider; }
+    void SetHydrologyProvider(IHydrologyInputsProvider* provider) { hooks.hydrologyProvider = provider; }
+    // Called after commit with the step's week and season; the module posts WeatherUpdated on the bus.
+    void SetPublishSeam(std::function<void(uint64_t, Draoi::HexWorld::Weather::Season)> fn) { hooks.publishWeather = std::move(fn); }
     void SetSpinUpWeekObserver(std::function<void(uint32_t)> observer) { hooks.onSpinUpWeek = std::move(observer); }
 
     // A world revision was announced: copies the world into a SpinUpInput and starts the spin-up. SimPU only.

@@ -83,6 +83,11 @@ public:
         virtual void ApplyEntry(TSim& working, TLatch& latch, const TEntry& entry) = 0;
         virtual void RunStep(TSim& working, const TLatch& latch, Dia::ParallelExecutor::IParallelExecutor& executor) = 0;
         virtual void PublishCommit(const TSim& committed, uint32_t stepDay) = 0;
+        // Optional mutating companions (default no-op, so existing systems are unaffected). CaptureSim runs in Capture
+        // right after a successful LatchInputs, with the working sim; CommitSim runs in Commit just before PublishCommit
+        // (non-discarded steps only), with the sim that is about to become the committed one.
+        virtual void CaptureSim(TSim& /*working*/, TLatch& /*latch*/) {}
+        virtual void CommitSim(TSim& /*sim*/, uint32_t /*stepDay*/) {}
         virtual void OnStartExtra() {}
         virtual void OnStopExtra() {}
         // Restore (step 3): the system's own count check (e.g. basin_count) against the announced world.
@@ -274,6 +279,22 @@ public:
         return false;
     }
 
+    // A system's own Degraded cause (e.g. a missing input provider). Never overrides Failing; ClearDegradedCause only
+    // recovers when the base has no Degraded cause of its own pending (queue full, params changed).
+    void ReportDegradedCause(const char* cause)
+    {
+        const Dia::Observation::Health::Health now = mHealth.Report();
+        const Dia::Core::StringCRC crc(cause);
+        if (now.status == Dia::Observation::Health::HealthStatus::kFailing) { return; }
+        if (now.status == Dia::Observation::Health::HealthStatus::kDegraded && now.reason == crc) { return; }
+        mHealth.SetDegraded(crc);
+    }
+    void ClearDegradedCause()
+    {
+        if (!mParamsDegraded && !mQueueDegraded
+            && mHealth.Report().status == Dia::Observation::Health::HealthStatus::kDegraded) { mHealth.SetOK(); }
+    }
+
     // ----- IStepStage ------------------------------------------------------------------------------
 
     bool IsReady() const override
@@ -320,6 +341,7 @@ public:
                 && mHealth.Report().status == Dia::Observation::Health::HealthStatus::kDegraded) { mHealth.SetOK(); }
         }
         if (mStepValid && !mHooks.LatchInputs(mLatch, key)) { mStepValid = false; }
+        if (mStepValid) { mHooks.CaptureSim(*mActive, mLatch); }
     }
 
     void Run(Dia::ParallelExecutor::IParallelExecutor& executor) override
@@ -344,6 +366,7 @@ public:
         else
         {
             if (mStepMsGauge != nullptr) { mStepMsGauge->Set(mLastStepMs); }
+            mHooks.CommitSim(*mActive, mCapturedDay);
             mHooks.PublishCommit(*mActive, mCapturedDay);
         }
         if (mDropAfterStep)

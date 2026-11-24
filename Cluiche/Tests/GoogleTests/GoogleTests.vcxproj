@@ -1404,6 +1404,7 @@
     <ClCompile Include="..\..\CoW\Modules\Weather\WeatherModule.cpp" />
     <ClCompile Include="CoW\Weather\TestWeatherSpinUp.cpp" />
     <ClCompile Include="..\..\CoW\Shared\Weather\WeatherTerrainBuilder.cpp" />
+    <ClCompile Include="CoW\Weather\TestWeatherSteps.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

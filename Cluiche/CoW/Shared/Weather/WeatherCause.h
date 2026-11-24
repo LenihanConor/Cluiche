@@ -27,6 +27,10 @@ inline const char* CauseText(CauseCode code)
     }
 }
 
+// Degraded (not Failing) causes reported through the stage's health reporter.
+constexpr const char* kCauseBaselineClamped = "baseline_clamped";     // a baseline provider value was outside [0, 1]
+constexpr const char* kCauseFallbackBaseline = "fallback_baseline";   // no baseline provider: the sim uses its table
+
 // Adapter for WorldStepStageBase::CauseTextFn (takes the raw uint32_t).
 inline const char* CauseTextRaw(uint32_t code) { return CauseText(static_cast<CauseCode>(code)); }
 

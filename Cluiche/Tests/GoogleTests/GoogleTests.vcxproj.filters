@@ -3387,5 +3387,8 @@
     <ClCompile Include="..\..\CoW\Shared\Weather\WeatherTerrainBuilder.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherSteps.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

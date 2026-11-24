@@ -86,22 +86,126 @@ bool WeatherHooks::InitialiseSim(WeatherSimulation& sim, const WorldStep::WorldV
     return true;
 }
 
-// Tasks 3-4.
-bool WeatherHooks::LatchInputs(WeatherLatch&, Dia::DeferredStep::StepKey)
+// Runs inside the base's Capture on SimPU after the queue has been applied. Everything Run will read is latched here
+// (or in CaptureSim) so the worker never touches a provider, the parameters or the queue.
+bool WeatherHooks::LatchInputs(WeatherLatch& latch, Dia::DeferredStep::StepKey key)
 {
+    const uint64_t day = static_cast<uint32_t>(key);
+    latch.season = static_cast<Season>(SeasonOf(day) % kSeasonsPerYear);
+    latch.weekOfYear = static_cast<uint32_t>(WeekOf(day) % kWeeksPerYear);
+    if (registry == nullptr)
+    {
+        DIA_LOG_ERROR(kLogChannel, "WTH: step for day %u has no biome registry, step invalid", static_cast<unsigned>(day));
+        return false;
+    }
+    SnapshotParameters(latch.params);
+    latch.hydro.present = false;
+    if (hydrologyProvider != nullptr && !hydrologyProvider->GetInputs(latch.hydro)) { latch.hydro.present = false; }
+    latch.influences = Draoi::HexWorld::Weather::InfluenceSnapshot();   // Features 7-9 not built
     return true;
+}
+
+// Per-cell baseline for the latched season from the provider, one lookup per biome, each clamped to [0, 1].
+void WeatherHooks::BuildBaseline(const WeatherSimulation& sim, WeatherLatch& latch)
+{
+    const uint32_t biomeCount = registry->Count();
+    const uint32_t seasonIndex = static_cast<uint32_t>(latch.season);
+    if (mClampLogged.size() != static_cast<size_t>(biomeCount) * kSeasonsPerYear)
+    {
+        mClampLogged.assign(static_cast<size_t>(biomeCount) * kSeasonsPerYear, false);
+    }
+    std::vector<float> perBiome(biomeCount);
+    bool clamped = false;
+    for (uint32_t b = 0; b < biomeCount; ++b)
+    {
+        float v = baselineProvider->GetBaseline(b, latch.season);
+        const bool bad = !(v >= 0.0f && v <= 1.0f);   // also catches NaN
+        if (bad)
+        {
+            clamped = true;
+            const size_t slot = static_cast<size_t>(b) * kSeasonsPerYear + seasonIndex;
+            if (!mClampLogged[slot])
+            {
+                mClampLogged[slot] = true;
+                DIA_LOG_ERROR(kLogChannel, "WTH: baseline for biome %u season %u is %f, clamped to [0, 1]",
+                              static_cast<unsigned>(b), static_cast<unsigned>(seasonIndex), static_cast<double>(v));
+            }
+            v = (v != v) ? 0.5f : (v < 0.0f ? 0.0f : 1.0f);
+        }
+        perBiome[b] = v;
+    }
+    const auto& biome = sim.Terrain().biome;
+    const uint32_t n = biome.Size();
+    latch.baseline.temperature.RemoveAll();
+    if (latch.baseline.temperature.Capacity() < n) { latch.baseline.temperature.Reserve(n); }
+    for (uint32_t i = 0; i < n; ++i)
+    {
+        const uint32_t b = static_cast<uint32_t>(biome[i]);
+        latch.baseline.temperature.Add(b < biomeCount ? perBiome[b] : 0.5f);
+    }
+    latch.hasBaseline = true;
+    if (clamped)
+    {
+        mBaselineDegraded = true;
+        if (reportDegraded) { reportDegraded(kCauseBaselineClamped); }
+    }
+    else if (mBaselineDegraded)
+    {
+        mBaselineDegraded = false;
+        if (clearDegraded) { clearDegraded(); }
+    }
+}
+
+void WeatherHooks::CaptureSim(WeatherSimulation& working, WeatherLatch& latch)
+{
+    const Draoi::HexWorld::Weather::SeasonalBaselineInput* baseline = nullptr;
+    if (baselineProvider != nullptr)
+    {
+        mFallbackLogged = false;
+        BuildBaseline(working, latch);
+        baseline = &latch.baseline;
+    }
+    else
+    {
+        latch.hasBaseline = false;
+        if (!mFallbackLogged)
+        {
+            mFallbackLogged = true;
+            DIA_LOG_INFO(kLogChannel, "WTH: no biome baseline provider set, using the sidecar baseline table");
+        }
+        mBaselineDegraded = true;
+        if (reportDegraded) { reportDegraded(kCauseFallbackBaseline); }
+    }
+    working.Capture(latch.params, latch.season, latch.weekOfYear, *registry, baseline, latch.hydro, latch.influences);
 }
 
 void WeatherHooks::ApplyEntry(WeatherSimulation&, WeatherLatch&, const WeatherEntry&) {}
 
-void WeatherHooks::RunStep(WeatherSimulation&, const WeatherLatch&, Dia::ParallelExecutor::IParallelExecutor&) {}
+void WeatherHooks::RunStep(WeatherSimulation& working, const WeatherLatch&, Dia::ParallelExecutor::IParallelExecutor& executor)
+{
+    working.Run(executor);
+}
 
-void WeatherHooks::PublishCommit(const WeatherSimulation&, uint32_t) {}
+void WeatherHooks::CommitSim(WeatherSimulation& sim, uint32_t stepDay)
+{
+    sim.Commit();
+    sim.SetCommittedWeek(WeekOf(stepDay));
+}
+
+void WeatherHooks::PublishCommit(const WeatherSimulation&, uint32_t stepDay)
+{
+    if (publishWeather)
+    {
+        publishWeather(WeekOf(stepDay), static_cast<Season>(SeasonOf(stepDay) % kSeasonsPerYear));
+    }
+}
 
 WeatherStage::WeatherStage()
     : Detail::HooksHolder()
     , WeatherStageBase(hooks, World::kWeather, kLogChannel, &CauseTextRaw)
 {
+    hooks.reportDegraded = [this](const char* cause) { ReportDegradedCause(cause); };
+    hooks.clearDegraded = [this]() { ClearDegradedCause(); };
 }
 
 void WeatherStage::OnWorldComplete(uint32_t revision)

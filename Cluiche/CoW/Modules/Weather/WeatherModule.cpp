@@ -3,6 +3,7 @@
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <Modules/Weather/WeatherMessages.h>
 #include <Shared/Weather/WeatherTerrainBuilder.h>
 #include <Shared/World/WorldSimNames.h>
 
@@ -94,6 +95,13 @@ Dia::ApplicationFlow::StartResult WeatherModule::DoStart()
     {
         bus->RegisterType<WorldGenerationComplete, 4>();
         bus->RegisterType<WorldGenerationFailed, 4>();
+        bus->RegisterType<WeatherUpdated, 4>();
+        mStage.SetPublishSeam([bus](uint64_t week, Draoi::HexWorld::Weather::Season season) {
+            WeatherUpdated msg;
+            msg.week = week;
+            msg.season = season;
+            bus->Broadcast(msg);
+        });
         mSubscriptions[0] = bus->Subscribe<WorldGenerationComplete>(
             GetInstanceId(), [this](const WorldGenerationComplete& msg) { OnWorldComplete(msg); });
         mSubscriptions[1] = bus->Subscribe<WorldGenerationFailed>(
@@ -144,6 +152,7 @@ Dia::ApplicationFlow::StopResult WeatherModule::DoStop()
     mRegistered = false;
     mWorldStep = nullptr;
     Unsubscribe();
+    mStage.SetPublishSeam(nullptr);
     mStage.Stop();
     mStage.SetWorldSource(nullptr);
     mStage.SetGenerationHold(nullptr);

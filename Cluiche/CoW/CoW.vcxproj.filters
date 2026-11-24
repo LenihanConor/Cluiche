@@ -297,5 +297,8 @@
     <ClInclude Include="Shared\Weather\WeatherTerrainBuilder.h">
       <Filter>Shared</Filter>
     </ClInclude>
+    <ClInclude Include="Shared\Weather\BiomeSeasonalBaseline.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
