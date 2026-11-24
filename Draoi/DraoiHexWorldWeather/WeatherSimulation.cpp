@@ -1,6 +1,7 @@
 #include <DraoiHexWorldWeather/WeatherSimulation.h>
 
 #include <DiaGeometry2D/Grid/HexTopology.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DraoiHexWorld/BiomeRegistry.h>
 
 namespace Draoi {
@@ -98,14 +99,28 @@ void WeatherSimulation::SeedFields(Season season, const WeatherTerrain& terrain,
 bool WeatherSimulation::Initialise(const WeatherTerrain& terrain, const WeatherParameters& params,
                                    const BiomeRegistry& registry, const SeasonalBaselineInput* baseline)
 {
-    if (!terrain.IsConsistent()) return false;
+    if (!terrain.IsConsistent())
+    {
+        DIA_LOG_ERROR("Weather", "WeatherSimulation: Initialise rejected, terrain arrays are inconsistent or empty (%ux%u)",
+                      terrain.width, terrain.height);
+        return false;
+    }
 
     const uint32_t n = terrain.width * terrain.height;
     bool anyWater = false;
     for (uint32_t i = 0; i < n && !anyWater; ++i) anyWater = (terrain.waterSource[i] != WaterSource::None);
-    if (!anyWater) return false;   // EC-01
+    if (!anyWater)   // EC-01
+    {
+        DIA_LOG_ERROR("Weather", "WeatherSimulation: Initialise rejected, no water-source cell in %u cells (EC-01)", n);
+        return false;
+    }
 
-    if (baseline != nullptr && baseline->temperature.Size() != n) return false;
+    if (baseline != nullptr && baseline->temperature.Size() != n)
+    {
+        DIA_LOG_ERROR("Weather", "WeatherSimulation: Initialise rejected, baseline has %u entries for %u cells",
+                      baseline->temperature.Size(), n);
+        return false;
+    }
 
     // Every failure path is above, so from here on the call cannot fail and the members can be built in place:
     // a rejected call has already returned with the previous state untouched.
@@ -176,7 +191,12 @@ void WeatherSimulation::BuildGridTables()
 
 bool WeatherSimulation::SetOrographicFactor(const Dia::Core::Containers::DynamicArray<float>& factor)
 {
-    if (!mInitialised || factor.Size() != mPendingOrographic.Size()) return false;
+    if (!mInitialised || factor.Size() != mPendingOrographic.Size())
+    {
+        DIA_LOG_WARNING("Weather", "WeatherSimulation: SetOrographicFactor rejected (initialised %d, %u entries for %u cells)",
+                        mInitialised ? 1 : 0, factor.Size(), mPendingOrographic.Size());
+        return false;
+    }
     CopyInto(mPendingOrographic, factor);
     return true;
 }
@@ -185,7 +205,11 @@ void WeatherSimulation::Capture(const WeatherParameters& params, Season season, 
                                 const BiomeRegistry& registry, const SeasonalBaselineInput* baseline,
                                 const HydrologyInputs& hydro, const InfluenceSnapshot& influences)
 {
-    if (!mInitialised) return;
+    if (!mInitialised)
+    {
+        DIA_LOG_WARNING("Weather", "WeatherSimulation: Capture ignored, not initialised");
+        return;
+    }
     const uint32_t n = mTables.cellCount;
 
     CopyFields(mBuffers[1 - mCommittedIndex], mBuffers[mCommittedIndex]);
@@ -199,6 +223,9 @@ void WeatherSimulation::Capture(const WeatherParameters& params, Season season, 
 
     // Baseline: per-cell input wins (when the right length), else the table row by biome.
     const bool useInput = (baseline != nullptr && baseline->temperature.Size() == n);
+    if (baseline != nullptr && !useInput)
+        DIA_LOG_WARNING("Weather", "WeatherSimulation: Capture ignored per-cell baseline (%u entries for %u cells), using the table",
+                        baseline->temperature.Size(), n);
     const BaselineResolver resolver(season, params, registry);
     for (uint32_t c = 0; c < n; ++c)
         mCaptured.seasonBaseline[c] = useInput ? baseline->temperature[c] : resolver.For(mTerrain.biome[c]);
@@ -217,6 +244,8 @@ void WeatherSimulation::Capture(const WeatherParameters& params, Season season, 
     HydrologyInputs& h = mCaptured.hydrology;
     const bool hydroOk = hydro.present && hydro.surfaceWetness.Size() == n && hydro.openWater.Size() == n
                       && hydro.glacierEligible.Size() == n;
+    if (hydro.present && !hydroOk)
+        DIA_LOG_WARNING("Weather", "WeatherSimulation: Capture treats hydrology as absent, array sizes do not match %u cells", n);
     h.present = hydroOk;
     h.glacierCheckWeek = hydro.glacierCheckWeek;
     h.glacierSnowFloor = hydro.glacierSnowFloor;
@@ -252,7 +281,11 @@ void WeatherSimulation::LatchClimate(uint64_t)
 
 void WeatherSimulation::Run(Dia::ParallelExecutor::IParallelExecutor& executor)
 {
-    if (!mInitialised) return;
+    if (!mInitialised)
+    {
+        DIA_LOG_WARNING("Weather", "WeatherSimulation: Run ignored, not initialised");
+        return;
+    }
     PassContext context;
     context.terrain = &mTerrain;
     context.tables = &mTables;
@@ -277,7 +310,11 @@ void WeatherSimulation::Run(Dia::ParallelExecutor::IParallelExecutor& executor)
 
 void WeatherSimulation::Commit()
 {
-    if (!mInitialised) return;
+    if (!mInitialised)
+    {
+        DIA_LOG_WARNING("Weather", "WeatherSimulation: Commit ignored, not initialised");
+        return;
+    }
     mCommittedIndex = 1 - mCommittedIndex;
     ++mCommittedWeek;
     mCommittedTotals = mTotals;
@@ -309,14 +346,31 @@ void WeatherSimulation::Step(const WeatherParameters& params, Season season, uin
 
 CellSetHandle WeatherSimulation::RegisterCellSet(const Dia::Core::Containers::DynamicArray<uint32_t>& sortedCells)
 {
-    if (!mInitialised || mCellSets.used >= kMaxCellSets) return kNoCellSet;
+    if (!mInitialised || mCellSets.used >= kMaxCellSets)
+    {
+        DIA_LOG_WARNING("Weather", "WeatherSimulation: RegisterCellSet rejected (initialised %d, %u of %u sets used)",
+                        mInitialised ? 1 : 0, mCellSets.used, kMaxCellSets);
+        return kNoCellSet;
+    }
     const uint32_t n = mTables.cellCount;
     const uint32_t count = sortedCells.Size();
-    if (count == 0 || count > n) return kNoCellSet;
+    if (count == 0 || count > n)
+    {
+        DIA_LOG_WARNING("Weather", "WeatherSimulation: RegisterCellSet rejected, %u cells for a %u-cell grid", count, n);
+        return kNoCellSet;
+    }
     for (uint32_t i = 0; i < count; ++i)
     {
-        if (sortedCells[i] >= n) return kNoCellSet;
-        if (i > 0 && sortedCells[i] <= sortedCells[i - 1]) return kNoCellSet;   // unsorted or duplicate
+        if (sortedCells[i] >= n)
+        {
+            DIA_LOG_WARNING("Weather", "WeatherSimulation: RegisterCellSet rejected, cell %u out of range (%u cells)", sortedCells[i], n);
+            return kNoCellSet;
+        }
+        if (i > 0 && sortedCells[i] <= sortedCells[i - 1])   // unsorted or duplicate
+        {
+            DIA_LOG_WARNING("Weather", "WeatherSimulation: RegisterCellSet rejected, list unsorted or duplicated at index %u", i);
+            return kNoCellSet;
+        }
     }
     const uint32_t handle = mCellSets.used;
     for (uint32_t i = 0; i < count; ++i) mCellSets.cells[handle * n + i] = sortedCells[i];
@@ -337,16 +391,32 @@ void WeatherSimulation::ClearCellSets()
 
 bool WeatherSimulation::AddForcing(const WeatherForcing& forcing)
 {
-    if (!mInitialised || mForcings.Size() >= kMaxForcings) return false;
+    if (!mInitialised || mForcings.Size() >= kMaxForcings)
+    {
+        DIA_LOG_WARNING("Weather", "WeatherSimulation: AddForcing rejected (initialised %d, %u of %u forcings active)",
+                        mInitialised ? 1 : 0, mForcings.Size(), kMaxForcings);
+        return false;
+    }
     if (forcing.cellSet == kNoCellSet)
     {
-        if (forcing.cell >= mTables.cellCount) return false;
+        if (forcing.cell >= mTables.cellCount)
+        {
+            DIA_LOG_WARNING("Weather", "WeatherSimulation: AddForcing rejected, cell %u out of range (%u cells)", forcing.cell, mTables.cellCount);
+            return false;
+        }
     }
     else if (forcing.cellSet >= mCellSets.used)
     {
+        DIA_LOG_WARNING("Weather", "WeatherSimulation: AddForcing rejected, cell set %u not registered (%u sets)",
+                        static_cast<unsigned>(forcing.cellSet), mCellSets.used);
         return false;
     }
-    if (forcing.kind != ForcingKind::WindOverride && forcing.weeksRemaining == 0) return false;
+    if (forcing.kind != ForcingKind::WindOverride && forcing.weeksRemaining == 0)
+    {
+        DIA_LOG_WARNING("Weather", "WeatherSimulation: AddForcing rejected, kind %u needs weeksRemaining >= 1",
+                        static_cast<unsigned>(forcing.kind));
+        return false;
+    }
     mForcings.Add(forcing);
     return true;
 }
