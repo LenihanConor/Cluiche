@@ -70,7 +70,7 @@ Feature specs for extraction order step (e) (order: Strata -> core -> terrain ->
 - @docs/specs/features/draoi/extract-draoigamespeed.md (Approved 2026-11-21)
 
 ## Status
-Core extraction Done 2026-11-21: `Draoi/DraoiHexWorld` (namespace `Draoi::HexWorld`) exists. The terrain and GameSpeed extraction specs are Approved; see the extraction specs above for their status. The step-by-step log is in "Backlog status log" below.
+Extractions Done: core (2026-11-21), terrain (2026-11-22), GameSpeed (2026-11-23), plus the kit's Draoi half (2026-11-23) and the Draoi tooling (2026-11-23). **The extraction backlog row was closed 2026-11-23.** What remains lives elsewhere: the A4, A1, A3 and A5 sims build in Draoi packages under their own backlog rows (each system spec's "Draoi layer amendment (2026-11-21)"), and the terrain test helper follow-up is a Task row in BACKLOG.md. The step-by-step log is in "Backlog status log" below.
 
 ## Backlog status log (moved 2026-11-22)
 

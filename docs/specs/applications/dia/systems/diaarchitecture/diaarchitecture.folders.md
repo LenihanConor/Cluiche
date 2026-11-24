@@ -17,10 +17,10 @@ Current assignment of every Dia `.vcxproj` to a numbered Visual Studio solution 
 `DiaGeometry2D` `DiaGeometry3D` `DiaMaths`
 
 ### 1.1-Services
-`DiaAPI` `DiaCaptureTest` `DiaDebugProtocol` `DiaDebugServer` `DiaImGui` `DiaMailbox` `DiaMessageBus` `DiaObservation` `DiaPicking` `DiaPython` `DiaSaveGame` `DiaSerializer` `DiaStateMachine` `DiaStreams` `DiaWebSocket`
+`DiaAPI` `DiaDebugProtocol` `DiaDebugServer` `DiaDeferredStep` `DiaImGui` `DiaMailbox` `DiaMessageBus` `DiaObservation` `DiaPicking` `DiaPython` `DiaSaveGame` `DiaSerializer` `DiaStateMachine` `DiaStreams` `DiaWebSocket`
 
 ### 1.2-Application
-`DiaApplicationFlow` `DiaAutomation` `DiaCellHistory` `DiaCellLayers` `DiaDeferredStep` `DiaEditor` `DiaGame` `DiaSimTime` `DiaValueSchema`
+`DiaApplicationFlow` `DiaAutomation` `DiaEditor` `DiaGame`
 
 ### 1.2-Platform
 `DiaGeometry2DPicking` `DiaInput` `DiaSDL` `DiaWindow`
@@ -30,7 +30,7 @@ Current assignment of every Dia `.vcxproj` to a numbered Visual Studio solution 
 ## Assets
 
 ### 2.0-Assets
-`DiaAsset` `DiaAssetCatalogue` `DiaAssetRuntime` `DiaEntity` `DiaMesh3D`
+`DiaAsset` `DiaAssetCatalogue` `DiaAssetRuntime` `DiaEntity` `DiaMesh3D` `DiaValueSchema`
 
 ---
 
@@ -40,13 +40,13 @@ Current assignment of every Dia `.vcxproj` to a numbered Visual Studio solution 
 `DiaAnimation2D` `DiaIK2D` `DiaRig2D`
 
 ### 3.0-Gameplay
-`DiaAIBudget` `DiaAICallout` `DiaAttribute` `DiaBehaviourTree` `DiaBlackboard` `DiaCondition` `DiaEconomy` `DiaEntitySpatial` `DiaEntitySpawner` `DiaFlowField` `DiaGridVisibility` `DiaHTN` `DiaObjective` `DiaOrder` `DiaPathfinding` `DiaRules` `DiaScalarField` `DiaSensor` `DiaSteering` `DiaTriggerScript` `DiaUtilityAI`
+`DiaAIBudget` `DiaAICallout` `DiaAttribute` `DiaBehaviourTree` `DiaBlackboard` `DiaCondition` `DiaEconomy` `DiaEntitySpatial` `DiaEntitySpawner` `DiaFlowField` `DiaGridVisibility` `DiaHTN` `DiaObjective` `DiaOrder` `DiaPathfinding` `DiaRules` `DiaScalarField` `DiaSensor` `DiaSimTime` `DiaSteering` `DiaTriggerScript` `DiaUtilityAI`
 
 ### 3.0-Physics
 `DiaRigidBody2D` `DiaSoftBody2D`
 
 ### 3.0-Visual
-`DiaBgfx` `DiaBgfx3D` `DiaCamera2D` `DiaCamera3D` `DiaGraphics` `DiaGraphics3D` `DiaLighting2D` `DiaLighting3D` `DiaScene2D` `DiaUI` `DiaUICEF` `DiaUIUltralight`
+`DiaBgfx` `DiaBgfx3D` `DiaCamera2D` `DiaCamera3D` `DiaCellHistory` `DiaCellLayers` `DiaGraphics` `DiaGraphics3D` `DiaLighting2D` `DiaLighting3D` `DiaScene2D` `DiaUI` `DiaUICEF` `DiaUIUltralight`
 
 ---
 
@@ -88,6 +88,16 @@ Current assignment of every Dia `.vcxproj` to a numbered Visual Studio solution 
 
 ### Draoi
 `DraoiGameSpeed` `DraoiHexWorld` `DraoiHexWorldTerrain`
+
+---
+
+## Unassigned (no module doc / recognized layer yet)
+
+These stay in their current `.sln` folder until a module doc with a recognized `layer:` value exists. `dia check sln-sync` will move them automatically once it does.
+
+| Project | Current folder |
+|---------|-----------------|
+| DiaCaptureTest | 1.1-Services |
 
 ---
 

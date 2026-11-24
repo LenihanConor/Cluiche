@@ -1,7 +1,7 @@
 # Plan: World Step (system)
 
 **Spec:** @docs/specs/applications/cow/systems/worldstep/worldstep.md
-**Status:** Not Started
+**Status:** In Progress (rows 1-5 Done; row 6, the weather-stack close-out, waits on A4, A5 and S-2.5)
 
 System-level tracker. Each row is a feature spec with its own plan; the detailed tasks live there. The three weather systems share one cross-system order: see `a4-weather.plan.md` and `s25-weatherpatterns.plan.md`.
 
