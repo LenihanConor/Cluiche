@@ -72,7 +72,9 @@ public:
     const WeatherHandoff&     GetHandoff() const { return mHandoff; }
     // Valid from Capture to Commit; the buffers are allocated once at Initialise.
     const WeatherFields&      GetWorkingFields() const { return mBuffers[1 - mCommittedIndex]; }
-    const WeatherGridTotals&  GetGridTotals() const { return mTotals; }
+    // Totals of the last committed step (latched by Commit); the working totals are valid from Run to Commit.
+    const WeatherGridTotals&  GetGridTotals() const { return mCommittedTotals; }
+    const WeatherGridTotals&  GetWorkingTotals() const { return mTotals; }
     const WeatherStepProfile& GetLastProfile() const { return mProfile; }
     const GridTables&         Tables() const { return mTables; }
     const Dia::Core::Containers::DynamicArray<uint32_t>& Neighbours() const { return mTables.neighbours; }
@@ -98,7 +100,8 @@ private:
     CellSetStore   mCellSets;
     WesterlyBand   mPendingBand;
     Dia::Core::Containers::DynamicArray<float> mPendingOrographic;
-    WeatherGridTotals  mTotals;
+    WeatherGridTotals  mTotals;            // working, written by Run
+    WeatherGridTotals  mCommittedTotals;   // latched from mTotals by Commit
     WeatherStepProfile mProfile;
 };
 

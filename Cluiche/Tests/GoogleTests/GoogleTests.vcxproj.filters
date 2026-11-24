@@ -3336,5 +3336,8 @@
     <ClCompile Include="Draoi\TestWeatherOrographic.cpp">
       <Filter>Draoi</Filter>
     </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherPrecipMelt.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

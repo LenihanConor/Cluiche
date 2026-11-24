@@ -334,6 +334,122 @@ void RunOrographicPass(PassContext& context, Dia::ParallelExecutor::IParallelExe
     });
 }
 
+// Pass 8 Precipitation (GDD s10). The GDD triggers on moisture above rain_threshold AND temperature below
+// condensation_temp. RouteCondensate adds the amount to `precipitation` (exactly once) and splits snow and rain.
+void RunPrecipitationPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
+{
+    DIA_PROFILE_SCOPE("Weather.Pass8.Precipitation", kWeatherCategory);
+    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    {
+        const WeatherParameters& p = context.inputs->params;
+        WeatherFields& f = *context.fields;
+        for (uint32_t c = begin; c < end; ++c)
+        {
+            if (f.moisture[c] > p.rainThreshold && f.temperature[c] < p.condensationTemp)
+            {
+                float amount = (f.moisture[c] - p.rainThreshold) * p.precipRate;   // CH-09: never negative
+                if (!(amount > 0.0f)) amount = 0.0f;
+                f.moisture[c] -= amount;
+                RouteCondensate(context, c, amount);
+                f.cloudCover[c] = f.moisture[c] * 0.8f;   // clouds dissipate as rain falls
+            }
+        }
+        // Hook D (rain forcing) is added by task 9: one-week rain adds to precipitation and routes the same way
+        // through RouteCondensate, without consuming moisture.
+    });
+}
+
+// Pass 9 Snow melt (GDD s11.2) then the firn hand-off (GDD s11.3). The firn constants come from the latched hydrology.
+void RunSnowMeltPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
+{
+    DIA_PROFILE_SCOPE("Weather.Pass9.SnowMelt", kWeatherCategory);
+    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    {
+        const CapturedInputs& in = *context.inputs;
+        const WeatherParameters& p = in.params;
+        const HydrologyInputs& h = in.hydrology;
+        WeatherFields& f = *context.fields;
+        const bool firnWeek = h.present && in.weekOfYear == h.glacierCheckWeek;
+        for (uint32_t c = begin; c < end; ++c)
+        {
+            if (f.snowPack[c] > 0.0f && f.temperature[c] > p.meltThreshold)
+            {
+                float rate = (f.temperature[c] - p.meltThreshold) * p.meltRate;
+                if (rate > 1.0f) rate = 1.0f;
+                const float melt = f.snowPack[c] * rate;
+                f.snowPack[c] -= melt;
+                f.waterToGround[c] += melt;
+                const float cooled = f.temperature[c] - melt * p.meltCooling;
+                f.temperature[c] = cooled > 0.0f ? cooled : 0.0f;
+            }
+            if (firnWeek && c < h.glacierEligible.Size() && h.glacierEligible[c] != 0)
+            {
+                const float firn = f.snowPack[c] - h.glacierSnowFloor;
+                if (firn > 0.0f)
+                {
+                    f.snowPack[c] -= firn;
+                    context.handoff->glacierInput[c] += firn;
+                }
+            }
+        }
+    });
+}
+
+namespace
+{
+    // NaN maps to 0, which lies inside every range used here.
+    inline float ClampRange(float v, float lo, float hi)
+    {
+        if (v != v) return 0.0f;
+        return v < lo ? lo : (v > hi ? hi : v);
+    }
+}
+
+// Finish (GDD s14, EC-20): clamp every field to its range, then the serial totals pass in cell order.
+void RunFinishPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
+{
+    DIA_PROFILE_SCOPE("Weather.Finish", kWeatherCategory);
+    {
+        DIA_PROFILE_SCOPE("Weather.Finish.Clamp", kWeatherCategory);
+        executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+        {
+            WeatherFields& f = *context.fields;
+            WeatherHandoff& h = *context.handoff;
+            for (uint32_t c = begin; c < end; ++c)
+            {
+                f.moisture[c]      = ClampRange(f.moisture[c], 0.0f, 1.0f);
+                f.temperature[c]   = ClampRange(f.temperature[c], 0.0f, 1.0f);
+                f.pressure[c]      = ClampRange(f.pressure[c], 0.0f, 1.0f);
+                f.windSpeed[c]     = ClampRange(f.windSpeed[c], 0.0f, 1.0f);
+                f.cloudCover[c]    = ClampRange(f.cloudCover[c], 0.0f, 1.0f);
+                f.precipitation[c] = ClampRange(f.precipitation[c], 0.0f, 1.0f);
+                f.snowPack[c]      = ClampRange(f.snowPack[c], 0.0f, 1.0f);
+                f.waterToGround[c] = ClampRange(f.waterToGround[c], 0.0f, 2.0f);
+                h.glacierInput[c]  = ClampRange(h.glacierInput[c], 0.0f, 2.0f);
+                f.pressureAnomaly[c] = ClampRange(f.pressureAnomaly[c], -0.5f, 0.5f);
+                const float w = f.windDirection[c];
+                f.windDirection[c] = (w - w == 0.0f) ? Wrap2Pi(w) : 0.0f;   // non-finite -> 0
+            }
+        });
+    }
+
+    // Serial totals, cell order, calling thread: bit-identical at any range count.
+    WeatherGridTotals& totals = *context.totals;
+    const WeatherFields& f = *context.fields;
+    const uint32_t n = context.tables->cellCount;
+    double moistureSum = 0.0, snowSum = 0.0;
+    uint32_t raining = 0;
+    for (uint32_t c = 0; c < n; ++c)
+    {
+        moistureSum += static_cast<double>(f.moisture[c]);
+        snowSum += static_cast<double>(f.snowPack[c]);
+        if (f.precipitation[c] > 0.0f) ++raining;
+    }
+    totals.meanMoisture = n > 0 ? moistureSum / static_cast<double>(n) : 0.0;
+    totals.totalSnowPack = snowSum;
+    totals.rainingCellCount = raining;
+}
+
 void RunPipelineUntil(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor, PassId lastPass)
 {
     // Pass 0 (Influence) is skipped until Feature 7.
@@ -357,6 +473,12 @@ void RunPipelineUntil(PassContext& context, Dia::ParallelExecutor::IParallelExec
     RunHeatGatherPass(context, executor);
     if (lastPass < PassId::Orographic) return;
     RunOrographicPass(context, executor);
+    if (lastPass < PassId::Precipitation) return;
+    RunPrecipitationPass(context, executor);
+    if (lastPass < PassId::SnowMelt) return;
+    RunSnowMeltPass(context, executor);
+    if (lastPass < PassId::Finish) return;
+    RunFinishPass(context, executor);
 }
 
 void RunPipeline(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)

@@ -45,7 +45,7 @@ namespace
             ctx.inputs = &sim.Captured();
             ctx.fields = &Working();
             ctx.handoff = const_cast<WeatherHandoff*>(&sim.GetHandoff());
-            ctx.totals = const_cast<WeatherGridTotals*>(&sim.GetGridTotals());
+            ctx.totals = const_cast<WeatherGridTotals*>(&sim.GetWorkingTotals());
             ctx.profile = const_cast<WeatherStepProfile*>(&sim.GetLastProfile());
         }
         WeatherFields& Working() { return const_cast<WeatherFields&>(sim.GetWorkingFields()); }

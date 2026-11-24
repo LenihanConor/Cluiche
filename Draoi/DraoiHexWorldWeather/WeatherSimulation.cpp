@@ -170,6 +170,7 @@ void WeatherSimulation::BuildGridTables()
 
     mCommittedWeek = 0;
     mTotals = WeatherGridTotals();
+    mCommittedTotals = WeatherGridTotals();
     mProfile = WeatherStepProfile();
 }
 
@@ -268,6 +269,7 @@ void WeatherSimulation::Commit()
     if (!mInitialised) return;
     mCommittedIndex = 1 - mCommittedIndex;
     ++mCommittedWeek;
+    mCommittedTotals = mTotals;
 
     // Decrement and compact in record order. WindOverride with weeksRemaining 0 lasts until cleared.
     uint32_t keep = 0;

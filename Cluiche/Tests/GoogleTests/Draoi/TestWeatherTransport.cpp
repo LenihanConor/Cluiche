@@ -44,7 +44,7 @@ namespace
             ctx.inputs = &sim.Captured();
             ctx.fields = &Working();
             ctx.handoff = const_cast<WeatherHandoff*>(&sim.GetHandoff());
-            ctx.totals = const_cast<WeatherGridTotals*>(&sim.GetGridTotals());
+            ctx.totals = const_cast<WeatherGridTotals*>(&sim.GetWorkingTotals());
             ctx.profile = const_cast<WeatherStepProfile*>(&sim.GetLastProfile());
         }
         WeatherFields& Working() { return const_cast<WeatherFields&>(sim.GetWorkingFields()); }
@@ -471,6 +471,9 @@ TEST(WeatherTransportHeat, FullCellWithInflowIsMaxOfRemainderPlusInflow)
     RunHeatOutPass(rig.ctx, rig.serial);
     RunHeatGatherPass(rig.ctx, rig.serial);
     EXPECT_NEAR(rig.Working().temperature[down], 1.0f + rig.params.heatTransportRate, 1e-6f);
+    RunFinishPass(rig.ctx, rig.serial);   // the finish clamp brings it back to exactly 1.0
+    EXPECT_EQ(rig.Working().temperature[down], 1.0f);
+    for (uint32_t c = 0; c < kN; ++c) EXPECT_LE(rig.Working().temperature[c], 1.0f);
 }
 
 TEST(WeatherTransportHeat, InflowOrderMatchesReferenceBitForBit)
@@ -653,7 +656,7 @@ TEST(WeatherTransportPipeline, RunPipelineUntilStopsAfterEachNewPass)
 {
     Rig rig(Terrain());
     rig.Capture();
-    EXPECT_EQ(PassId::kLast, PassId::Orographic);
+    EXPECT_EQ(PassId::kLast, PassId::Finish);
     RunPipelineUntil(rig.ctx, rig.serial, PassId::kLast);
     for (uint32_t c = 0; c < kN; ++c) EXPECT_GE(rig.Working().temperature[c], 0.0f);
 }
