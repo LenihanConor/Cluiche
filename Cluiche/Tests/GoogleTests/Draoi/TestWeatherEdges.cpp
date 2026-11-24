@@ -257,3 +257,133 @@ TEST(WeatherEdges, ZeroWindEverywhereForAYearStaysInRangeWithNoTransport)
         if ((c % w) >= 1) EXPECT_EQ(out.moisture[c], rig.params.initialMoistureLand) << c;
     }
 }
+
+// ---- A4 weather-save Task 3: RestoreCommitted / RestoreCompleted ----------------------------------------------------
+// Spec: docs/specs/applications/cow/systems/a4-weather/weather-save.md
+namespace
+{
+    using FloatArray = Dia::Core::Containers::DynamicArray<float>;
+    FloatArray WeatherFields::* const kAllFieldArrays[10] = {
+        &WeatherFields::moisture, &WeatherFields::temperature, &WeatherFields::pressure, &WeatherFields::windDirection,
+        &WeatherFields::windSpeed, &WeatherFields::precipitation, &WeatherFields::cloudCover, &WeatherFields::waterToGround,
+        &WeatherFields::snowPack, &WeatherFields::pressureAnomaly };
+
+    void FillDistinct(WeatherFields& f, uint32_t n, float salt)
+    {
+        f.Resize(n);
+        for (uint32_t a = 0; a < 10; ++a)
+            for (uint32_t c = 0; c < n; ++c) (f.*kAllFieldArrays[a])[c] = salt + float(a) * 0.01f + float(c) * 0.0001f;
+    }
+
+    using BiomeArray = Dia::Core::Containers::DynamicArray<BiomeIndex>;
+    void FillBiomes(BiomeArray& b, uint32_t n, BiomeIndex value)
+    {
+        b.RemoveAll();
+        b.Reserve(n);
+        for (uint32_t i = 0; i < n; ++i) b.Add(static_cast<BiomeIndex>((value + i) % 13u));
+    }
+}
+
+TEST(WeatherRestore, RestoreCommittedReadsBackAndSetsWeekAndBiomes)
+{
+    Rig rig(WT::MakeHexTerrain(8, 6));
+    const uint32_t n = 48;
+    WeatherFields in; FillDistinct(in, n, 0.2f);
+    BiomeArray biomes; FillBiomes(biomes, n, 5);
+    ASSERT_TRUE(rig.sim.RestoreCommitted(77u, in, biomes));
+    EXPECT_EQ(rig.sim.GetCommittedWeek(), 77u);
+    EXPECT_TRUE(WT::SameFields(rig.sim.Fields(), in));
+    for (uint32_t c = 0; c < n; ++c) EXPECT_EQ(rig.sim.Terrain().biome[c], biomes[c]);
+}
+
+TEST(WeatherRestore, RestoreCommittedRejectsEachMismatchWithoutChange)
+{
+    Rig rig(WT::MakeHexTerrain(8, 6));
+    const uint32_t n = 48;
+    rig.Step();
+    WeatherFields before;
+    WT::CloneFields(rig.sim.Fields(), before);
+    const uint64_t weekBefore = rig.sim.GetCommittedWeek();
+    BiomeArray biomes; FillBiomes(biomes, n, 5);
+
+    for (uint32_t a = 0; a < 10; ++a)
+    {
+        WeatherFields bad; FillDistinct(bad, n, 0.3f);
+        (bad.*kAllFieldArrays[a]).Remove();
+        EXPECT_FALSE(rig.sim.RestoreCommitted(99u, bad, biomes)) << "array " << a;
+        EXPECT_TRUE(WT::SameFields(rig.sim.Fields(), before)) << "array " << a;
+        EXPECT_EQ(rig.sim.GetCommittedWeek(), weekBefore);
+    }
+    WeatherFields good; FillDistinct(good, n, 0.3f);
+    BiomeArray shortBiomes; FillBiomes(shortBiomes, n, 5);
+    shortBiomes.Remove();
+    EXPECT_FALSE(rig.sim.RestoreCommitted(99u, good, shortBiomes));
+    EXPECT_TRUE(WT::SameFields(rig.sim.Fields(), before));
+    EXPECT_EQ(rig.sim.GetCommittedWeek(), weekBefore);
+    EXPECT_EQ(rig.sim.Terrain().biome[0], 2);   // MakeHexTerrain default biome, untouched
+}
+
+TEST(WeatherRestore, RestoreCompletedRejectsEachMismatchWithoutChange)
+{
+    Rig rig(WT::MakeHexTerrain(8, 6));
+    const uint32_t n = 48;
+    rig.Capture();
+    WeatherFields before;
+    WT::CloneFields(rig.sim.GetWorkingFields(), before);
+    for (uint32_t a = 0; a < 10; ++a)
+    {
+        WeatherFields bad; FillDistinct(bad, n, 0.3f);
+        (bad.*kAllFieldArrays[a]).Remove();
+        EXPECT_FALSE(rig.sim.RestoreCompleted(bad)) << "array " << a;
+        EXPECT_TRUE(WT::SameFields(rig.sim.GetWorkingFields(), before)) << "array " << a;
+    }
+}
+
+TEST(WeatherRestore, RejectedBeforeInitialise)
+{
+    WeatherSimulation sim;
+    WeatherFields in; FillDistinct(in, 4, 0.2f);
+    BiomeArray b4; FillBiomes(b4, 4, 1);
+    EXPECT_FALSE(sim.RestoreCommitted(1u, in, b4));
+    EXPECT_FALSE(sim.RestoreCompleted(in));
+    EXPECT_FALSE(sim.IsInitialised());
+}
+
+TEST(WeatherRestore, RestoreCompletedThenCommitPublishesRestoredSet)
+{
+    Rig rig(WT::MakeHexTerrain(8, 6));
+    rig.Step();
+    const uint64_t week = rig.sim.GetCommittedWeek();
+    WeatherFields in; FillDistinct(in, 48, 0.4f);
+    ASSERT_TRUE(rig.sim.RestoreCompleted(in));
+    EXPECT_TRUE(WT::SameFields(rig.sim.GetWorkingFields(), in));
+    rig.sim.Commit();
+    EXPECT_TRUE(WT::SameFields(rig.sim.Fields(), in));
+    EXPECT_EQ(rig.sim.GetCommittedWeek(), week + 1);
+}
+
+TEST(WeatherRestore, StepAfterRestoreCommittedMatchesUninterruptedRun)
+{
+    for (uint32_t weeks : { 1u, 13u })
+    {
+        WT::HexTerrainOptions o; o.latitudeRamp = true; o.waterColumns = 2;
+        const WeatherTerrain terrain = WT::MakeHexTerrain(10, 8, o);
+        const uint32_t splitAt = 5;
+
+        Rig whole(terrain);
+        WeatherFields snapshot;
+        for (uint32_t wk = 0; wk < splitAt + weeks; ++wk)
+        {
+            if (wk == splitAt) WT::CloneFields(whole.sim.Fields(), snapshot);
+            whole.Step(static_cast<Season>((wk / 13) % 4), wk);
+        }
+
+        Rig resumed(terrain);
+        ASSERT_TRUE(resumed.sim.RestoreCommitted(splitAt, snapshot, terrain.biome));
+        for (uint32_t wk = splitAt; wk < splitAt + weeks; ++wk)
+            resumed.Step(static_cast<Season>((wk / 13) % 4), wk);
+
+        EXPECT_TRUE(WT::SameFields(resumed.sim.Fields(), whole.sim.Fields())) << "weeks " << weeks;
+        EXPECT_EQ(resumed.sim.GetCommittedWeek(), whole.sim.GetCommittedWeek());
+    }
+}

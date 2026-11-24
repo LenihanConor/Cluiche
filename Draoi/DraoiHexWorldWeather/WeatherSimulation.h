@@ -81,6 +81,15 @@ public:
     void          ClearCellSets();
     uint32_t      CellSetCount() const { return mCellSets.used; }
 
+    // Weather-save restore (weather-save.md). Both validate that the sim is initialised and that every one of the ten
+    // arrays (and the biome array) has exactly one entry per cell; on mismatch they return false with no state change.
+    // No allocation: the buffers exist from Initialise. Call only when no step is in flight.
+    // RestoreCommitted sets the committed week, the committed fields and every cell's biome in the owned terrain.
+    bool RestoreCommitted(uint64_t week, const WeatherFields& fields,
+                          const Dia::Core::Containers::DynamicArray<BiomeIndex>& biomes);
+    // Puts the sim in the "Run finished" state: `fields` becomes the working set, so the next Commit swaps it in.
+    bool RestoreCompleted(const WeatherFields& fields);
+
     uint64_t GetCommittedWeek() const { return mCommittedWeek; }
     void     SetCommittedWeek(uint64_t week) { mCommittedWeek = week; }
 

@@ -52,6 +52,13 @@ namespace
         CopyInto(dst.snowPack, src.snowPack);       CopyInto(dst.pressureAnomaly, src.pressureAnomaly);
     }
 
+    bool FieldsMatch(const WeatherFields& f, uint32_t n)
+    {
+        return f.moisture.Size() == n && f.temperature.Size() == n && f.pressure.Size() == n && f.windDirection.Size() == n
+            && f.windSpeed.Size() == n && f.precipitation.Size() == n && f.cloudCover.Size() == n
+            && f.waterToGround.Size() == n && f.snowPack.Size() == n && f.pressureAnomaly.Size() == n;
+    }
+
     // The one baseline resolution shared by seeding and Capture: the season's table row by biome, the registry's
     // fallback biome value for an unknown or out-of-range biome, 0.5 for kNoBiome.
     struct BaselineResolver
@@ -441,6 +448,34 @@ bool WeatherSimulation::SetCellBiome(uint32_t cell, BiomeIndex biome)
         return false;
     }
     mTerrain.biome[cell] = biome;
+    return true;
+}
+
+bool WeatherSimulation::RestoreCommitted(uint64_t week, const WeatherFields& fields,
+                                         const Dia::Core::Containers::DynamicArray<BiomeIndex>& biomes)
+{
+    const uint32_t n = mTables.cellCount;
+    if (!mInitialised || !FieldsMatch(fields, n) || biomes.Size() != n)
+    {
+        DIA_LOG_WARNING("Weather", "WeatherSimulation: RestoreCommitted rejected (initialised %d, %u biomes for %u cells)",
+                        mInitialised ? 1 : 0, biomes.Size(), n);
+        return false;
+    }
+    CopyFields(mBuffers[mCommittedIndex], fields);
+    for (uint32_t c = 0; c < n; ++c) mTerrain.biome[c] = biomes[c];
+    mCommittedWeek = week;
+    return true;
+}
+
+bool WeatherSimulation::RestoreCompleted(const WeatherFields& fields)
+{
+    if (!mInitialised || !FieldsMatch(fields, mTables.cellCount))
+    {
+        DIA_LOG_WARNING("Weather", "WeatherSimulation: RestoreCompleted rejected (initialised %d, cells %u)",
+                        mInitialised ? 1 : 0, mTables.cellCount);
+        return false;
+    }
+    CopyFields(mBuffers[1 - mCommittedIndex], fields);
     return true;
 }
 
