@@ -7,6 +7,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -23,6 +24,7 @@
 #include <Shared/Weather/WeatherSaveFields.h>
 #include <Shared/Weather/WeatherStage.h>
 
+#include "../WorldStep/WorldStepSaveRig.h"
 #include "WeatherTestWorld.h"
 
 namespace
@@ -76,7 +78,7 @@ public:
     bool GetWorld(CoW::WorldStep::WorldView& view, Draoi::HexWorld::Weather::WeatherTerrain& terrain) override
     {
         Draoi::HexWorld::Weather::Testing::HexTerrainOptions o;
-        o.waterColumns = 1;
+        o.waterColumns = waterColumns;
         WeatherTestWorld::CopyTerrain(Draoi::HexWorld::Weather::Testing::MakeHexTerrain(columns, rows, o), terrain);
         view.present = true;
         view.width = columns;
@@ -85,6 +87,7 @@ public:
     }
     uint32_t columns = 6;
     uint32_t rows = 5;
+    uint32_t waterColumns = 1;
 };
 
 struct NullHold : public CoW::WorldStep::IGenerationHold
@@ -489,4 +492,210 @@ TEST(WeatherPendingSave, PressureAnomalyMissingOrOutOfRangeIsRejected)
     edge["stage_0"]["pressure_anomaly"][0u] = 0.5;
     edge["stage_0"]["pressure_anomaly"][1u] = -0.5;
     EXPECT_TRUE(b.ValidatePending(edge));
+}
+
+// ---- Task 14: DFS-005 for weather (AC 15 stage half, AC 15 coordinator half, AC 18) -----------------------------------
+
+namespace
+{
+struct Checkpoint
+{
+    std::vector<uint32_t> bits;
+    Json::Value record;
+    bool operator==(const Checkpoint& o) const { return bits == o.bits && record == o.record; }
+};
+
+Checkpoint Take(PendWorld& w) { return { Bits(Committed(w)), w.CommittedRecord() }; }
+
+// Weather stage + fake neighbour behind the real WorldStepModule, the real SaveManager and the real
+// DeferredStepSaveParticipant. The weather participant registers first (the contract: stage state before the channel).
+struct CoordWorld
+{
+    explicit CoordWorld(const std::string& slot)
+        : slotId(slot.c_str())
+        , saveConfig{ "temp/worldstep_save_tests/", "slot_{id}.sav", 0, Dia::SaveGame::SaveFormat::Json }
+        , harness(WsTest::kDefaultConfig)
+        , scheduleParticipant(harness.scheduler)
+    {
+        _mkdir("temp");
+        _mkdir("temp/worldstep_save_tests");
+        EXPECT_TRUE(harness.module.RegisterStage(Dia::Core::StringCRC("weather"), world.stage));
+        EXPECT_TRUE(harness.module.RegisterStage(Dia::Core::StringCRC("ecology"), ecology));
+        manager.Init(saveConfig, registry);
+        harness.module.ObserveLoads(manager);
+        registry.Register(Dia::Core::StringCRC("CowWeather"), &world.participant);
+        scheduleParticipant.Attach(registry, manager);
+    }
+    ~CoordWorld()
+    {
+        harness.module.StopObservingLoads();
+        registry.Unregister(Dia::Core::StringCRC("CowWeather"));
+        harness.module.UnregisterStage(Dia::Core::StringCRC("weather"));
+        harness.module.UnregisterStage(Dia::Core::StringCRC("ecology"));
+    }
+
+    void Days(uint64_t first, uint64_t last)
+    {
+        for (uint64_t d = first; d <= last; ++d) { harness.StepDay(d); }
+    }
+
+    PendWorld world;
+    Dia::DeferredStep::Testing::CallLog log;
+    Dia::DeferredStep::Testing::FakeStepStage ecology{ Dia::Core::StringCRC("ecology"), log };
+    Dia::Core::StringCRC slotId;
+    Dia::SaveGame::SaveConfig saveConfig;
+    Dia::SaveGame::SaveRegistry registry;
+    Dia::SaveGame::SaveManager manager;
+    WsTest::Harness harness;
+    Dia::DeferredStep::DeferredStepSaveParticipant scheduleParticipant;
+};
+}
+
+TEST(WeatherPendingSaveDfs005, StageLevelSaveAfterRunAndBeforeCommitAppliesAtTheOriginalKeyBitIdentically)
+{
+    const uint32_t day = 3 * 7;
+    PendWorld a;
+    a.Announce(5);
+    a.CommitWeeks(1, 2);
+    const Json::Value committedRecord = a.CommittedRecord();
+    a.RunInFlight(day);
+    const Json::Value save = a.PendingSave();
+    ASSERT_TRUE(save["stage_0"]["valid"].asBool());
+    a.stage.Commit();
+    std::vector<Checkpoint> ref;
+    ref.push_back(Take(a));          // after the apply
+    a.CommitWeeks(4, 1);
+    ref.push_back(Take(a));          // N = 1
+    a.CommitWeeks(5, 12);
+    ref.push_back(Take(a));          // N = 13
+
+    PendWorld b;
+    b.Announce(5);
+    ASSERT_TRUE(b.LoadCommitted(committedRecord));
+    ASSERT_TRUE(b.ValidatePending(save));
+    b.DeserializePending(save);
+    ASSERT_TRUE(b.stage.IsReady());
+    b.stage.Commit();
+    EXPECT_TRUE(ref[0] == Take(b)) << "after the apply";
+    b.CommitWeeks(4, 1);
+    EXPECT_TRUE(ref[1] == Take(b)) << "one week later";
+    b.CommitWeeks(5, 12);
+    EXPECT_TRUE(ref[2] == Take(b)) << "thirteen weeks later";
+}
+
+TEST(WeatherPendingSaveDfs005, CoordinatorMidStepSaveThroughTheRealSaveManagerLoadsAndAppliesBitIdentically)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    std::map<uint64_t, Checkpoint> ref;
+    {
+        CoordWorld r(slot + "r");
+        r.world.Announce(5);
+        for (uint64_t d = 1; d <= 112; ++d)
+        {
+            r.harness.StepDay(d);
+            if (d == 21 || d == 28 || d == 112) { ref[d] = Take(r.world); }
+        }
+        ASSERT_GE(r.world.published.size(), 10u);
+    }
+    {
+        CoordWorld a(slot);
+        a.world.Announce(5);
+        a.Days(1, 17);   // week 14 is complete and applies at 21
+        ASSERT_EQ(Dia::DeferredStep::ChainPhase::Ran, a.harness.module.GetChain().Phase());
+        ASSERT_TRUE(a.manager.Save(a.slotId).Ok());
+    }
+    CoordWorld b(slot);
+    b.world.Announce(5);
+    ASSERT_TRUE(b.manager.Load(b.slotId).Ok());
+    EXPECT_EQ(Dia::DeferredStep::ChainPhase::Ran, b.harness.module.GetChain().Phase());
+    EXPECT_TRUE(b.world.stage.IsReady());
+    EXPECT_TRUE(b.world.published.empty());   // loading raises nothing
+    for (uint64_t d = 18; d <= 112; ++d)
+    {
+        b.harness.StepDay(d);
+        if (d == 21 || d == 28 || d == 112)
+        {
+            SCOPED_TRACE(d);
+            EXPECT_TRUE(ref[d] == Take(b.world));
+        }
+    }
+}
+
+TEST(WeatherPendingSaveDfs005, WithNoActiveSimTheRestoredPendingBlobIsNotReadyWithAnErrorAndTheLaterApplyIsANoOp)
+{
+    for (int cause = 0; cause < 2; ++cause)   // 0 = dimension mismatch, 1 = no water source
+    {
+        SCOPED_TRACE(cause == 0 ? "dimension mismatch" : "no water source");
+        PendWorld a;
+        a.Announce(5);
+        a.CommitWeeks(1, 2);
+        const Json::Value committedRecord = a.CommittedRecord();
+        a.RunInFlight(3 * 7);
+        const Json::Value save = a.PendingSave();
+        ASSERT_TRUE(save["stage_0"]["valid"].asBool());
+
+        PendWorld b;
+        b.stage.SetLaunchMode(CoW::Weather::WeatherStage::LaunchMode::kManual);   // the re-spin-up has not finished
+        if (cause == 0) { b.source.columns = 7; } else { b.source.waterColumns = 0; }
+        b.Announce(5);
+        {   // SaveManager order: every Validate first, then the Deserializes
+            Dia::SaveGame::LoadContext validateCtx(committedRecord);
+            ASSERT_TRUE(b.participant.Validate(validateCtx));
+            ASSERT_TRUE(b.ValidatePending(save));
+            Dia::SaveGame::LoadContext ctx(committedRecord);
+            b.participant.Deserialize(ctx);   // the world does not fit: the restore is discarded
+        }
+        Dia::DeferredStep::Testing::LogCapture logs("WTH");
+        b.DeserializePending(save);
+        EXPECT_FALSE(b.stage.IsReady());
+        EXPECT_GE(logs.Count(Dia::DeferredStep::Testing::LogCapture::Level::kError), 1u);
+
+        logs.Clear();
+        b.stage.Commit();   // the later Apply
+        EXPECT_TRUE(b.published.empty());
+        EXPECT_EQ(1u, logs.Infos("step discarded"));
+        EXPECT_FALSE(b.stage.IsReady());
+
+        if (cause == 0)   // the next kick works once the world is spun up again
+        {
+            ASSERT_TRUE(b.stage.RunNextJob());
+            b.stage.Update();
+            ASSERT_TRUE(b.stage.IsReady());
+            b.CommitWeeks(1, 1);
+            EXPECT_EQ(1u, b.published.size());
+        }
+    }
+}
+
+TEST(WeatherPendingSaveDfs005, CoordinatorDiscardPathLogsAnErrorTheChannelAppliesAsANoOpAndTheNextKickWorks)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    {
+        CoordWorld a(slot);
+        a.world.Announce(5);
+        a.Days(1, 17);
+        ASSERT_TRUE(a.manager.Save(a.slotId).Ok());
+    }
+    CoordWorld b(slot);
+    b.world.stage.SetLaunchMode(CoW::Weather::WeatherStage::LaunchMode::kManual);
+    b.world.source.columns = 7;
+    b.world.Announce(5);
+    Dia::DeferredStep::Testing::LogCapture moduleLogs("WST");
+    ASSERT_TRUE(b.manager.Load(b.slotId).Ok());
+    EXPECT_FALSE(b.world.stage.IsReady());
+    EXPECT_GE(moduleLogs.Count(Dia::DeferredStep::Testing::LogCapture::Level::kError, "weather"), 1u);
+
+    b.Days(18, 22);   // the restored channel reaches its apply key: a logged no-op
+    EXPECT_TRUE(b.world.published.empty());
+    EXPECT_EQ(0u, b.harness.module.ApplyCount());
+
+    ASSERT_TRUE(b.world.stage.RunNextJob());
+    b.world.stage.Update();
+    ASSERT_TRUE(b.world.stage.IsReady());
+    b.Days(23, 45);
+    EXPECT_GE(b.harness.module.KickCount(), 1u);
+    EXPECT_GE(b.harness.module.ApplyCount(), 1u);
+    EXPECT_GE(b.world.published.size(), 1u);
 }

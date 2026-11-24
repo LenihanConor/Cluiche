@@ -434,7 +434,7 @@ public:
         }
         else
         {
-            DIA_LOG_INFO(mLogChannel, "%s: pending blob has no restored sim to apply to, dropped", mLogChannel);
+            DIA_LOG_ERROR(mLogChannel, "%s: pending blob has no restored sim to apply to, dropped", mLogChannel);
         }
     }
     bool ValidatePending(Dia::SaveGame::LoadContext& ctx) const override { return ValidatePendingBlob(ctx); }
