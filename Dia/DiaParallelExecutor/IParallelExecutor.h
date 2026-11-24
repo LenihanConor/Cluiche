@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <functional>
 
-namespace Dia::DeferredStep
+namespace Dia::ParallelExecutor
 {
 	// fn(begin, end) over a half-open sub-range of [0, count).
 	using RangeFn = std::function<void(uint32_t begin, uint32_t end)>;

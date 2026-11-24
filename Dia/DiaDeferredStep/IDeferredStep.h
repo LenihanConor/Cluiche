@@ -8,10 +8,13 @@ namespace Dia::SaveGame
 	class LoadContext;
 }
 
-namespace Dia::DeferredStep
+namespace Dia::ParallelExecutor
 {
 	class IParallelExecutor;
+}
 
+namespace Dia::DeferredStep
+{
 	class IDeferredStep
 	{
 	public:
@@ -21,7 +24,7 @@ namespace Dia::DeferredStep
 		virtual void Capture() = 0;
 
 		// Launcher's thread. Pure function of captured inputs; touches the working copy only. Result identical at any range count.
-		virtual void Run(IParallelExecutor& executor) = 0;
+		virtual void Run(Dia::ParallelExecutor::IParallelExecutor& executor) = 0;
 
 		// SimPU, at the apply key. Commit the working copy into the state readers see.
 		virtual void Apply() = 0;

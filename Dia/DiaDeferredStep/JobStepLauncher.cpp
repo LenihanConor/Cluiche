@@ -4,7 +4,7 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaDeferredStep/DeferredStepObservation.h>
 #include <DiaDeferredStep/IDeferredStep.h>
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 #include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia::DeferredStep
@@ -38,7 +38,7 @@ namespace Dia::DeferredStep
 		}
 	}
 
-	void JobStepLauncher::RunStepGuarded(IDeferredStep& step, IParallelExecutor& executor) const
+	void JobStepLauncher::RunStepGuarded(IDeferredStep& step, Dia::ParallelExecutor::IParallelExecutor& executor) const
 	{
 		try
 		{
@@ -86,7 +86,7 @@ namespace Dia::DeferredStep
 	void JobStepLauncher::RunInline(Slot& slot) const
 	{
 		slot.ranInline = true;
-		SerialExecutor serial;
+		Dia::ParallelExecutor::SerialExecutor serial;
 		RunStepGuarded(*slot.step, serial);
 		slot.complete.store(true);
 	}
@@ -116,7 +116,7 @@ namespace Dia::DeferredStep
 			DIA_ASSERT(false, "JobStepLauncher: token table full (%u in flight)", kMaxInFlight);
 			DIA_LOG_WARNING(DeferredStepObservation::kLogChannel,
 				"Launch with %u steps already in flight; running synchronously", kMaxInFlight);
-			SerialExecutor serial;
+			Dia::ParallelExecutor::SerialExecutor serial;
 			RunStepGuarded(step, serial);
 			return MakeToken(kMaxInFlight, 0);   // inert, always complete
 		}

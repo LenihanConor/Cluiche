@@ -18,7 +18,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaDeferredStep/DeferredStepScheduler.h>
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 #include <DiaDeferredStep/Testing/LogCapture.h>
 #include <DiaDeferredStep/Testing/ManualStepLauncher.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
@@ -276,7 +276,7 @@ namespace WsTest
             }
         }
 
-        void Run(Dia::DeferredStep::IParallelExecutor& executor) override
+        void Run(Dia::ParallelExecutor::IParallelExecutor& executor) override
         {
             const uint32_t count = static_cast<uint32_t>(mWorking.size());
             for (uint32_t pass = 0; pass < mPasses; ++pass)

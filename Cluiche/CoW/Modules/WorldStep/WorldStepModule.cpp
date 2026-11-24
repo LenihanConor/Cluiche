@@ -873,7 +873,7 @@ void WorldStepModule::Capture()
     }
 }
 
-void WorldStepModule::Run(Dia::DeferredStep::IParallelExecutor& executor)
+void WorldStepModule::Run(Dia::ParallelExecutor::IParallelExecutor& executor)
 {
     DIA_TRACE_ZONE("WorldStepModule::Run", Dia::Observation::Trace::Category::kNone);
     mChain.Run(executor);

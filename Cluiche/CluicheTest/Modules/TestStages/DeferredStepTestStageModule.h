@@ -6,7 +6,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <Modules/DeferredStepModule.h>
 #include <DiaDeferredStep/IDeferredStep.h>
-#include <DiaDeferredStep/IParallelExecutor.h>
+#include <DiaParallelExecutor/IParallelExecutor.h>
 #include <DiaSaveGame/SaveConfig.h>
 #include <DiaSaveGame/SaveManager.h>
 #include <DiaSaveGame/SaveRegistry.h>
@@ -33,7 +33,7 @@ public:
     std::vector<uint32_t>& GetLiveCells() { return mLive; }
 
     void Capture() override;
-    void Run(Dia::DeferredStep::IParallelExecutor& executor) override;
+    void Run(Dia::ParallelExecutor::IParallelExecutor& executor) override;
     void Apply() override;
 
     uint32_t GetPendingVersion() const override { return 1; }

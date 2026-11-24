@@ -672,7 +672,7 @@ namespace
         TimedStage(int captureMs, int runMs, int commitMs) : mCaptureMs(captureMs), mRunMs(runMs), mCommitMs(commitMs) {}
         bool IsReady() const override { return true; }
         void Capture(Dia::DeferredStep::StepKey) override { Burn(mCaptureMs); }
-        void Run(Dia::DeferredStep::IParallelExecutor&) override { Burn(mRunMs); }
+        void Run(Dia::ParallelExecutor::IParallelExecutor&) override { Burn(mRunMs); }
         void Commit() override { Burn(mCommitMs); mInnerAtCommit = mInnerMs; }
         void SerializePending(Dia::SaveGame::SaveContext&) const override {}
         void DeserializePending(Dia::SaveGame::LoadContext&) override {}

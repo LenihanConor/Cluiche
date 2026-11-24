@@ -55,7 +55,7 @@ namespace Dia::DeferredStep::Testing
             mCapturedKey = key;
         }
 
-        void Run(IParallelExecutor& executor) override
+        void Run(Dia::ParallelExecutor::IParallelExecutor& executor) override
         {
             Record(CallPhase::Run, 0);
             mLastExecutor = &executor;
@@ -114,7 +114,7 @@ namespace Dia::DeferredStep::Testing
                 && ctx.Read(Dia::Core::StringCRC("checksum"), c) && c == ChecksumOf(w, r);
         }
 
-        const IParallelExecutor* LastExecutor() const { return mLastExecutor; }
+        const Dia::ParallelExecutor::IParallelExecutor* LastExecutor() const { return mLastExecutor; }
         StepKey CapturedKey() const { return mCapturedKey; }
 
         int  source    = 0;   // tests overwrite this after Capture to poison it
@@ -147,7 +147,7 @@ namespace Dia::DeferredStep::Testing
         bool                 mReady = true;
         uint32_t             mParallelForCalls = 0;
         StepKey              mCapturedKey = 0;
-        const IParallelExecutor* mLastExecutor = nullptr;
+        const Dia::ParallelExecutor::IParallelExecutor* mLastExecutor = nullptr;
     };
 
     // Records every StepChainApplied; from inside the callback it reads each observed stage's committed value

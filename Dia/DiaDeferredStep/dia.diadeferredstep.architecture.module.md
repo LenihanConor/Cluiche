@@ -13,6 +13,7 @@ dependencies:
     - dia.core
     - dia.observation
     - dia.threading
+    - dia.parallelexecutor
     - dia.savegame
   forbidden: []
 public_api:
@@ -28,7 +29,7 @@ public_api:
 ---
 # DiaDeferredStep
 
-Async world-step scheduler: one deferred step per channel, with Kick/Tick/DrainAll lifecycle. IDeferredStep contract, IStepLauncher seam, DeferredStepScheduler, and executor abstractions (IParallelExecutor + SerialExecutor).
+Async world-step scheduler: one deferred step per channel, with Kick/Tick/DrainAll lifecycle. IDeferredStep contract, IStepLauncher seam, DeferredStepScheduler, and the capped executor (the IParallelExecutor and SerialExecutor abstractions live in DiaParallelExecutor).
 
 Namespace: `Dia::DeferredStep`. Runs on SimPU (deferred step channel subscribers).
 
@@ -37,7 +38,7 @@ Namespace: `Dia::DeferredStep`. Runs on SimPU (deferred step channel subscribers
 - IDeferredStep contract for async step work
 - IStepLauncher seam for kicking deferred steps
 - DeferredStepScheduler: one step per channel, Kick/Tick/DrainAll
-- IParallelExecutor + SerialExecutor abstractions
+- Consumes IParallelExecutor + SerialExecutor from DiaParallelExecutor
 - StepChain: ordered stages (Capture, Run, Commit) inside one deferred step; capacity is a template parameter (default 8)
 
 ## Non-Responsibilities

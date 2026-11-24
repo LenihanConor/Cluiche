@@ -3,7 +3,7 @@
 #include <DiaDeferredStep/StepChain.h>
 #include <DiaDeferredStep/Testing/FakeStepStage.h>
 
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 
 #include <cstdint>
 #include <cstdio>
@@ -14,7 +14,7 @@
 using namespace Dia::DeferredStep;
 using namespace Dia::DeferredStep::Testing;
 using Dia::Core::StringCRC;
-using Dia::DeferredStep::SerialExecutor;
+using Dia::ParallelExecutor::SerialExecutor;
 
 namespace
 {
@@ -42,7 +42,7 @@ TEST(StepChainEdge, MaxStagesAllRegisteredAndEnabledRunInDeclaredOrder)
     static_assert(kMaxStages == 8, "test config below lists 8 ids");
     CallLog log;
     StepChain<> chain;
-    SerialExecutor exec;
+    Dia::ParallelExecutor::SerialExecutor exec;
     ASSERT_TRUE(chain.Configure(MakeConfig({"s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7"})));
 
     std::vector<std::unique_ptr<FakeStepStage>> fakes;
@@ -86,7 +86,7 @@ TEST(StepChainEdge, ConfigureShrinkingOrderExcludesRegisteredStage)
     FakeStepStage a(StringCRC("a"), log);
     FakeStepStage b(StringCRC("b"), log);
     StepChain<> chain;
-    SerialExecutor exec;
+    Dia::ParallelExecutor::SerialExecutor exec;
     ASSERT_TRUE(chain.Configure(MakeConfig({"a", "b"})));
     ASSERT_TRUE(chain.RegisterStage(StringCRC("a"), a));
     ASSERT_TRUE(chain.RegisterStage(StringCRC("b"), b));
@@ -133,7 +133,7 @@ TEST(StepChainEdge, UnregisterThenReregisterAtIdle)
     FakeStepStage a(StringCRC("a"), log);
     FakeStepStage b(StringCRC("b"), log);
     StepChain<> chain;
-    SerialExecutor exec;
+    Dia::ParallelExecutor::SerialExecutor exec;
     ASSERT_TRUE(chain.Configure(MakeConfig({"a", "b"})));
     ASSERT_TRUE(chain.RegisterStage(StringCRC("a"), a));
     ASSERT_TRUE(chain.RegisterStage(StringCRC("b"), b));
@@ -195,7 +195,7 @@ TEST(StepChainEdge, PhaseAndKeyUnchangedAfterAnyFalseReturn)
     CallLog log;
     FakeStepStage a(StringCRC("a"), log);
     StepChain<> chain;
-    SerialExecutor exec;
+    Dia::ParallelExecutor::SerialExecutor exec;
     ASSERT_TRUE(chain.Configure(MakeConfig({"a"})));
     ASSERT_TRUE(chain.RegisterStage(StringCRC("a"), a));
 
@@ -242,7 +242,7 @@ TEST(StepChainEdge, RegisterWhenFullWithPendingRemovalStaysFalseUntilIdle)
 {
     CallLog log;
     StepChain<> chain;
-    SerialExecutor exec;
+    Dia::ParallelExecutor::SerialExecutor exec;
     ASSERT_TRUE(chain.Configure(MakeConfig({"s0"})));
     std::vector<std::unique_ptr<FakeStepStage>> fakes;
     for (uint32_t i = 0; i < kMaxStages; ++i)

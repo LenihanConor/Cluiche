@@ -5,7 +5,7 @@
 #include <thread>
 #include <vector>
 #include <DiaDeferredStep/IDeferredStep.h>
-#include <DiaDeferredStep/IParallelExecutor.h>
+#include <DiaParallelExecutor/IParallelExecutor.h>
 
 namespace Dia::DeferredStep::Testing
 {
@@ -24,7 +24,7 @@ namespace Dia::DeferredStep::Testing
 			mCaptureThread = std::this_thread::get_id();
 		}
 
-		void Run(IParallelExecutor& executor) override
+		void Run(Dia::ParallelExecutor::IParallelExecutor& executor) override
 		{
 			++mRunCount;
 			mRunThread = std::this_thread::get_id();
@@ -55,7 +55,7 @@ namespace Dia::DeferredStep::Testing
 		std::thread::id GetCaptureThread() const { return mCaptureThread; }
 		std::thread::id GetRunThread() const { return mRunThread; }
 		std::thread::id GetApplyThread() const { return mApplyThread; }
-		IParallelExecutor* GetLastExecutor() const { return mLastExecutor; }
+		Dia::ParallelExecutor::IParallelExecutor* GetLastExecutor() const { return mLastExecutor; }
 		int GetId() const { return mId; }
 
 		void SetOnRun(std::function<void()> fn) { mOnRun = std::move(fn); }
@@ -69,7 +69,7 @@ namespace Dia::DeferredStep::Testing
 		std::thread::id mCaptureThread;
 		std::thread::id mRunThread;
 		std::thread::id mApplyThread;
-		IParallelExecutor* mLastExecutor = nullptr;
+		Dia::ParallelExecutor::IParallelExecutor* mLastExecutor = nullptr;
 		std::function<void()> mOnRun;
 	};
 }

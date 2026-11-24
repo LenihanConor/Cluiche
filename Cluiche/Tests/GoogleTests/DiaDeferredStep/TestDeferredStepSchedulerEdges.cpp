@@ -30,7 +30,7 @@ namespace
 	{
 	public:
 		void Capture() override { ++mCaptureCount; }
-		void Run(IParallelExecutor&) override { ++mRunCount; }
+		void Run(Dia::ParallelExecutor::IParallelExecutor&) override { ++mRunCount; }
 		void Apply() override
 		{
 			++mApplyCount;

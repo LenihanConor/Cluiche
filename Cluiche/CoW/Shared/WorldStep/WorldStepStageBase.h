@@ -81,7 +81,7 @@ public:
         virtual bool ExtraReady() const { return true; }
         virtual bool LatchInputs(TLatch& latch, Dia::DeferredStep::StepKey key) = 0;   // false -> step invalid
         virtual void ApplyEntry(TSim& working, TLatch& latch, const TEntry& entry) = 0;
-        virtual void RunStep(TSim& working, const TLatch& latch, Dia::DeferredStep::IParallelExecutor& executor) = 0;
+        virtual void RunStep(TSim& working, const TLatch& latch, Dia::ParallelExecutor::IParallelExecutor& executor) = 0;
         virtual void PublishCommit(const TSim& committed, uint32_t stepDay) = 0;
         virtual void OnStartExtra() {}
         virtual void OnStopExtra() {}
@@ -322,7 +322,7 @@ public:
         if (mStepValid && !mHooks.LatchInputs(mLatch, key)) { mStepValid = false; }
     }
 
-    void Run(Dia::DeferredStep::IParallelExecutor& executor) override
+    void Run(Dia::ParallelExecutor::IParallelExecutor& executor) override
     {
         if (!mStepValid) { return; }
         const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();

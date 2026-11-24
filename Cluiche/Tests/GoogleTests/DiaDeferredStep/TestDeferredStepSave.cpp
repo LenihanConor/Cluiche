@@ -219,7 +219,7 @@ namespace
 		explicit PayloadStep(int32_t payload, uint32_t pendingVersion = 3) : mPayload(payload), mPendingVersion(pendingVersion) {}
 
 		void Capture() override {}
-		void Run(IParallelExecutor&) override { ++mRunCount; }
+		void Run(Dia::ParallelExecutor::IParallelExecutor&) override { ++mRunCount; }
 		void Apply() override { ++mApplyCount; }
 		uint32_t GetPendingVersion() const override { return mPendingVersion; }
 		void SerializePending(Dia::SaveGame::SaveContext& ctx) const override
@@ -549,7 +549,7 @@ namespace
 	{
 	public:
 		void Capture() override {}
-		void Run(IParallelExecutor&) override {}
+		void Run(Dia::ParallelExecutor::IParallelExecutor&) override {}
 		void Apply() override {}
 		uint32_t GetPendingVersion() const override { return 1; }
 		void SerializePending(Dia::SaveGame::SaveContext&) const override {}
@@ -833,7 +833,7 @@ namespace
 			: mId(id), mPayload(payload), mCallLog(callLog), mApplyLog(applyLog) {}
 
 		void Capture() override {}
-		void Run(IParallelExecutor&) override {}
+		void Run(Dia::ParallelExecutor::IParallelExecutor&) override {}
 		void Apply() override
 		{
 			++mApplyCount;

@@ -75,8 +75,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="DeferredStepTypes.h" />
-    <ClInclude Include="IParallelExecutor.h" />
-    <ClInclude Include="SerialExecutor.h" />
     <ClInclude Include="IDeferredStep.h" />
     <ClInclude Include="IStepLauncher.h" />
     <ClInclude Include="DeferredStepObservation.h" />
@@ -109,7 +107,6 @@
     <ClInclude Include="Testing\FakeStepStage.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SerialExecutor.cpp" />
     <ClCompile Include="DeferredStepObservation.cpp" />
     <ClCompile Include="DeferredStepScheduler.cpp" />
     <ClCompile Include="CapGate.cpp" />
@@ -126,6 +123,10 @@
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
       <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaParallelExecutor\DiaParallelExecutor.vcxproj">
+      <Project>{128D9ECE-FA18-59D5-A396-FE51946E313A}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">

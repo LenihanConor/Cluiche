@@ -4,7 +4,7 @@
 #include <DiaDeferredStep/CapGate.h>
 #include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaDeferredStep/JobStepLauncher.h>
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 #include <DiaDeferredStep/Testing/ConcurrencyProbe.h>
 #include <DiaDeferredStep/Testing/LogCapture.h>
 #include <DiaThreading/JobSystem.h>
@@ -62,10 +62,10 @@ namespace
 	class FnStep final : public IDeferredStep
 	{
 	public:
-		explicit FnStep(std::function<void(IParallelExecutor&)> body = nullptr) : mBody(std::move(body)) {}
+		explicit FnStep(std::function<void(Dia::ParallelExecutor::IParallelExecutor&)> body = nullptr) : mBody(std::move(body)) {}
 
 		void Capture() override {}
-		void Run(IParallelExecutor& executor) override
+		void Run(Dia::ParallelExecutor::IParallelExecutor& executor) override
 		{
 			mRunThread = std::this_thread::get_id();
 			mRunCount.fetch_add(1);
@@ -80,15 +80,15 @@ namespace
 		std::thread::id GetRunThread() const { return mRunThread; }
 
 	private:
-		std::function<void(IParallelExecutor&)> mBody;
+		std::function<void(Dia::ParallelExecutor::IParallelExecutor&)> mBody;
 		std::atomic<uint32_t> mRunCount{ 0 };
 		std::thread::id mRunThread;
 	};
 
 	// Fills out[i] = i * 3 + 1 over [0,count) through the executor.
-	std::function<void(IParallelExecutor&)> FillBody(std::vector<uint32_t>& out)
+	std::function<void(Dia::ParallelExecutor::IParallelExecutor&)> FillBody(std::vector<uint32_t>& out)
 	{
-		return [&out](IParallelExecutor& exec)
+		return [&out](Dia::ParallelExecutor::IParallelExecutor& exec)
 		{
 			exec.ParallelFor(static_cast<uint32_t>(out.size()), 8, [&out](uint32_t b, uint32_t e)
 			{
@@ -132,7 +132,7 @@ TEST(DeferredStepLauncherTest, ResultMatchesSerialExecutor)
 	}
 	{
 		FnStep step(FillBody(serial));
-		SerialExecutor exec;
+		Dia::ParallelExecutor::SerialExecutor exec;
 		step.Run(exec);
 	}
 	EXPECT_EQ(capped, serial);
@@ -150,7 +150,7 @@ TEST(DeferredStepLauncherTest, EightLaunchesGetDistinctValidTokens)
 		std::set<uint32_t> values;
 		for (int i = 0; i < 8; ++i)
 		{
-			steps.push_back(std::make_unique<FnStep>([](IParallelExecutor& e) { e.ParallelFor(32, 4, [](uint32_t, uint32_t) {}); }));
+			steps.push_back(std::make_unique<FnStep>([](Dia::ParallelExecutor::IParallelExecutor& e) { e.ParallelFor(32, 4, [](uint32_t, uint32_t) {}); }));
 			tokens.push_back(launcher.Launch(*steps.back(), LaunchInfo()));
 			ASSERT_TRUE(tokens.back().IsValid());
 			values.insert(tokens.back().value);
@@ -172,7 +172,7 @@ TEST(DeferredStepLauncherTest, LaunchWithFullGateReturnsImmediatelyAndQueues)
 	{
 		JobStepLauncher launcher(jobs, CapOf(1));
 		Latch started, release;
-		FnStep first([&](IParallelExecutor&) { started.Open(); release.Wait(); });
+		FnStep first([&](Dia::ParallelExecutor::IParallelExecutor&) { started.Open(); release.Wait(); });
 		FnStep second;
 
 		const LaunchToken t1 = launcher.Launch(first, LaunchInfo());
@@ -246,7 +246,7 @@ TEST(DeferredStepLauncherTest, QueuedCoordinatorWithPumpTimeFailureCompletesInli
 	{
 		JobStepLauncher launcher(jobs, CapOf(1));
 		Latch started, release;
-		FnStep first([&](IParallelExecutor&) { started.Open(); release.Wait(); });
+		FnStep first([&](Dia::ParallelExecutor::IParallelExecutor&) { started.Open(); release.Wait(); });
 		FnStep second;
 		const LaunchToken t1 = launcher.Launch(first, LaunchInfo());
 		started.Wait();
@@ -272,7 +272,7 @@ TEST(DeferredStepLauncherTest, IsCompleteOnPumpTimeFailureEventuallyTurnsTrue)
 	{
 		JobStepLauncher launcher(jobs, CapOf(1));
 		Latch started, release;
-		FnStep first([&](IParallelExecutor&) { started.Open(); release.Wait(); });
+		FnStep first([&](Dia::ParallelExecutor::IParallelExecutor&) { started.Open(); release.Wait(); });
 		FnStep second;
 		const LaunchToken t1 = launcher.Launch(first, LaunchInfo());
 		started.Wait();
@@ -375,7 +375,7 @@ TEST(DeferredStepLauncherTest, TableExhaustionAssertsRunsInlineAndTokenIsInert)
 		std::vector<LaunchToken> tokens;
 		for (uint32_t i = 0; i < JobStepLauncher::kMaxInFlight; ++i)
 		{
-			steps.push_back(std::make_unique<FnStep>([&](IParallelExecutor&) { started.fetch_add(1); release.Wait(); }));
+			steps.push_back(std::make_unique<FnStep>([&](Dia::ParallelExecutor::IParallelExecutor&) { started.fetch_add(1); release.Wait(); }));
 			tokens.push_back(launcher.Launch(*steps.back(), LaunchInfo()));
 		}
 
@@ -426,7 +426,7 @@ TEST(DeferredStepLauncherTest, ThrowingStepOnPoolStillCompletes)
 	{
 		// Error log is emitted on a pool thread with no log buffer in tests, so it is not asserted here.
 		JobStepLauncher launcher(jobs, CapOf(1));
-		FnStep step([](IParallelExecutor&) { throw std::runtime_error("boom"); });
+		FnStep step([](Dia::ParallelExecutor::IParallelExecutor&) { throw std::runtime_error("boom"); });
 		const LaunchToken t = launcher.Launch(step, LaunchInfo());
 		ASSERT_TRUE(t.IsValid());
 		launcher.Wait(t);
@@ -449,7 +449,7 @@ TEST(DeferredStepLauncherTest, ThrowingStepOnInlineFallbackStillReturnsCompleteT
 	JobSystem jobs;   // uninitialised -> inline
 	Testing::LogCapture log;
 	JobStepLauncher launcher(jobs, CapOf(1));
-	FnStep step([](IParallelExecutor&) { throw std::runtime_error("boom"); });
+	FnStep step([](Dia::ParallelExecutor::IParallelExecutor&) { throw std::runtime_error("boom"); });
 	LaunchToken t;
 	EXPECT_NO_THROW(t = launcher.Launch(step, LaunchInfo()));
 	ASSERT_TRUE(t.IsValid());
@@ -496,7 +496,7 @@ TEST(DeferredStepLauncherTest, RepeatedLaunchReleaseCyclesReuseSlots)
 		JobStepLauncher launcher(jobs, CapOf(2));
 		for (int i = 0; i < 300; ++i)   // wraps the 8-bit generation
 		{
-			FnStep step([](IParallelExecutor& e) { e.ParallelFor(20, 2, [](uint32_t, uint32_t) {}); });
+			FnStep step([](Dia::ParallelExecutor::IParallelExecutor& e) { e.ParallelFor(20, 2, [](uint32_t, uint32_t) {}); });
 			const LaunchToken t = launcher.Launch(step, LaunchInfo());
 			ASSERT_TRUE(t.IsValid());
 			launcher.Wait(t);
@@ -524,9 +524,9 @@ namespace
 
 	// Step body that counts exactly one probe slot for the coordinator and one per range running on
 	// another thread; ranges the coordinator runs itself nest inside its slot and are not counted.
-	std::function<void(IParallelExecutor&)> ProbedBody(ConcurrencyProbe& probe, std::atomic<int>& ranCount)
+	std::function<void(Dia::ParallelExecutor::IParallelExecutor&)> ProbedBody(ConcurrencyProbe& probe, std::atomic<int>& ranCount)
 	{
-		return [&probe, &ranCount](IParallelExecutor& exec)
+		return [&probe, &ranCount](Dia::ParallelExecutor::IParallelExecutor& exec)
 		{
 			ConcurrencyProbe::Scope coordinatorScope(probe);
 			const std::thread::id coordinatorThread = std::this_thread::get_id();
@@ -609,7 +609,7 @@ TEST(DeferredStepLauncherTest, CapOneOnOneWorkerPoolCompletesSixteenRangeStep)
 		std::atomic<int> ran{ 0 };
 		std::atomic<int> offThread{ 0 };
 		const std::thread::id testThread = std::this_thread::get_id();
-		FnStep step([&](IParallelExecutor& exec)
+		FnStep step([&](Dia::ParallelExecutor::IParallelExecutor& exec)
 		{
 			exec.ParallelFor(16, 1, [&](uint32_t, uint32_t)
 			{
@@ -640,7 +640,7 @@ TEST(DeferredStepLauncherTest, CapOneTwoChannelsBothCompleteSecondQueues)
 		JobStepLauncher launcher(jobs, CapOf(1, 8));
 		Latch started, release;
 		std::vector<uint32_t> o1(200, 0), o2(200, 0);
-		FnStep first([&](IParallelExecutor& e) { started.Open(); release.Wait(); FillBody(o1)(e); });
+		FnStep first([&](Dia::ParallelExecutor::IParallelExecutor& e) { started.Open(); release.Wait(); FillBody(o1)(e); });
 		FnStep second(FillBody(o2));
 		const LaunchToken t1 = launcher.Launch(first, LaunchInfo());
 		started.Wait();
@@ -671,7 +671,7 @@ TEST(DeferredStepLauncherTest, StepThatNeverCallsParallelForCompletesAndHoldsNoS
 	jobs.Initialize(4);
 	{
 		JobStepLauncher launcher(jobs, CapOf(2));
-		FnStep step([](IParallelExecutor&) {});
+		FnStep step([](Dia::ParallelExecutor::IParallelExecutor&) {});
 		const LaunchToken t = launcher.Launch(step, LaunchInfo());
 		launcher.Wait(t);
 		EXPECT_TRUE(launcher.IsComplete(t));
@@ -693,7 +693,7 @@ TEST(DeferredStepLauncherTest, StepCallingParallelForTwiceInOneRun)
 	{
 		JobStepLauncher launcher(jobs, CapOf(2));
 		std::vector<uint32_t> a(300, 0), b(77, 0);
-		FnStep step([&](IParallelExecutor& e)
+		FnStep step([&](Dia::ParallelExecutor::IParallelExecutor& e)
 		{
 			e.ParallelFor(static_cast<uint32_t>(a.size()), 4, [&](uint32_t s, uint32_t en) { for (uint32_t i = s; i < en; ++i) { a[i] = i + 1; } });
 			EXPECT_EQ(e.GetLastRangeCount(), 8u);   // clamp(ceil(300/4), 1, 2 * 4)
@@ -718,7 +718,7 @@ TEST(DeferredStepLauncherTest, SingleElementStepWithCapEightUsesOneRange)
 		JobStepLauncher launcher(jobs, CapOf(8));
 		uint32_t ranges = 0;
 		int calls = 0;
-		FnStep step([&](IParallelExecutor& e)
+		FnStep step([&](Dia::ParallelExecutor::IParallelExecutor& e)
 		{
 			e.ParallelFor(1, 1, [&](uint32_t, uint32_t) { ++calls; });
 			ranges = e.GetLastRangeCount();
@@ -771,7 +771,7 @@ TEST(DeferredStepLauncherTest, PoolFailingMidStepCompletesInline)
 		launcher.GetCapGate().SetSubmitFailureHookForTest([&poolDead] { return poolDead.load(); });
 		Latch started, go;
 		std::vector<uint32_t> out(640, 0);
-		FnStep step([&](IParallelExecutor& e)
+		FnStep step([&](Dia::ParallelExecutor::IParallelExecutor& e)
 		{
 			started.Open();
 			go.Wait();
@@ -817,7 +817,7 @@ TEST(DeferredStepCapStarvationTest, SLOW_GameplayJobNotStarvedByStep)
 		JobStepLauncher launcher(jobs, CapOf(1, 16));
 		Latch started;
 		std::atomic<int> rangesRun{ 0 };
-		FnStep step([&](IParallelExecutor& e)
+		FnStep step([&](Dia::ParallelExecutor::IParallelExecutor& e)
 		{
 			e.ParallelFor(16, 1, [&](uint32_t, uint32_t)
 			{

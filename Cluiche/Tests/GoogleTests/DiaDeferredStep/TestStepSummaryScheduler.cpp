@@ -3,12 +3,12 @@
 #include <DiaDeferredStep/DeferredStepScheduler.h>
 #include <DiaDeferredStep/DeferredStepTypes.h>
 #include <DiaDeferredStep/IDeferredStep.h>
-#include <DiaDeferredStep/IParallelExecutor.h>
+#include <DiaParallelExecutor/IParallelExecutor.h>
 #include <DiaDeferredStep/IStepLauncher.h>
 #include <DiaDeferredStep/IStepSummarySink.h>
 #include <DiaDeferredStep/JobStepLauncher.h>
 #include <DiaDeferredStep/RangeTiming.h>
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 #include <DiaObservation/Profile/StepSummaryRecord.h>
 #include <DiaThreading/JobSystem.h>
 #include <atomic>
@@ -46,16 +46,16 @@ namespace
 	class FnStep final : public IDeferredStep
 	{
 	public:
-		explicit FnStep(std::function<void(IParallelExecutor&)> body) : mBody(std::move(body)) {}
+		explicit FnStep(std::function<void(Dia::ParallelExecutor::IParallelExecutor&)> body) : mBody(std::move(body)) {}
 		void Capture() override {}
-		void Run(IParallelExecutor& executor) override { mBody(executor); }
+		void Run(Dia::ParallelExecutor::IParallelExecutor& executor) override { mBody(executor); }
 		void Apply() override { ++applies; }
 		uint32_t GetPendingVersion() const override { return 1; }
 		void SerializePending(Dia::SaveGame::SaveContext&) const override {}
 		void DeserializePending(Dia::SaveGame::LoadContext&) override {}
 		int applies = 0;
 	private:
-		std::function<void(IParallelExecutor&)> mBody;
+		std::function<void(Dia::ParallelExecutor::IParallelExecutor&)> mBody;
 	};
 
 	// Forwards to a real launcher and keeps a copy of the range timings the scheduler asked for.
@@ -93,7 +93,7 @@ namespace
 		void Release(LaunchToken) override {}
 		bool RanInlineWholly(LaunchToken) const override { return true; }
 	private:
-		SerialExecutor mExecutor;
+		Dia::ParallelExecutor::SerialExecutor mExecutor;
 	};
 
 	// Real JobSystem + JobStepLauncher + scheduler with a capturing sink. workers == 0: the job system is never initialised.
@@ -135,9 +135,9 @@ namespace
 	};
 
 	// ParallelFor over many items; every range spins `us` microseconds.
-	std::function<void(IParallelExecutor&)> SpinBody(int us, uint32_t count = 1000, uint32_t* rangeCountOut = nullptr)
+	std::function<void(Dia::ParallelExecutor::IParallelExecutor&)> SpinBody(int us, uint32_t count = 1000, uint32_t* rangeCountOut = nullptr)
 	{
-		return [us, count, rangeCountOut](IParallelExecutor& ex)
+		return [us, count, rangeCountOut](Dia::ParallelExecutor::IParallelExecutor& ex)
 		{
 			ex.ParallelFor(count, 1, [us](uint32_t, uint32_t) { SpinMicros(us); });
 			if (rangeCountOut) { *rangeCountOut = ex.GetLastRangeCount(); }
@@ -196,7 +196,7 @@ TEST(DeferredStepSummaryScheduler, LoadDiscardWritesNoRecord)
 {
 	Rig rig(4, 4);
 	FnStep inFlight(SpinBody(100));
-	FnStep restored([](IParallelExecutor&) {});
+	FnStep restored([](Dia::ParallelExecutor::IParallelExecutor&) {});
 	const auto a = rig.Reg("sumLoadA", inFlight);
 	const auto b = rig.Reg("sumLoadB", restored);
 	ASSERT_EQ(rig.sched->Kick(a, 1, 100), KickResult::kLaunched);
@@ -278,7 +278,7 @@ TEST(DeferredStepSummaryScheduler, SumsAndRangeCountMatchTheExecutorsRanges)
 TEST(DeferredStepSummaryScheduler, KickToFirstRangeGapIsAccountedForWithinFiveMillisecondsTolerance)
 {
 	Rig rig(4, 4);
-	FnStep step([](IParallelExecutor& ex) { ex.ParallelFor(1, 1, [](uint32_t, uint32_t) { SpinMicros(100); }); });
+	FnStep step([](Dia::ParallelExecutor::IParallelExecutor& ex) { ex.ParallelFor(1, 1, [](uint32_t, uint32_t) { SpinMicros(100); }); });
 	const auto id = rig.Reg("sumRecon", step);
 	ASSERT_EQ(rig.sched->Kick(id, 1, 5), KickResult::kLaunched);
 	SleepMs(60);
@@ -295,7 +295,7 @@ TEST(DeferredStepSummaryScheduler, KickToFirstRangeGapIsAccountedForWithinFiveMi
 TEST(DeferredStepSummaryScheduler, LateStepRecordsStallAndStalledFlag)
 {
 	Rig rig(4, 4);
-	FnStep step([](IParallelExecutor& ex) { ex.ParallelFor(2, 1, [](uint32_t, uint32_t) { SleepMs(40); }); });
+	FnStep step([](Dia::ParallelExecutor::IParallelExecutor& ex) { ex.ParallelFor(2, 1, [](uint32_t, uint32_t) { SleepMs(40); }); });
 	const auto id = rig.Reg("sumStall", step);
 	ASSERT_EQ(rig.sched->Kick(id, 1, 1), KickResult::kLaunched);
 	rig.sched->Tick(1);
@@ -348,8 +348,8 @@ TEST(DeferredStepSummaryScheduler, CapOfOneShowsCapWaitOnSecondChannelButNoWorke
 TEST(DeferredStepSummaryScheduler, CapEqualToWorkersOnIdlePoolHasZeroCapWait)
 {
 	Rig rig(4, 4);
-	FnStep stepA([](IParallelExecutor& ex) { ex.ParallelFor(2, 1, [](uint32_t, uint32_t) { SpinMicros(200); }); });
-	FnStep stepB([](IParallelExecutor& ex) { ex.ParallelFor(2, 1, [](uint32_t, uint32_t) { SpinMicros(200); }); });
+	FnStep stepA([](Dia::ParallelExecutor::IParallelExecutor& ex) { ex.ParallelFor(2, 1, [](uint32_t, uint32_t) { SpinMicros(200); }); });
+	FnStep stepB([](Dia::ParallelExecutor::IParallelExecutor& ex) { ex.ParallelFor(2, 1, [](uint32_t, uint32_t) { SpinMicros(200); }); });
 	const auto a = rig.Reg("sumFullA", stepA);
 	const auto b = rig.Reg("sumFullB", stepB);
 	ASSERT_EQ(rig.sched->Kick(a, 1, 1), KickResult::kLaunched);
@@ -370,7 +370,7 @@ TEST(DeferredStepSummaryScheduler, InlineLauncherStepRecordsRanInlineWholly)
 	DeferredStepScheduler sched(launcher);
 	CapturingSink sink;
 	sched.SetSummarySink(&sink);
-	FnStep step([](IParallelExecutor& ex) { ex.ParallelFor(10, 1, [](uint32_t, uint32_t) { SpinMicros(2000); }); });
+	FnStep step([](Dia::ParallelExecutor::IParallelExecutor& ex) { ex.ParallelFor(10, 1, [](uint32_t, uint32_t) { SpinMicros(2000); }); });
 	const Dia::Core::StringCRC id("sumInline");
 	ASSERT_TRUE(sched.Register(id, step));
 	ASSERT_EQ(sched.Kick(id, 1, 1), KickResult::kLaunched);
@@ -406,7 +406,7 @@ TEST(DeferredStepSummaryScheduler, JobLauncherWithoutJobSystemRecordsRanInlineWh
 TEST(DeferredStepSummaryScheduler, RestoredStepRecordsRestoredFlagWithZeroedRangeFields)
 {
 	Rig rig(4, 4);
-	FnStep step([](IParallelExecutor&) {});
+	FnStep step([](Dia::ParallelExecutor::IParallelExecutor&) {});
 	const auto id = rig.Reg("sumRestore", step);
 	ASSERT_TRUE(rig.sched->RestorePending(id, 3, 7));
 	rig.sched->Tick(6);
@@ -481,7 +481,7 @@ namespace
 	{
 	public:
 		void Capture() override {}
-		void Run(IParallelExecutor& ex) override { ex.ParallelFor(4, 1, [](uint32_t, uint32_t) { SpinMicros(50); }); }
+		void Run(Dia::ParallelExecutor::IParallelExecutor& ex) override { ex.ParallelFor(4, 1, [](uint32_t, uint32_t) { SpinMicros(50); }); }
 		void Apply() override { ++applies; if (onApply) { onApply(); } }
 		uint32_t GetPendingVersion() const override { return 1; }
 		void SerializePending(Dia::SaveGame::SaveContext&) const override {}
@@ -581,7 +581,7 @@ TEST(DeferredStepSummaryScheduler, TwoChannelsAppliedInOneTickEmitInKickOrder)
 TEST(DeferredStepSummaryScheduler, EmptyParallelForStepEmitsRecordWithoutCrashing)
 {
 	Rig rig(4, 4);
-	FnStep step([](IParallelExecutor& ex) { ex.ParallelFor(0, 1, [](uint32_t, uint32_t) {}); });
+	FnStep step([](Dia::ParallelExecutor::IParallelExecutor& ex) { ex.ParallelFor(0, 1, [](uint32_t, uint32_t) {}); });
 	const auto id = rig.Reg("sumEmpty", step);
 	ASSERT_EQ(rig.sched->Kick(id, 1, 1), KickResult::kLaunched);
 	rig.sched->Tick(1);
@@ -603,8 +603,8 @@ TEST(DeferredStepSummaryScheduler, NoSinkSchedulerStatsMatchSinkRunForTheSameFlo
 		Rig rig(4, 4);
 		if (!withSink) { rig.sched->SetSummarySink(nullptr); }
 		FnStep normal(SpinBody(100, 8));
-		FnStep slow([](IParallelExecutor& ex) { ex.ParallelFor(1, 1, [](uint32_t, uint32_t) { SleepMs(30); }); });
-		FnStep restored([](IParallelExecutor&) {});
+		FnStep slow([](Dia::ParallelExecutor::IParallelExecutor& ex) { ex.ParallelFor(1, 1, [](uint32_t, uint32_t) { SleepMs(30); }); });
+		FnStep restored([](Dia::ParallelExecutor::IParallelExecutor&) {});
 		FnStep dropped(SpinBody(100, 8));
 		const auto n = rig.Reg("nsN", normal);
 		const auto s = rig.Reg("nsS", slow);
@@ -641,7 +641,7 @@ TEST(DeferredStepSummaryScheduler, SoakThousandStepsSinkOnVersusOffPrintsBallpar
 	{
 		Rig rig(4, 4);
 		if (!sinkOn) { rig.sched->SetSummarySink(nullptr); }
-		FnStep step([](IParallelExecutor& ex) { ex.ParallelFor(64, 8, [](uint32_t, uint32_t) { SpinMicros(5); }); });
+		FnStep step([](Dia::ParallelExecutor::IParallelExecutor& ex) { ex.ParallelFor(64, 8, [](uint32_t, uint32_t) { SpinMicros(5); }); });
 		const auto id = rig.Reg("sumSoak", step);
 		const auto t0 = std::chrono::steady_clock::now();
 		for (int k = 1; k <= kSteps; ++k)

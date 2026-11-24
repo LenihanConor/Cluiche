@@ -25,7 +25,7 @@ namespace
 	public:
 		explicit WaitProbeStep(const Testing::ManualStepLauncher& launcher) : mLauncher(launcher) {}
 		void Capture() override {}
-		void Run(IParallelExecutor&) override {}
+		void Run(Dia::ParallelExecutor::IParallelExecutor&) override {}
 		void Apply() override
 		{
 			++mApplyCount;
@@ -52,7 +52,7 @@ namespace
 	public:
 		explicit OrderProbeStep(const Testing::ManualStepLauncher& launcher) : mLauncher(launcher) {}
 		void Capture() override { ++mCaptureCount; mLaunchesAtCapture = mLauncher.GetLaunchCount(); }
-		void Run(IParallelExecutor&) override {}
+		void Run(Dia::ParallelExecutor::IParallelExecutor&) override {}
 		void Apply() override {}
 		uint32_t GetPendingVersion() const override { return 1; }
 		void SerializePending(Dia::SaveGame::SaveContext&) const override {}

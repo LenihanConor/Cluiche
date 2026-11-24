@@ -7,8 +7,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DeferredStepTypes.h" />
-    <ClInclude Include="IParallelExecutor.h" />
-    <ClInclude Include="SerialExecutor.h" />
     <ClInclude Include="IDeferredStep.h" />
     <ClInclude Include="IStepLauncher.h" />
     <ClInclude Include="DeferredStepObservation.h" />
@@ -57,7 +55,6 @@
     <ClInclude Include="Testing\FakeStepStage.h">
       <Filter>Testing</Filter>
     </ClInclude>
-    <ClCompile Include="SerialExecutor.cpp" />
     <ClCompile Include="DeferredStepObservation.cpp" />
     <ClCompile Include="DeferredStepScheduler.cpp" />
     <ClCompile Include="CapGate.cpp" />

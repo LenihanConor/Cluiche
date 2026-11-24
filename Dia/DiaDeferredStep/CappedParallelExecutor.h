@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <vector>
 #include <DiaDeferredStep/DeferredStepTypes.h>
-#include <DiaDeferredStep/IParallelExecutor.h>
+#include <DiaParallelExecutor/IParallelExecutor.h>
 #include <DiaDeferredStep/RangeTiming.h>
 
 namespace Dia::DeferredStep
@@ -21,7 +21,7 @@ namespace Dia::DeferredStep
 	//
 	// ParallelFor returns only after every range has finished. The first exception thrown by a range
 	// body is captured, all other ranges still finish, then it is rethrown.
-	class CappedParallelExecutor : public IParallelExecutor
+	class CappedParallelExecutor : public Dia::ParallelExecutor::IParallelExecutor
 	{
 	public:
 		CappedParallelExecutor(CapGate& gate, const LaunchInfo& info);
@@ -29,7 +29,7 @@ namespace Dia::DeferredStep
 		CappedParallelExecutor(const CappedParallelExecutor&) = delete;
 		CappedParallelExecutor& operator=(const CappedParallelExecutor&) = delete;
 
-		void     ParallelFor(uint32_t count, uint32_t minRange, const RangeFn& fn) override;
+		void     ParallelFor(uint32_t count, uint32_t minRange, const Dia::ParallelExecutor::RangeFn& fn) override;
 		uint32_t GetLastRangeCount() const override { return mLastRangeCount; }
 
 		// Timings reflect the LAST ParallelFor call only (the array is rebuilt per call).

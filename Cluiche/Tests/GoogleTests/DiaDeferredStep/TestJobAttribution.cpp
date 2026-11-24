@@ -48,15 +48,15 @@ namespace
 	class FnStep final : public IDeferredStep
 	{
 	public:
-		explicit FnStep(std::function<void(IParallelExecutor&)> body) : mBody(std::move(body)) {}
+		explicit FnStep(std::function<void(Dia::ParallelExecutor::IParallelExecutor&)> body) : mBody(std::move(body)) {}
 		void Capture() override {}
-		void Run(IParallelExecutor& executor) override { mBody(executor); }
+		void Run(Dia::ParallelExecutor::IParallelExecutor& executor) override { mBody(executor); }
 		void Apply() override {}
 		uint32_t GetPendingVersion() const override { return 1; }
 		void SerializePending(Dia::SaveGame::SaveContext&) const override {}
 		void DeserializePending(Dia::SaveGame::LoadContext&) override {}
 	private:
-		std::function<void(IParallelExecutor&)> mBody;
+		std::function<void(Dia::ParallelExecutor::IParallelExecutor&)> mBody;
 	};
 
 	CapConfig CapOf(uint32_t m, uint32_t rangesPerWorker = 4)
@@ -79,7 +79,7 @@ namespace
 	uint32_t RunStep(JobStepLauncher& launcher, const LaunchInfo& info)
 	{
 		uint32_t rangeCount = 0;
-		FnStep step([&rangeCount](IParallelExecutor& ex)
+		FnStep step([&rangeCount](Dia::ParallelExecutor::IParallelExecutor& ex)
 		{
 			ex.ParallelFor(1000, 1, [](uint32_t, uint32_t) {});
 			rangeCount = ex.GetLastRangeCount();
@@ -211,8 +211,8 @@ TEST(DeferredStepAttribution, ConcurrentChannelsHaveDistinctOwnersAndUniqueRange
 	uint32_t rcB = 0;
 	{
 		JobStepLauncher launcher(js, CapOf(4));
-		FnStep stepA([&rcA](IParallelExecutor& ex) { ex.ParallelFor(1000, 1, [](uint32_t, uint32_t) {}); rcA = ex.GetLastRangeCount(); });
-		FnStep stepB([&rcB](IParallelExecutor& ex) { ex.ParallelFor(1000, 1, [](uint32_t, uint32_t) {}); rcB = ex.GetLastRangeCount(); });
+		FnStep stepA([&rcA](Dia::ParallelExecutor::IParallelExecutor& ex) { ex.ParallelFor(1000, 1, [](uint32_t, uint32_t) {}); rcA = ex.GetLastRangeCount(); });
+		FnStep stepB([&rcB](Dia::ParallelExecutor::IParallelExecutor& ex) { ex.ParallelFor(1000, 1, [](uint32_t, uint32_t) {}); rcB = ex.GetLastRangeCount(); });
 		LaunchToken ta = launcher.Launch(stepA, a);
 		LaunchToken tb = launcher.Launch(stepB, b);
 		launcher.Wait(ta);

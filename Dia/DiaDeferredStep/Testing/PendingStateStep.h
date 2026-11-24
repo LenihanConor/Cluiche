@@ -10,7 +10,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaDeferredStep/DeferredStepTypes.h>
 #include <DiaDeferredStep/IDeferredStep.h>
-#include <DiaDeferredStep/IParallelExecutor.h>
+#include <DiaParallelExecutor/IParallelExecutor.h>
 #include <DiaSaveGame/LoadContext.h>
 #include <DiaSaveGame/SaveContext.h>
 
@@ -55,7 +55,7 @@ namespace Dia::DeferredStep::Testing
 			}
 		}
 
-		void Run(IParallelExecutor&) override
+		void Run(Dia::ParallelExecutor::IParallelExecutor&) override
 		{
 			++mRunCount;
 			uint32_t acc = 17;

@@ -43,7 +43,7 @@ namespace
 		}
 
 		void Capture() override {}
-		void Run(IParallelExecutor&) override { ++mRunCount; }
+		void Run(Dia::ParallelExecutor::IParallelExecutor&) override { ++mRunCount; }
 		void Apply() override
 		{
 			++mApplyCount;
@@ -588,7 +588,7 @@ namespace
 		}
 
 		void Capture() override {}
-		void Run(IParallelExecutor&) override {}
+		void Run(Dia::ParallelExecutor::IParallelExecutor&) override {}
 		void Apply() override {}
 		uint32_t GetPendingVersion() const override { return 1; }
 		void DeserializePending(Dia::SaveGame::LoadContext&) override {}

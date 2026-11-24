@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 #include <DiaObservation/Log/ISink.h>
 #include <DiaObservation/Log/LogEntry.h>
 #include <DiaObservation/Log/Logger.h>
@@ -159,7 +159,7 @@ protected:
     FakeHooks hooks;
     FakeStage stage;
     CountingSink sink;
-    Dia::DeferredStep::SerialExecutor exec;
+    Dia::ParallelExecutor::SerialExecutor exec;
 };
 
 // ---- Task 15b: ranges from sidecars ----------------------------------------------------------------

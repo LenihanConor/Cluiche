@@ -4,7 +4,7 @@
 #include <DiaDeferredStep/StepChainConfigLoader.h>
 #include <DiaDeferredStep/Testing/FakeStepStage.h>
 
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 
 #include <cstdio>
 #include <memory>
@@ -52,7 +52,7 @@ namespace
         EXPECT_FALSE(chain.RegisterStage(StringCRC("overflow"), extra));
         EXPECT_EQ(chain.RegisteredCount(), Capacity);
 
-        SerialExecutor exec;
+        Dia::ParallelExecutor::SerialExecutor exec;
         ASSERT_TRUE(chain.Capture(1));
         ASSERT_TRUE(chain.Run(exec));
         ASSERT_TRUE(chain.Commit());

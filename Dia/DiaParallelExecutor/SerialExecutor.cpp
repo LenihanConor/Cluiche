@@ -1,6 +1,6 @@
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 
-namespace Dia::DeferredStep
+namespace Dia::ParallelExecutor
 {
 	void SerialExecutor::ParallelFor(uint32_t count, uint32_t /*minRange*/, const RangeFn& fn)
 	{

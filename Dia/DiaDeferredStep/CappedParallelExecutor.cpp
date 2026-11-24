@@ -28,7 +28,7 @@ namespace Dia::DeferredStep
 	{
 	}
 
-	void CappedParallelExecutor::ParallelFor(uint32_t count, uint32_t minRange, const RangeFn& fn)
+	void CappedParallelExecutor::ParallelFor(uint32_t count, uint32_t minRange, const Dia::ParallelExecutor::RangeFn& fn)
 	{
 		DIA_TRACE_ZONE("CappedParallelExecutor::ParallelFor", Dia::Observation::Trace::Category::kDiaDeferredStep);
 		DIA_PROFILE_SCOPE("CappedParallelExecutor::ParallelFor", Dia::Observation::Profile::Category::kDiaDeferredStep);

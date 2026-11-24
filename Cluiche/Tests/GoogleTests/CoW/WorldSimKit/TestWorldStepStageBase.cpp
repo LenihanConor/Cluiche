@@ -11,7 +11,7 @@
 #include <DiaObservation/Log/LogEntry.h>
 #include <DiaObservation/Log/Logger.h>
 
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 #include <Shared/WorldStep/Testing/FakeWorldStage.h>
 
 namespace CoW {
@@ -21,7 +21,7 @@ namespace Testing {
 TEST(FakeWorldStageTest, RecordsCaptureRunCommitInOrder)
 {
     FakeWorldStage stage;
-    Dia::DeferredStep::SerialExecutor exec;
+    Dia::ParallelExecutor::SerialExecutor exec;
     stage.Capture(7);
     stage.Run(exec);
     stage.Commit();
@@ -118,7 +118,7 @@ protected:
     FakeGenerationHold hold;
     FakeStage stage;
     CountingSink sink;
-    Dia::DeferredStep::SerialExecutor exec;
+    Dia::ParallelExecutor::SerialExecutor exec;
 };
 
 }  // namespace

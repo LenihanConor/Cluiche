@@ -2,20 +2,20 @@
 #include <gtest/gtest.h>
 #include <DiaDeferredStep/Testing/FakeStepStage.h>
 
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 
 using namespace Dia::DeferredStep;
 using namespace Dia::DeferredStep::Testing;
 using Dia::Core::StringCRC;
-using Dia::DeferredStep::SerialExecutor;
+using Dia::ParallelExecutor::SerialExecutor;
 
 namespace
 {
     // Counts ParallelFor calls so the fake's configurable count can be checked.
-    class CountingExecutor final : public Dia::DeferredStep::IParallelExecutor
+    class CountingExecutor final : public Dia::ParallelExecutor::IParallelExecutor
     {
     public:
-        void ParallelFor(uint32_t, uint32_t, const Dia::DeferredStep::RangeFn&) override { ++calls; }
+        void ParallelFor(uint32_t, uint32_t, const Dia::ParallelExecutor::RangeFn&) override { ++calls; }
         uint32_t GetLastRangeCount() const override { return 1; }
         uint32_t calls = 0;
     };
@@ -25,7 +25,7 @@ TEST(StepFake, RecordsCapturedRunCommitInOrderWithKey)
 {
     CallLog log;
     FakeStepStage fake(StringCRC("weather"), log);
-    SerialExecutor exec;
+    Dia::ParallelExecutor::SerialExecutor exec;
 
     fake.Capture(42);
     fake.Run(exec);
@@ -68,7 +68,7 @@ TEST(StepFake, RecordsExecutorIdentity)   // AC 19
 {
     CallLog log;
     FakeStepStage fake(StringCRC("weather"), log);
-    SerialExecutor exec;
+    Dia::ParallelExecutor::SerialExecutor exec;
     EXPECT_EQ(fake.LastExecutor(), nullptr);
     fake.Capture(1);
     fake.Run(exec);
@@ -90,7 +90,7 @@ TEST(StepFake, PoisonedSourceDoesNotAffectRun)
 {
     CallLog log;
     FakeStepStage fake(StringCRC("weather"), log);
-    SerialExecutor exec;
+    Dia::ParallelExecutor::SerialExecutor exec;
     fake.source = 5;
     fake.Capture(1);
     fake.source = 999;   // poison after capture
@@ -107,7 +107,7 @@ TEST(StepFake, CommitOrderProbeSeesOtherCommittedValueAtOwnCommit)
     CommitOrderProbe probe;
     probe.other = &first;
     second.SetCommitProbe(&probe);
-    SerialExecutor exec;
+    Dia::ParallelExecutor::SerialExecutor exec;
     first.source = 2;
     second.source = 1;
 
@@ -123,7 +123,7 @@ TEST(StepFake, ResetOnCaptureClearsPriorWorkingState)
 {
     CallLog log;
     FakeStepStage fake(StringCRC("weather"), log);
-    SerialExecutor exec;
+    Dia::ParallelExecutor::SerialExecutor exec;
     fake.resetOnCapture = true;
     fake.source = 4;
     fake.Capture(1);

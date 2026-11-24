@@ -13,7 +13,7 @@
 #include <DiaDeferredStep/DeferredStepScheduler.h>
 #include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaDeferredStep/IStepLauncher.h>
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 #include <DiaDeferredStep/Testing/ManualStepLauncher.h>
 #include <DiaDeferredStep/Testing/PendingStateStep.h>
 #include <DiaDeferredStep/Testing/ScriptedKeyDriver.h>
@@ -187,7 +187,7 @@ namespace
 			Entry* entry = &e;
 			e.thread = std::thread([stepPtr, entry]()
 			{
-				SerialExecutor executor;
+				Dia::ParallelExecutor::SerialExecutor executor;
 				stepPtr->Run(executor);
 				entry->done = true;
 			});

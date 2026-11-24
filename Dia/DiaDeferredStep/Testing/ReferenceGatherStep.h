@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <vector>
 #include <DiaDeferredStep/IDeferredStep.h>
-#include <DiaDeferredStep/IParallelExecutor.h>
+#include <DiaParallelExecutor/IParallelExecutor.h>
 
 namespace Dia::DeferredStep::Testing
 {
@@ -33,7 +33,7 @@ namespace Dia::DeferredStep::Testing
 			mTotal = 0;
 		}
 
-		void Run(IParallelExecutor& executor) override
+		void Run(Dia::ParallelExecutor::IParallelExecutor& executor) override
 		{
 			const uint32_t n = mCellCount;
 			executor.ParallelFor(n, 1, [this, n](uint32_t b, uint32_t e)

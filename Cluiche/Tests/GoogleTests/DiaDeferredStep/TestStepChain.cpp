@@ -3,7 +3,7 @@
 #include <DiaDeferredStep/StepChain.h>
 #include <DiaDeferredStep/Testing/FakeStepStage.h>
 
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 
 #include <cstdio>
 #include <initializer_list>
@@ -13,7 +13,7 @@
 using namespace Dia::DeferredStep;
 using namespace Dia::DeferredStep::Testing;
 using Dia::Core::StringCRC;
-using Dia::DeferredStep::SerialExecutor;
+using Dia::ParallelExecutor::SerialExecutor;
 
 namespace
 {
@@ -42,7 +42,7 @@ namespace
         FakeStepStage weather{StringCRC("weather"), log};
         FakeStepStage ecology{StringCRC("ecology"), log};
         StepChain<> chain;
-        SerialExecutor exec;
+        Dia::ParallelExecutor::SerialExecutor exec;
 
         Rig()
         {
@@ -69,10 +69,10 @@ namespace
         EXPECT_EQ(log[offset + 1].phase, phase);
     }
 
-    class CountingExecutor final : public Dia::DeferredStep::IParallelExecutor
+    class CountingExecutor final : public Dia::ParallelExecutor::IParallelExecutor
     {
     public:
-        void ParallelFor(uint32_t, uint32_t, const Dia::DeferredStep::RangeFn&) override { ++calls; }
+        void ParallelFor(uint32_t, uint32_t, const Dia::ParallelExecutor::RangeFn&) override { ++calls; }
         uint32_t GetLastRangeCount() const override { return 1; }
         uint32_t calls = 0;
     };
@@ -105,7 +105,7 @@ namespace
             captureNested = mChain.Capture(9);
             configureNested = mChain.Configure(StepChainConfig<>());
         }
-        void Run(Dia::DeferredStep::IParallelExecutor& ex) override { runNested = mChain.Run(ex); }
+        void Run(Dia::ParallelExecutor::IParallelExecutor& ex) override { runNested = mChain.Run(ex); }
         void Commit() override { commitNested = mChain.Commit(); }
         void SerializePending(Dia::SaveGame::SaveContext&) const override {}
         void DeserializePending(Dia::SaveGame::LoadContext&) override {}
@@ -462,7 +462,7 @@ TEST(StepChain, StageUnregisteredAfterCaptureStillRunsCommitsAndIsGoneNextStep) 
     CallLog log;
     auto weather = std::make_unique<FakeStepStage>(StringCRC("weather"), log);
     auto ecology = std::make_unique<FakeStepStage>(StringCRC("ecology"), log);
-    SerialExecutor exec;
+    Dia::ParallelExecutor::SerialExecutor exec;
     StepChain<> chain;
     chain.Configure(MakeConfig({"weather", "ecology"}));
     chain.RegisterStage(StringCRC("weather"), *weather);
@@ -731,7 +731,7 @@ TEST(StepChain, ChainCallFromInsideStageMethodIsNoOpReturningFalseInRelease)   /
     GTEST_SKIP() << "Debug build asserts on re-entrant chain calls";
 #else
     StepChain<> chain;
-    SerialExecutor exec;
+    Dia::ParallelExecutor::SerialExecutor exec;
     ReentrantStage stage(chain);
     chain.Configure(MakeConfig({"weather"}));
     chain.RegisterStage(StringCRC("weather"), stage);

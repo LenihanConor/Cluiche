@@ -55,7 +55,7 @@ namespace Dia::DeferredStep
         bool UnknownStages(IdList& out) const;   // registered but not in order; true if any
 
         bool Capture(StepKey key);                  // false if not Idle (or not AllReady / re-entrant)
-        bool Run(IParallelExecutor& executor);      // false if not Captured
+        bool Run(Dia::ParallelExecutor::IParallelExecutor& executor);      // false if not Captured
         bool Commit();                              // false if not Ran
         void Abandon();                             // Idle without Commit; applies pending removals
         bool RestoreRan(StepKey key);               // load only: Idle -> Ran without calling any stage
@@ -304,7 +304,7 @@ namespace Dia::DeferredStep
     }
 
     template <uint32_t Capacity>
-    bool StepChain<Capacity>::Run(IParallelExecutor& executor)
+    bool StepChain<Capacity>::Run(Dia::ParallelExecutor::IParallelExecutor& executor)
     {
         if (!BeginCall()) { return false; }
         if (mPhase != ChainPhase::Captured) { return false; }

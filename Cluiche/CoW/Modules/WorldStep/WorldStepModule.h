@@ -14,7 +14,7 @@
 #include <DiaDeferredStep/DeferredStepScheduler.h>
 #include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaDeferredStep/IStepKeySource.h>
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 #include <DiaMessageBus/BusSubscriptionHandle.h>
 #include <DiaObservation/Health/HealthReporterBase.h>
 #include <DiaObservation/Metric/Counter.h>
@@ -97,7 +97,7 @@ public:
 
     // ---- IDeferredStep ----
     void Capture() override;
-    void Run(Dia::DeferredStep::IParallelExecutor& executor) override;
+    void Run(Dia::ParallelExecutor::IParallelExecutor& executor) override;
     void Apply() override;
     uint32_t GetPendingVersion() const override { return static_cast<uint32_t>(kWorldVersion); }
     bool ValidatePending(Dia::SaveGame::LoadContext& ctx) const override;      // read-only, refuses the whole load
@@ -192,7 +192,7 @@ private:
 
     // ---- collaborators (SimPU only, no locks) ----
     Dia::DeferredStep::StepChain<> mChain;
-    Dia::DeferredStep::SerialExecutor mSerial;
+    Dia::ParallelExecutor::SerialExecutor mSerial;
     Dia::DeferredStep::DeferredStepScheduler* mScheduler = nullptr;   // borrowed
     Cluiche::AppFlow::SimQueryHostModule* mQueryHost = nullptr;       // borrowed
     TestHosts mTestHosts;

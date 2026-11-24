@@ -1,8 +1,8 @@
 #pragma once
 
-#include <DiaDeferredStep/IParallelExecutor.h>
+#include <DiaParallelExecutor/IParallelExecutor.h>
 
-namespace Dia::DeferredStep
+namespace Dia::ParallelExecutor
 {
 	// One range, on the calling thread. Tests, and the fallback when no job system exists.
 	class SerialExecutor final : public IParallelExecutor

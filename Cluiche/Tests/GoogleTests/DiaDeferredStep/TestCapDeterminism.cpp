@@ -2,7 +2,7 @@
 #include <DiaDeferredStep/CapConfig.h>
 #include <DiaDeferredStep/CapGate.h>
 #include <DiaDeferredStep/CappedParallelExecutor.h>
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 #include <DiaDeferredStep/Testing/ReorderingExecutor.h>
 #include <DiaDeferredStep/Testing/ReferenceGatherStep.h>
 #include <DiaThreading/JobSystem.h>
@@ -29,7 +29,7 @@ namespace
 	{
 		ReferenceGatherStep step(cells, kSeed);
 		step.Capture();
-		SerialExecutor serial;
+		Dia::ParallelExecutor::SerialExecutor serial;
 		step.Run(serial);
 		return step.GetResultBytes();
 	}

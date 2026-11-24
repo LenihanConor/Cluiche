@@ -3,7 +3,7 @@
 #pragma once
 
 #include <DiaDeferredStep/DeferredStepTypes.h>
-#include <DiaDeferredStep/IParallelExecutor.h>
+#include <DiaParallelExecutor/IParallelExecutor.h>
 
 namespace Dia::SaveGame
 {
@@ -27,7 +27,7 @@ namespace Dia::DeferredStep
 
         virtual bool IsReady() const = 0;                                      // initialised and spun up; SimPU
         virtual void Capture(StepKey key) = 0;                                 // SimPU
-        virtual void Run(IParallelExecutor& executor) = 0;                     // worker thread(s); working copy only
+        virtual void Run(Dia::ParallelExecutor::IParallelExecutor& executor) = 0;                     // worker thread(s); working copy only
         virtual void Commit() = 0;                                             // SimPU
         virtual void SerializePending(Dia::SaveGame::SaveContext& ctx) const = 0;
         virtual void DeserializePending(Dia::SaveGame::LoadContext& ctx) = 0;

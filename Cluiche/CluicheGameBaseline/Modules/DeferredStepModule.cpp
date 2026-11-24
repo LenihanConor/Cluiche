@@ -7,7 +7,7 @@
 #include <DiaDeferredStep/DeferredStepObservation.h>
 #include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaDeferredStep/JobStepLauncher.h>
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
@@ -39,7 +39,7 @@ namespace Dia::DeferredStep
 			bool RanInlineWholly(LaunchToken /*token*/) const override { return true; }
 
 		private:
-			SerialExecutor mExecutor;
+			Dia::ParallelExecutor::SerialExecutor mExecutor;
 		};
 	}
 

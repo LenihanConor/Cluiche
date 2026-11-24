@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <thread>
 #include <vector>
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 #include <DiaDeferredStep/Testing/ManualStepLauncher.h>
 #include <DiaDeferredStep/Testing/RecordingStep.h>
 #include <DiaDeferredStep/Testing/ScriptedKeyDriver.h>
@@ -164,7 +164,7 @@ TEST(DeferredStepHelperTestLauncher, DoubleReleaseIsDetected)
 TEST(DeferredStepHelperTestRecordingStep, CountsAndThreadIds)
 {
 	RecordingStep step;
-	SerialExecutor executor;
+	Dia::ParallelExecutor::SerialExecutor executor;
 	EXPECT_EQ(step.GetCaptureCount(), 0u);
 	step.Capture();
 	step.Run(executor);
@@ -183,7 +183,7 @@ TEST(DeferredStepHelperTestRecordingStep, CountsAndThreadIds)
 TEST(DeferredStepHelperTestRecordingStep, RunOnOtherThreadIsDistinguishable)
 {
 	RecordingStep step;
-	SerialExecutor executor;
+	Dia::ParallelExecutor::SerialExecutor executor;
 	step.Capture();
 	std::thread worker([&] { step.Run(executor); });
 	worker.join();
@@ -197,7 +197,7 @@ TEST(DeferredStepHelperTestRecordingStep, OnRunHookAndOrderSink)
 	RecordingStep a(1, &order), b(2, &order);
 	int hookCalls = 0;
 	a.SetOnRun([&] { ++hookCalls; });
-	SerialExecutor executor;
+	Dia::ParallelExecutor::SerialExecutor executor;
 	a.Run(executor);
 	EXPECT_EQ(hookCalls, 1);
 	b.Apply();

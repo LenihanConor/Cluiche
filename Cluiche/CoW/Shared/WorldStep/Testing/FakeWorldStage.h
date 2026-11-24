@@ -69,7 +69,7 @@ public:
         return readyValue && extraReady && !initFails;
     }
     void Capture(Dia::DeferredStep::StepKey) override { log.Add("Capture"); }
-    void Run(Dia::DeferredStep::IParallelExecutor&) override { log.Add("Run"); }
+    void Run(Dia::ParallelExecutor::IParallelExecutor&) override { log.Add("Run"); }
     void Commit() override { log.Add("Commit"); }
     void SerializePending(Dia::SaveGame::SaveContext&) const override { log.Add("SerializePending"); }
     void DeserializePending(Dia::SaveGame::LoadContext&) override { log.Add("DeserializePending"); }
@@ -122,7 +122,7 @@ struct FakeHooks : public FakeBase::Hooks
         if (appliedCount < kMaxApplied) { applied[appliedCount++] = e.value; }
         working.value += e.value;
     }
-    void RunStep(FakeSim& working, const FakeLatch& latch, Dia::DeferredStep::IParallelExecutor&) override
+    void RunStep(FakeSim& working, const FakeLatch& latch, Dia::ParallelExecutor::IParallelExecutor&) override
     {
         log.Add("RunStep");
         if (runSleepMs > 0) { std::this_thread::sleep_for(std::chrono::milliseconds(runSleepMs)); }

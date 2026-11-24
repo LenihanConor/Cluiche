@@ -4,7 +4,7 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaDeferredStep/IStepLauncher.h>
 #include <DiaDeferredStep/IDeferredStep.h>
-#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaParallelExecutor/SerialExecutor.h>
 
 namespace Dia::DeferredStep::Testing
 {
@@ -145,7 +145,7 @@ namespace Dia::DeferredStep::Testing
 		uint32_t mReleaseCount = 0;
 		uint32_t mBadReleaseCount = 0;
 		bool mAssertOnBadRelease = true;
-		SerialExecutor mSerialExecutor;
+		Dia::ParallelExecutor::SerialExecutor mSerialExecutor;
 
 		mutable Call mCalls[kCapacity];
 		mutable uint32_t mCallCount = 0;

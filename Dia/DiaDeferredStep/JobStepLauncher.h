@@ -76,7 +76,7 @@ namespace Dia::DeferredStep
 		void  RunInline(Slot& slot) const;
 		// Slot finished its gate item as kSubmitFailed but has not run yet: run it inline.
 		void  CompleteIfSubmitFailed(Slot& slot) const;
-		void  RunStepGuarded(IDeferredStep& step, IParallelExecutor& executor) const;
+		void  RunStepGuarded(IDeferredStep& step, Dia::ParallelExecutor::IParallelExecutor& executor) const;
 
 		CapGate                               mGate;      // declared before mSlots: slots are destroyed first
 		mutable std::array<Slot, kMaxInFlight> mSlots;

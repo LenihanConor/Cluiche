@@ -86,7 +86,7 @@ void SyntheticDeferredStep::Capture()
     mOutput.assign(mCellCount, 0ull);
 }
 
-void SyntheticDeferredStep::Run(Dia::DeferredStep::IParallelExecutor& executor)
+void SyntheticDeferredStep::Run(Dia::ParallelExecutor::IParallelExecutor& executor)
 {
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(mSpinMs);
     executor.ParallelFor(mCellCount, kMinRange, [this, deadline](uint32_t begin, uint32_t end)
