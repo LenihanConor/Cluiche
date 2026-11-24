@@ -258,6 +258,18 @@ def test_good_constraint_accepted():
     assert validate_schema_document(d, "f") == []
 
 
+def test_constraint_accepts_dotted_entry_keys():
+    d = _doc(_entry(key="precipitation.snow_threshold"), _entry(key="snow.melt_threshold"),
+             constraints=[{"a": "precipitation.snow_threshold", "op": "<=", "b": "snow.melt_threshold"}])
+    assert validate_schema_document(d, "f") == []
+
+
+def test_constraint_with_unknown_dotted_key_is_still_rejected():
+    d = _doc(_entry(key="precipitation.snow_threshold"), _entry(key="snow.melt_threshold"),
+             constraints=[{"a": "precipitation.snow_threshold", "op": "<=", "b": "snow.melt_thresholdX"}])
+    assert [x.rule for x in _fails(d)] == ["schema.bad-constraint"]
+
+
 # ---- map object defaults (parameter files, plan task 6) -----------------------
 
 def _map_entry(**over):

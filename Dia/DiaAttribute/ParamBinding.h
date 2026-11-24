@@ -12,6 +12,7 @@
 //   b.Bind(StringCRC("sea.enabled"), &TerrainRules::enabled);         // bool (0/1)
 //   b.BindEnum(StringCRC("sea.mode"), &TerrainRules::mode);           // enum ordinal
 //   b.BindMap(StringCRC("biome.wetness"), &TerrainRules::wetness);    // float[N] / int32_t[N] / bool[N] / E[N]
+//   b.BindMap(StringCRC("biome.base"), &Rules::base, biomeCount);      // float[N] capacity, first biomeCount bound (run-time count)
 //   BindingReport report;  b.Resolve(schema, report);                 // keys -> indices, once per schema
 //   b.Snapshot(attributeSet, rules);                                  // no allocation, no hash lookup
 //
@@ -115,6 +116,14 @@ namespace Dia::Attribute {
         void BindMap(Dia::Core::StringCRC key, bool    T::* first, uint32_t count) { Add(key, Kind::BoolMap,  OffsetOf(first), count, 0); }
         template<class E, class = std::enable_if_t<std::is_enum_v<E>>>
         void BindMap(Dia::Core::StringCRC key, E T::* first, uint32_t count) { Add(key, Kind::EnumMap, OffsetOf(first), count, static_cast<uint8_t>(sizeof(E))); }
+
+        // Capacity forms: `arr` has room for N elements but only the first `count` are bound, for maps whose key count is
+        // known at run time (e.g. one value per registry biome, up to a fixed capacity). Resolve requires the schema's
+        // expansion to equal `count` (not N); Snapshot writes elements [0, count) and leaves the rest untouched.
+        // count > N is a programming error (DIA_ASSERT; the binding is clamped to N).
+        template<size_t N> void BindMap(Dia::Core::StringCRC key, float   (T::* arr)[N], uint32_t count) { Add(key, Kind::FloatMap, OffsetOf(arr), ClampCount(count, N), 0); }
+        template<size_t N> void BindMap(Dia::Core::StringCRC key, int32_t (T::* arr)[N], uint32_t count) { Add(key, Kind::IntMap,   OffsetOf(arr), ClampCount(count, N), 0); }
+        template<size_t N> void BindMap(Dia::Core::StringCRC key, bool    (T::* arr)[N], uint32_t count) { Add(key, Kind::BoolMap,  OffsetOf(arr), ClampCount(count, N), 0); }
 
         // Maps every key to its attribute index (once per schema) and checks coverage both ways. Returns true
         // when the report is clean. Safe to call again after a schema change (Reload): it re-resolves everything.
@@ -232,6 +241,12 @@ namespace Dia::Attribute {
         };
 
         static bool IsMap(Kind k) { return k >= Kind::FloatMap; }
+
+        static size_t ClampCount(uint32_t count, size_t capacity)
+        {
+            DIA_ASSERT(count <= capacity, "ParamBinding::BindMap: count %u exceeds the array capacity %u", count, static_cast<uint32_t>(capacity));
+            return count <= capacity ? count : capacity;
+        }
 
         static AttributeKind ExpectedAttributeKind(Kind k)
         {

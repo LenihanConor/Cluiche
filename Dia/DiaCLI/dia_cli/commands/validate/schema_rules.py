@@ -248,7 +248,9 @@ def _check_constraints(constraints: object, entries: list, fail) -> List[Finding
                 problem = "'op' must be one of <, <=, >, >=, ==, !="
             else:
                 for side in (a, b):
-                    if side.partition(".")[0] not in heads:
+                    # Entry keys may themselves contain dots ("precipitation.snow_threshold"); a map column is
+                    # addressed as "<entry key>.<map key>", so accept the key or any dotted prefix of the side.
+                    if not any(side == h or side.startswith(h + ".") for h in heads):
                         problem = f"'{side}' does not name a numeric entry"
                         break
         if problem:

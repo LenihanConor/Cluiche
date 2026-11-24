@@ -688,3 +688,76 @@ TEST(DiaAttributeParamBinding, ScalarBindToMapKeyAndMapBindToScalarKeyAreReporte
     EXPECT_EQ(report.bindingsWithoutEntry.Size(), 2u);
     EXPECT_GE(report.unboundParameters.Size(), 1u);
 }
+
+
+// ---------------------------------------------------------------------------------------------------------------
+// Capacity form: BindMap(key, arr, count) binds the first `count` elements of an array with room for more.
+// ---------------------------------------------------------------------------------------------------------------
+
+namespace
+{
+    struct CapRules
+    {
+        float   wet[8]   = { -1, -1, -1, -1, -1, -1, -1, -1 };
+        int32_t count[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+        bool    flag[8]  = { true, true, true, true, true, true, true, true };
+        float   scalar   = -1.0f;
+    };
+
+    void BindCap(ParamBinding<CapRules>& b, uint32_t count)
+    {
+        b.BindMap(StringCRC("biome.wet"), &CapRules::wet, count);
+        b.BindMap(StringCRC("biome.count"), &CapRules::count, count);
+        b.BindMap(StringCRC("biome.flag"), &CapRules::flag, count);
+        b.Bind(StringCRC("biome.scalar"), &CapRules::scalar);
+    }
+}
+
+TEST(DiaAttributeParamBinding, CapacityFormBindsTheFirstCountElementsAndLeavesTheRest)
+{
+    Loaded l(MapSidecar());   // 3 map keys, key-source order
+    ParamBinding<CapRules> b;
+    BindCap(b, 3);
+    BindingReport report;
+    ASSERT_TRUE(b.Resolve(l.schema, report));
+    CapRules r;
+    b.Snapshot(l.set, r);
+    EXPECT_FLOAT_EQ(r.wet[0], 0.25f);
+    EXPECT_FLOAT_EQ(r.wet[1], 0.5f);
+    EXPECT_FLOAT_EQ(r.wet[2], 0.75f);
+    EXPECT_EQ(r.count[2], 3);
+    EXPECT_FALSE(r.flag[1]);
+    for (uint32_t i = 3; i < 8; ++i)
+    {
+        EXPECT_FLOAT_EQ(r.wet[i], -1.0f) << i;
+        EXPECT_EQ(r.count[i], -1) << i;
+        EXPECT_TRUE(r.flag[i]) << i;
+    }
+}
+
+TEST(DiaAttributeParamBinding, CapacityFormCountMustEqualTheSchemaExpansion)
+{
+    Loaded l(MapSidecar());
+    ParamBinding<CapRules> b;
+    BindCap(b, 2);   // 2 bound, 3 in the key source
+    BindingReport report;
+    EXPECT_FALSE(b.Resolve(l.schema, report));
+    EXPECT_EQ(report.countMismatches.Size(), 3u);
+    CapRules r;
+    b.Snapshot(l.set, r);   // mismatched maps are skipped
+    EXPECT_FLOAT_EQ(r.wet[0], -1.0f);
+}
+
+TEST(DiaAttributeParamBinding, CapacityFormCoversTheWholeArrayWhenCountEqualsCapacity)
+{
+    struct Full { float v[3] = { -1, -1, -1 }; };
+    Loaded l(MapSidecar());
+    ParamBinding<Full> b;
+    b.BindMap(StringCRC("biome.wet"), &Full::v, 3);
+    BindingReport report;
+    EXPECT_FALSE(b.Resolve(l.schema, report));   // the other biome.* attributes are unbound
+    EXPECT_EQ(report.countMismatches.Size(), 0u);
+    Full r;
+    b.Snapshot(l.set, r);
+    EXPECT_FLOAT_EQ(r.v[2], 0.75f);
+}
