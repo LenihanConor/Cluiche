@@ -4,6 +4,7 @@
 #include <DraoiHexWorld/BiomeRegistry.h>
 #include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaParallelExecutor/SerialExecutor.h>
 #include <Shared/CoWCalendar.h>
@@ -295,6 +296,7 @@ void WeatherHooks::CommitSim(WeatherSimulation& sim, uint32_t stepDay)
 
 bool WeatherHooks::RestoreCommitted(WeatherSimulation& sim, const Json::Value& record)
 {
+    DIA_PROFILE_SCOPE("Weather.RestoreCommitted", Dia::Observation::Profile::Category::kNone);
     if (saveSpec == nullptr || registry == nullptr)
     {
         DIA_LOG_ERROR(kLogChannel, "WTH: restore has no record spec or biome registry, discarding the saved weather");
@@ -322,6 +324,7 @@ void WeatherHooks::WritePendingFields(Json::Value& blob, const WeatherSimulation
 
 bool WeatherHooks::RestorePending(WeatherSimulation& sim, const Json::Value& blob, const Json::Value&)
 {
+    DIA_PROFILE_SCOPE("Weather.RestorePending", Dia::Observation::Profile::Category::kNone);
     if (!blob["cell_count"].isUInt())
     {
         DIA_LOG_ERROR(kLogChannel, "WTH: pending blob has no cell_count, discarding the in-flight step");

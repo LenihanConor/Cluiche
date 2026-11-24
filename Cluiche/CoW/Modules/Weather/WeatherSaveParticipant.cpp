@@ -1,6 +1,7 @@
 #include <Modules/Weather/WeatherSaveParticipant.h>
 
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 
 namespace CoW {
@@ -9,12 +10,14 @@ namespace Weather {
 void WeatherSaveParticipant::Serialize(Dia::SaveGame::SaveContext& ctx) const
 {
     DIA_TRACE_ZONE("WeatherSaveParticipant::Serialize", Dia::Observation::Trace::Category::kNone);
+    DIA_PROFILE_SCOPE("WeatherSaveParticipant::Serialize", Dia::Observation::Profile::Category::kNone);
     Json::Value record(Json::objectValue);
     const Draoi::HexWorld::Weather::WeatherSimulation* sim = mStage.ReadableSim();
     const Draoi::HexWorld::BiomeRegistry* registry = mStage.GetRegistry();
     if (sim == nullptr || !sim->IsInitialised() || registry == nullptr
         || !EncodeRecord(*sim, mStage.ParametersHash(), *registry, record))
     {
+        if (registry == nullptr) { DIA_LOG_ERROR(kLogChannel, "WTH: weather save wrote not-ready, the biome registry is not available"); }
         record = Json::Value(Json::objectValue);
         Draoi::HexWorld::WriteNotReady(record);
     }
@@ -27,6 +30,7 @@ void WeatherSaveParticipant::Serialize(Dia::SaveGame::SaveContext& ctx) const
 // NoteCommittedRecord, which only remembers the record for ValidatePending (which runs before Restore).
 bool WeatherSaveParticipant::Validate(Dia::SaveGame::LoadContext& ctx) const
 {
+    DIA_PROFILE_SCOPE("WeatherSaveParticipant::Validate", Dia::Observation::Profile::Category::kNone);
     const Json::Value& root = ctx.Root();
     const bool notReady = root.isObject() && root["ready"].isBool() && !root["ready"].asBool();
     if (notReady)
@@ -53,6 +57,7 @@ bool WeatherSaveParticipant::Validate(Dia::SaveGame::LoadContext& ctx) const
 
 void WeatherSaveParticipant::Deserialize(Dia::SaveGame::LoadContext& ctx)
 {
+    DIA_PROFILE_SCOPE("WeatherSaveParticipant::Deserialize", Dia::Observation::Profile::Category::kNone);
     mStage.Restore(ctx.Root());
 }
 
