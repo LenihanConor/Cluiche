@@ -554,6 +554,7 @@ namespace
     void RunYear(Rig& rig, float baseline, const char* what)
     {
         SeasonalBaselineInput input;
+        input.temperature.Reserve(kN);
         for (uint32_t c = 0; c < kN; ++c) input.temperature.Add(baseline);
         for (uint32_t w = 0; w < 52; ++w)
         {
@@ -601,8 +602,9 @@ TEST(WeatherPipelineYear, ColdCellKeepsItsSnowAtOneAllYear)
 {
     Rig rig(Terrain());
     WeatherFields& committed = const_cast<WeatherFields&>(rig.sim.Fields());
-    for (uint32_t c = 0; c < kN; ++c) committed.snowPack[c] = 1.0f;
+    for (uint32_t c = 0; c < kN; ++c) { committed.snowPack[c] = 1.0f; committed.temperature[c] = 0.0f; }   // start cold too
     SeasonalBaselineInput cold;
+    cold.temperature.Reserve(kN);
     for (uint32_t c = 0; c < kN; ++c) cold.temperature.Add(0.0f);
     for (uint32_t w = 0; w < 52; ++w)
     {
