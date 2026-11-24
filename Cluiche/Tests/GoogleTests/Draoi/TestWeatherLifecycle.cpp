@@ -177,14 +177,13 @@ TEST(WeatherLifecycle, SetCommittedWeekOverwritesCounter)
     EXPECT_EQ(rig.sim.GetCommittedWeek(), 41u);
 }
 
-TEST(WeatherLifecycle, CaptureTwiceAndRunTwiceAreIdempotentOnCommitted)
+TEST(WeatherLifecycle, CaptureTwiceIsIdempotentOnCommitted)
 {
     Rig a(WT::MakeHexTerrain(6, 4));
     Rig b(WT::MakeHexTerrain(6, 4));
     a.Capture(Season::Summer, 14);
     a.Capture(Season::Summer, 14);
-    a.sim.Run(a.serial);
-    a.sim.Run(a.serial);
+    a.sim.Run(a.serial);   // Run relaxes the working set in place, so it is once per Capture
     a.sim.Commit();
 
     b.Capture(Season::Summer, 14);

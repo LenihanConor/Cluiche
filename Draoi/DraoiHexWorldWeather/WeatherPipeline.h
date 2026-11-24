@@ -60,8 +60,25 @@ struct PassContext
     WeatherStepProfile*     profile = nullptr;
 };
 
-// The ordered pass sequence (0, 1, 2, 3, 4, 5a..6b, 7, 8, 9, finish). Empty until the pass tasks fill it.
+// Pass identifiers in run order (pass 10 is retired). Later pass tasks append their entries before kLast.
+enum class PassId : uint8_t { Influence = 0, Solar, Pressure, Wind, kLast = Wind };
+
+// The ordered pass sequence (0, 1, 2, 3, 4, 5a..6b, 7, 8, 9, finish). Filled in by the pass tasks.
 void RunPipeline(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);
+
+// Test hook: runs the pipeline in order and stops after `lastPass` (inclusive). RunPipeline == RunPipelineUntil(kLast).
+void RunPipelineUntil(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor, PassId lastPass);
+
+// Individual passes (each is one ParallelFor over the cells), exposed so they can be tested alone.
+void RunSolarPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);     // pass 1
+void RunPressurePass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);  // pass 2
+void RunWindPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);      // pass 3
+
+// Pressure-driven push on `cell`'s wind: (1/6) * sum over the 6 directions d of kDirectionVectors[d] * (p[cell] - p[nb]).
+// A higher-pressure neighbour pushes the wind away from it, a lower one pulls it in. kNoCell neighbours add nothing
+// but still count in the divide by 6. Vectors are y-down world space (same as kDirectionVectors). Unscaled (no
+// pressureStrength). Reads `pressure` only.
+WindVector PressureGradient(uint32_t cell, const WeatherFields& fields, const GridTables& tables);
 
 } // namespace Weather
 } // namespace HexWorld
