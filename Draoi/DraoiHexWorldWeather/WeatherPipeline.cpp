@@ -247,16 +247,10 @@ void RunMoistureOutPass(PassContext& context, Dia::ParallelExecutor::IParallelEx
         GridTables& t = *context.tables;
         for (uint32_t c = begin; c < end; ++c)
         {
-            if (t.neighbours[c * Dia::Geometry2D::kHexDirections + t.dirIndex[c]] == Dia::Geometry2D::kNoCell)
-            {
-                t.moistureOut[c] = 0.0f;   // EC-16: stays in the cell
-                t.anomalyOut[c] = 0.0f;
-            }
-            else
-            {
-                t.moistureOut[c] = f.moisture[c] * f.windSpeed[c] * rate;
-                t.anomalyOut[c] = f.pressureAnomaly[c] * f.windSpeed[c] * rate;
-            }
+            // EC-16 (changed 2026-11-24, DECISION-141): a downwind-edge cell's outflow leaves the map (the cell loses it,
+            // nothing is delivered), so the out share is the normal fraction here too.
+            t.moistureOut[c] = f.moisture[c] * f.windSpeed[c] * rate;
+            t.anomalyOut[c] = f.pressureAnomaly[c] * f.windSpeed[c] * rate;
         }
     });
 }
@@ -327,8 +321,7 @@ void RunHeatOutPass(PassContext& context, Dia::ParallelExecutor::IParallelExecut
         GridTables& t = *context.tables;
         for (uint32_t c = begin; c < end; ++c)
         {
-            t.heatOut[c] = (t.neighbours[c * Dia::Geometry2D::kHexDirections + t.dirIndex[c]] == Dia::Geometry2D::kNoCell)
-                ? 0.0f : f.temperature[c] * f.windSpeed[c] * rate;
+            t.heatOut[c] = f.temperature[c] * f.windSpeed[c] * rate;   // EC-16: leaves the map at the downwind edge
         }
     });
 }

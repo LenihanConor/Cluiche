@@ -111,7 +111,7 @@ namespace
                       float* outScratch, float* result)
     {
         for (uint32_t c = 0; c < kN; ++c)
-            outScratch[c] = t.neighbours[c * 6 + t.dirIndex[c]] == kNoCell ? 0.0f : v[c] * speed[c] * rate;
+            outScratch[c] = v[c] * speed[c] * rate;   // EC-16 (changed 2026-11-24): downwind-edge outflow leaves the map
         for (uint32_t c = 0; c < kN; ++c)
             result[c] = v[c] - outScratch[c] + RefInflow(c, t, outScratch, edge, reverse);
     }
@@ -252,7 +252,7 @@ TEST(WeatherTransportMoisture, ClosedInteriorConservesTotalOverSeveralSteps)
     }
 }
 
-TEST(WeatherTransportMoisture, OffMapDownwindKeepsItsMoisture)
+TEST(WeatherTransportMoisture, OffMapDownwindLosesItsShare)
 {
     Rig rig(Terrain());
     rig.params.edgeInflow = false;
@@ -263,7 +263,8 @@ TEST(WeatherTransportMoisture, OffMapDownwindKeepsItsMoisture)
     ASSERT_NE(edgeCell, kNoCell);
     rig.Working().moisture[edgeCell] = 0.6f;
     RunTransport(rig, rig.serial);
-    EXPECT_EQ(rig.Working().moisture[edgeCell], 0.6f);
+    // EC-16 (changed 2026-11-24, DECISION-141): the downwind-edge outflow leaves the map.
+    EXPECT_NEAR(rig.Working().moisture[edgeCell], 0.6f * (1.0f - rig.params.moistureTransportRate), 1e-6f);
 }
 
 TEST(WeatherTransportMoisture, ZeroWindTransportsNothing)
@@ -283,20 +284,16 @@ TEST(WeatherTransportMoisture, ZeroWindTransportsNothing)
     }
 }
 
-TEST(WeatherTransportMoisture, UniformMoistureStaysUniformExceptDownwindEdgeWithEdgeInflowOn)
+TEST(WeatherTransportMoisture, UniformMoistureStaysUniformEverywhereWithEdgeInflowOn)
 {
-    // Spec text (AC 25) says uniform stays uniform everywhere; per the gather as written, a downwind-edge cell has
-    // outflow 0 but still receives its upwind neighbour's outflow, so it gains. Interior and upwind-edge cells hold.
+    // AC 25 under the new EC-16 (DECISION-141): downwind-edge outflow leaves, the edge term replaces it.
     Rig rig(Terrain());
     rig.Capture();
     rig.Uniform(0, 1.0f);
     for (uint32_t c = 0; c < kN; ++c) rig.Working().moisture[c] = 0.4f;
     RunTransport(rig, rig.serial);
     for (uint32_t c = 0; c < kN; ++c)
-    {
-        if (rig.Downwind(c) == kNoCell) continue;
         EXPECT_NEAR(rig.Working().moisture[c], 0.4f, 1e-6f) << "cell " << c;
-    }
 }
 
 TEST(WeatherTransportMoisture, InflowOrderMatchesReferenceBitForBitAndOrderMatters)
@@ -345,7 +342,7 @@ TEST(WeatherTransportAnomaly, SignedPulseMovesOneCellDownwindAtMoistureRate)
     EXPECT_NEAR(rig.Working().pressureAnomaly[kMid], -0.4f * (1.0f - rig.params.moistureTransportRate), 1e-6f);
 }
 
-TEST(WeatherTransportAnomaly, OffMapDownwindKeepsItsAnomaly)
+TEST(WeatherTransportAnomaly, OffMapDownwindLosesItsAnomalyShare)
 {
     Rig rig(Terrain());
     rig.params.edgeInflow = false;
@@ -356,7 +353,8 @@ TEST(WeatherTransportAnomaly, OffMapDownwindKeepsItsAnomaly)
     ASSERT_NE(edgeCell, kNoCell);
     rig.Working().pressureAnomaly[edgeCell] = -0.25f;
     RunTransport(rig, rig.serial);
-    EXPECT_EQ(rig.Working().pressureAnomaly[edgeCell], -0.25f);
+    // EC-16 (changed 2026-11-24, DECISION-141): the downwind-edge outflow leaves the map.
+    EXPECT_NEAR(rig.Working().pressureAnomaly[edgeCell], -0.25f * (1.0f - rig.params.moistureTransportRate), 1e-6f);
 }
 
 TEST(WeatherTransportAnomaly, UniformAnomalyStaysUniformBeforeDecayWithEdgeInflowOn)
@@ -366,11 +364,8 @@ TEST(WeatherTransportAnomaly, UniformAnomalyStaysUniformBeforeDecayWithEdgeInflo
     rig.Uniform(0, 1.0f);
     for (uint32_t c = 0; c < kN; ++c) rig.Working().pressureAnomaly[c] = -0.2f;
     RunTransport(rig, rig.serial);
-    for (uint32_t c = 0; c < kN; ++c)
-    {
-        if (rig.Downwind(c) == kNoCell) continue;   // see the moisture uniform test for the downwind-edge note
+    for (uint32_t c = 0; c < kN; ++c)   // AC 25 under the new EC-16: uniform at every cell
         EXPECT_NEAR(rig.Working().pressureAnomaly[c], -0.2f, 1e-6f) << "cell " << c;
-    }
 }
 
 TEST(WeatherTransportAnomaly, InflowOrderMatchesReferenceBitForBit)
@@ -486,7 +481,7 @@ TEST(WeatherTransportHeat, InflowOrderMatchesReferenceBitForBit)
     CopyOut(rig.Working().windSpeed, sp);
     const GridTables& t = rig.sim.Tables();
     for (uint32_t c = 0; c < kN; ++c)
-        outS[c] = t.neighbours[c * 6 + t.dirIndex[c]] == kNoCell ? 0.0f : v[c] * sp[c] * rig.params.heatTransportRate;
+        outS[c] = v[c] * sp[c] * rig.params.heatTransportRate;
     float ref[kN];
     for (uint32_t c = 0; c < kN; ++c)
     {
@@ -520,35 +515,23 @@ namespace
     }
 }
 
-TEST(WeatherTransportBoundary, UniformFieldsHoldFor52WeeksExceptDownwindEdgeCellsWhichOnlyGain)
+TEST(WeatherTransportBoundary, UniformFieldsHoldFor52WeeksAtEveryCell)
 {
-    // AC 25 says a uniform field stays uniform with edge_inflow on. Known spec conflict with EC-16: a cell whose downwind
-    // neighbour is off-map keeps its outflow (out = 0) yet still receives its upwind neighbour's outflow, so it
-    // accumulates. Every other cell, including upwind-edge cells (edge term cancels their outflow), must hold.
+    // AC 25 with the new EC-16 (changed 2026-11-24, DECISION-141): a downwind-edge cell's outflow leaves the map and
+    // the edge term (edge_inflow on) replaces it, so a uniform field stays uniform at every cell.
     for (uint32_t d = 0; d < 6; ++d)
     {
         Rig rig(Terrain());
         rig.Capture();
         rig.Uniform(d, 1.0f);
         SetUniformField(rig, 0.4f, 0.4f);
-        const float mRate = rig.params.moistureTransportRate, hRate = rig.params.heatTransportRate;
         for (uint32_t w = 0; w < kWeeks; ++w) RunWeek(rig);
         uint32_t edgeCells = 0;
         for (uint32_t c = 0; c < kN; ++c)
         {
-            if (rig.Downwind(c) == kNoCell)
-            {
-                ++edgeCells;
-                EXPECT_GE(rig.Working().moisture[c], 0.4f - 1e-5f) << "d=" << d << " cell " << c;
-                EXPECT_LE(rig.Working().moisture[c], 0.4f + kWeeks * 0.4f * mRate + 1e-4f) << "d=" << d << " cell " << c;
-                EXPECT_GE(rig.Working().temperature[c], 0.4f - 1e-5f) << "d=" << d << " cell " << c;
-                EXPECT_LE(rig.Working().temperature[c], 0.4f + kWeeks * 0.4f * hRate + 1e-4f) << "d=" << d << " cell " << c;
-            }
-            else
-            {
-                EXPECT_NEAR(rig.Working().moisture[c], 0.4f, 1e-5f) << "d=" << d << " cell " << c;
-                EXPECT_NEAR(rig.Working().temperature[c], 0.4f, 1e-5f) << "d=" << d << " cell " << c;
-            }
+            if (rig.Downwind(c) == kNoCell) ++edgeCells;
+            EXPECT_NEAR(rig.Working().moisture[c], 0.4f, 1e-5f) << "d=" << d << " cell " << c;
+            EXPECT_NEAR(rig.Working().temperature[c], 0.4f, 1e-5f) << "d=" << d << " cell " << c;
         }
         EXPECT_GT(edgeCells, 0u);
     }
@@ -592,7 +575,8 @@ TEST(WeatherTransportBoundary, EdgeInflowOffUpwindEdgeCellsLoseMoistureAndHeatEv
 TEST(WeatherTransportBoundary, CellWithBothNeighboursOffMapGainsAndLosesNothing)
 {
     // AC 27: a 1-wide column has no NE or SW neighbour, so with wind NE (d = 0) every cell has an off-map downwind and
-    // an off-map upwind. Its own outflow stays in the cell (EC-16) and the edge term returns only that zero.
+    // an off-map upwind. Its outflow leaves the map (EC-16, changed 2026-11-24); with edge_inflow on the edge term
+    // returns exactly that, so the cell gains and loses nothing; with it off the cell loses its share each week.
     for (int edge = 0; edge < 2; ++edge)
     {
         WT::HexTerrainOptions o;
@@ -618,10 +602,21 @@ TEST(WeatherTransportBoundary, CellWithBothNeighboursOffMapGainsAndLosesNothing)
             RunHeatOutPass(rig.ctx, rig.serial);
             RunHeatGatherPass(rig.ctx, rig.serial);
         }
+        const float mKeep = powf(1.0f - rig.params.moistureTransportRate, float(kWeeks));
+        const float hKeep = powf(1.0f - rig.params.heatTransportRate, float(kWeeks));
         for (uint32_t c = 0; c < 3; ++c)
         {
-            EXPECT_EQ(f.moisture[c], 0.3f + 0.1f * float(c)) << "edge=" << edge << " cell " << c;
-            EXPECT_EQ(f.temperature[c], 0.5f + 0.1f * float(c)) << "edge=" << edge << " cell " << c;
+            const float m0 = 0.3f + 0.1f * float(c), h0 = 0.5f + 0.1f * float(c);
+            if (edge != 0)
+            {
+                EXPECT_NEAR(f.moisture[c], m0, 1e-5f) << "edge=" << edge << " cell " << c;
+                EXPECT_NEAR(f.temperature[c], h0, 1e-5f) << "edge=" << edge << " cell " << c;
+            }
+            else
+            {
+                EXPECT_NEAR(f.moisture[c], m0 * mKeep, 1e-5f) << "edge=" << edge << " cell " << c;
+                EXPECT_NEAR(f.temperature[c], h0 * hKeep, 1e-5f) << "edge=" << edge << " cell " << c;
+            }
         }
     }
 }
