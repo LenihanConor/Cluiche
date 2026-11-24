@@ -78,5 +78,20 @@ bool DecodeRecord(const Json::Value& root, const WorldStep::RecordSpec& spec,
                   const Draoi::HexWorld::BiomeRegistry& registry, WeatherRecord& out,
                   Draoi::HexWorld::SaveError& err);
 
+constexpr uint32_t kWeatherStateVersion = 1;
+
+// The `cow.weather_state` export file: {"format":"cow.weather_state","version":1} plus the committed record's fields
+// (ready always true; no influences/climate). Returns false with `out` untouched for an uninitialised sim or a
+// week that overflows step_day.
+bool EncodeState(const Draoi::HexWorld::Weather::WeatherSimulation& sim, uint64_t paramsHash,
+                 const Draoi::HexWorld::BiomeRegistry& registry, Json::Value& out);
+
+// Parses a state file: rejects (err.field names the key) a non-object, wrong or missing `format`, missing or
+// non-1 `version`, `ready` false, and any record defect (DecodeRecord). `out` is assigned only on success.
+// Dimension match against the live world is the caller's (Feature 5).
+bool DecodeState(const Json::Value& root, const WorldStep::RecordSpec& spec,
+                 const Draoi::HexWorld::BiomeRegistry& registry, WeatherRecord& out,
+                 Draoi::HexWorld::SaveError& err);
+
 } // namespace Weather
 } // namespace CoW

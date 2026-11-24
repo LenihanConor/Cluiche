@@ -181,5 +181,75 @@ bool DecodeRecord(const Json::Value& root, const WorldStep::RecordSpec& spec,
     return true;
 }
 
+bool EncodeState(const Draoi::HexWorld::Weather::WeatherSimulation& sim, uint64_t paramsHash,
+                 const Draoi::HexWorld::BiomeRegistry& registry, Json::Value& out)
+{
+    if (!sim.IsInitialised())
+    {
+        DIA_LOG_ERROR(kLogChannel, "WTH: weather state export refused, simulation is not initialised");
+        return false;
+    }
+    Json::Value body(Json::objectValue);
+    if (!EncodeRecord(sim, paramsHash, registry, body)) { return false; }
+    body["format"]  = World::StateFormat(World::kWeather).c_str();
+    body["version"] = kWeatherStateVersion;
+    out = body;
+    return true;
+}
+
+bool DecodeState(const Json::Value& root, const WorldStep::RecordSpec& spec,
+                 const Draoi::HexWorld::BiomeRegistry& registry, WeatherRecord& out,
+                 Draoi::HexWorld::SaveError& err)
+{
+    if (!root.isObject())
+    {
+        err.field.SetText("format");
+        err.reason.SetText("state file is not an object");
+        return false;
+    }
+    const Json::Value& fmt = root["format"];
+    if (!fmt.isString() || fmt.asString() != World::StateFormat(World::kWeather).c_str())
+    {
+        err.field.SetText("format");
+        err.reason.SetText("expected format cow.weather_state");
+        return false;
+    }
+    const Json::Value& ver = root["version"];
+    if (!ver.isIntegral() || ver.asInt64() != static_cast<int64_t>(kWeatherStateVersion))
+    {
+        err.field.SetText("version");
+        err.reason.SetText("missing or unsupported state file version");
+        return false;
+    }
+    WeatherRecord rec;
+    if (!DecodeRecord(root, spec, registry, rec, err)) { return false; }
+    if (!rec.ready)
+    {
+        err.field.SetText("ready");
+        err.reason.SetText("a state file must hold a ready weather record");
+        return false;
+    }
+    // WeatherFields/DynamicArray are copied element-wise (as DecodeRecord does); a plain assignment is not relied on.
+    const uint32_t cellCount = rec.fields.CellCount();
+    out = WeatherRecord();
+    out.ready      = rec.ready;
+    out.week       = rec.week;
+    out.paramsHash = rec.paramsHash;
+    out.width      = rec.width;
+    out.height     = rec.height;
+    out.fields.Resize(cellCount);
+    float* dst[kWeatherSaveFieldCount];
+    const float* src[kWeatherSaveFieldCount];
+    WeatherFieldPointers(out.fields, dst);
+    WeatherFieldPointers(rec.fields, src);
+    for (uint32_t f = 0; f < kWeatherSaveFieldCount; ++f)
+    {
+        for (uint32_t c = 0; c < cellCount; ++c) { dst[f][c] = src[f][c]; }
+    }
+    out.biomes.Reserve(cellCount);
+    for (uint32_t i = 0; i < cellCount; ++i) { out.biomes.Add(rec.biomes[i]); }
+    return true;
+}
+
 } // namespace Weather
 } // namespace CoW

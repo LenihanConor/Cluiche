@@ -862,3 +862,166 @@ TEST_F(WeatherSaveRecordTest, IncomingInfluencesAndClimateBlocksAreIgnoredWithOn
     EXPECT_EQ(1u, log.Total());
     EXPECT_TRUE(WT::SameFields(sim.Fields(), rec.fields));
 }
+
+// ---- A4 weather-save Task 8: the cow.weather_state export file ----
+namespace
+{
+class WeatherSaveStateTest : public WeatherSaveRecordTest
+{
+protected:
+    Json::Value EncodeState(const WeatherSimulation& sim, const BiomeRegistry& reg)
+    {
+        Json::Value out(Json::objectValue);
+        EXPECT_TRUE(CoW::Weather::EncodeState(sim, 0xABCDEF0123456789ull, reg, out));
+        return ThroughText(out);
+    }
+
+    bool DecodeStateFile(const Json::Value& root, const BiomeRegistry& reg, CoW::Weather::WeatherRecord& rec, SaveError& err)
+    {
+        return CoW::Weather::DecodeState(root, spec, reg, rec, err);
+    }
+
+    // Marks `rec` so a failed decode that touches it is visible.
+    static void Mark(CoW::Weather::WeatherRecord& rec) { rec.week = 99; rec.width = 7; rec.paramsHash = 5; }
+    static bool Untouched(const CoW::Weather::WeatherRecord& rec)
+    {
+        return rec.week == 99 && rec.width == 7 && rec.paramsHash == 5 && rec.fields.CellCount() == 0 && rec.biomes.Size() == 0;
+    }
+};
+} // namespace
+
+TEST_F(WeatherSaveStateTest, StateFileRoundTripsBitIdenticalThroughRealJsonText)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    WeatherSimulation sim;
+    MakeSim(sim, reg, 5, 5);
+    const Json::Value parsed = EncodeState(sim, reg);
+    EXPECT_EQ("cow.weather_state", parsed["format"].asString());
+    EXPECT_EQ(1, parsed["version"].asInt());
+    EXPECT_TRUE(parsed["ready"].asBool());
+    EXPECT_FALSE(parsed.isMember("influences"));
+    EXPECT_FALSE(parsed.isMember("climate"));
+
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+    ASSERT_TRUE(DecodeStateFile(parsed, reg, rec, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+    EXPECT_TRUE(rec.ready);
+    EXPECT_EQ(5u, rec.week);
+    EXPECT_EQ(0xABCDEF0123456789ull, rec.paramsHash);
+    EXPECT_EQ(kW, rec.width);
+    EXPECT_EQ(kH, rec.height);
+    EXPECT_TRUE(WT::SameFields(sim.Fields(), rec.fields));
+    ASSERT_EQ(kN, rec.biomes.Size());
+    for (uint32_t i = 0; i < kN; ++i) { EXPECT_EQ(sim.Terrain().biome[i], rec.biomes[i]) << "cell " << i; }
+}
+
+TEST_F(WeatherSaveStateTest, WrongOrMissingFormatIsRejectedNamingFormat)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    WeatherSimulation sim;
+    MakeSim(sim, reg, 1, 1);
+    const Json::Value good = EncodeState(sim, reg);
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+
+    Json::Value wrong = good;
+    wrong["format"] = "cow.terrain_state";
+    Mark(rec);
+    EXPECT_FALSE(DecodeStateFile(wrong, reg, rec, err));
+    EXPECT_STREQ("format", err.field.AsCStr());
+    EXPECT_TRUE(Untouched(rec));
+
+    Json::Value missing = good;
+    missing.removeMember("format");
+    EXPECT_FALSE(DecodeStateFile(missing, reg, rec, err));
+    EXPECT_STREQ("format", err.field.AsCStr());
+
+    // A committed save record (no envelope) is not a state file.
+    Json::Value bare(Json::objectValue);
+    ASSERT_TRUE(CoW::Weather::EncodeRecord(sim, 1, reg, bare));
+    EXPECT_FALSE(DecodeStateFile(ThroughText(bare), reg, rec, err));
+    EXPECT_STREQ("format", err.field.AsCStr());
+}
+
+TEST_F(WeatherSaveStateTest, MissingOrUnsupportedVersionIsRejectedNamingVersionAndLeavesOutUntouched)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    WeatherSimulation sim;
+    MakeSim(sim, reg, 1, 1);
+    const Json::Value good = EncodeState(sim, reg);
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+
+    Json::Value missing = good;
+    missing.removeMember("version");
+    Mark(rec);
+    EXPECT_FALSE(DecodeStateFile(missing, reg, rec, err));
+    EXPECT_STREQ("version", err.field.AsCStr());
+    EXPECT_TRUE(Untouched(rec));
+
+    for (int v : { 0, 2 })
+    {
+        SCOPED_TRACE(v);
+        Json::Value bad = good;
+        bad["version"] = v;
+        EXPECT_FALSE(DecodeStateFile(bad, reg, rec, err));
+        EXPECT_STREQ("version", err.field.AsCStr());
+        EXPECT_TRUE(Untouched(rec));
+    }
+
+    Json::Value text = good;
+    text["version"] = "1";
+    EXPECT_FALSE(DecodeStateFile(text, reg, rec, err));
+    EXPECT_STREQ("version", err.field.AsCStr());
+}
+
+TEST_F(WeatherSaveStateTest, ANotReadyBodyIsRejectedForAStateFile)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    Json::Value body(Json::objectValue);
+    body["format"] = "cow.weather_state";
+    body["version"] = 1;
+    body["ready"] = false;
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+    Mark(rec);
+    EXPECT_FALSE(DecodeStateFile(ThroughText(body), reg, rec, err));
+    EXPECT_STREQ("ready", err.field.AsCStr());
+    EXPECT_TRUE(Untouched(rec));
+}
+
+TEST_F(WeatherSaveStateTest, AnUninitialisedSimIsNotExportedAndOutIsUntouched)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    WeatherSimulation sim;
+    Json::Value out(Json::objectValue);
+    out["keep"] = 1;
+    EXPECT_FALSE(CoW::Weather::EncodeState(sim, 1, reg, out));
+    EXPECT_EQ(1u, out.size());
+}
+
+TEST_F(WeatherSaveStateTest, ARecordDefectIsRejectedNamingTheKeyAndLeavesOutUntouched)
+{
+    const BiomeRegistry& reg = WT::TestRegistry();
+    WeatherSimulation sim;
+    MakeSim(sim, reg, 1, 1);
+    const Json::Value good = EncodeState(sim, reg);
+    CoW::Weather::WeatherRecord rec;
+    SaveError err;
+
+    Json::Value badField = good;
+    badField["snow_pack"][3u] = 5.0;
+    Mark(rec);
+    EXPECT_FALSE(DecodeStateFile(badField, reg, rec, err));
+    EXPECT_STREQ("snow_pack", err.field.AsCStr());
+    EXPECT_TRUE(Untouched(rec));
+
+    Json::Value noBiome = good;
+    noBiome.removeMember("biome");
+    EXPECT_FALSE(DecodeStateFile(noBiome, reg, rec, err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+    EXPECT_TRUE(Untouched(rec));
+
+    EXPECT_FALSE(DecodeStateFile(Json::Value(Json::arrayValue), reg, rec, err));
+    EXPECT_TRUE(Untouched(rec));
+}
