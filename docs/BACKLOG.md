@@ -163,7 +163,6 @@ Triaged 2026-11-19 ([triage](triage/loose-ends-triage-2026-11-19.md)): every row
 
 | Project | Item | Notes |
 |---------|------|-------|
-| CoW | V-1 map-rendering GDD fold-back (2026-11-20) | Hand-off to the GDD session: [gdd-foldback.md](research/tile_renderin_art_pipeline/gdd-foldback.md) (replaces TileRenderingPipeline's tile atlas; V-1 scope, camera, motion and Tests 1-9b restated; decision and change entries). **Answers decided 2026-11-24 (user), as proposed:** biome set (registry is truth), season names (Bloom/Hunt/Dry/Freeze), provisional palettes for Scrub, Burned Ashland and Desertified Plain. Ecology state labels are A1's (the map needs only band thresholds), and fire ownership was settled 2026-11-20 (A1 owns it). **Left:** the GDD session applies the text; Strategic Map Feature 1 is no longer blocked |
 
 ---
 
