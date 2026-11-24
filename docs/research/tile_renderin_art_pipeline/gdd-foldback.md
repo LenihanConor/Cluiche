@@ -103,7 +103,7 @@ Pass/Fail Metrics table: replace "All 12 biomes", "All 5 states", "Manual inspec
 
 ---
 
-## 5. Naming reconciliation (decided by the user 2026-11-24; **applied in the GDD as CHANGE-054, DECISION-142 to 147**; season names apply to the rendering docs only, A1/A2/A4/A5 keep Spring/Summer/Autumn/Winter via the Glossary)
+## 5. Naming reconciliation (decided by the user 2026-11-24; **applied in the GDD as CHANGE-054 (Resolved), DECISION-142 to 147; TileRenderingPipeline and V1_TileRendering locked 2026-11-24**; season names apply to the rendering docs only, A1/A2/A4/A5 keep Spring/Summer/Autumn/Winter via the Glossary)
 
 | Item | The conflict | Proposal |
 |---|---|---|
