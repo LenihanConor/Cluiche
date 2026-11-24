@@ -9,7 +9,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/props.js` (`PROP_SVG`, `PROP_PAL`, `BIOME_PROPS`, `propColours`), the prop sheet in `lookdev/index.html`
 
 ## Status
-`Draft` (2026-11-20). Drafted from the approved prototype; awaiting user review.
+`Approved` (2026-11-24, user, after spec review: palette-table recolour, linear atlas). Drafted 2026-11-20 from the approved prototype. The `map_props` DiaCLI handler still needs its AD-001 sign-off before build.
 
 ## Summary
 
@@ -28,7 +28,7 @@ This feature owns CoW's *content* (what and where). DiaBgfx3D owns how sprites a
 1. **Source assets**: SVG files under `Cluiche/Assets/CoW/Global/Map/props/` for each sprite, following the mask contract (red = primary, green = secondary, blue = accent, black = ink, alpha = coverage), each 100 × 100 with the foot at bottom centre.
 2. **Atlas build**: a DiaCLI asset handler rasterises the SVGs into one atlas PNG (grid layout) plus an `atlas.json` (index → name, cell, rigid flag, default size), with validation of the mask contract.
 3. **Prop rules** per `propSet` in `map_props.json` (`cow.map_props`): rules as in DraoiHexWorldRender3D (type, per-cell density, size, jitter, slope range, wet-only, dead variant).
-4. **Palettes for props**: by biome and season (from Feature 1), so a forest sprite recolours automatically.
+4. **Palettes for props**: the class × season palette table from Feature 1 (blended by CoW on the CPU) is passed to DiaBgfx3D `SetPaletteTable`. Scattered props carry only a class id (DraoiHexWorldRender3D Feature 3), so a season change recolours them with no rescatter; dynamic sprites (clouds, herds, birds) use the direct three-colour path.
 5. **Fauna and sky sprites**: cloud puffs (translucent), herd beasts, birds, with their layer assignments.
 6. **Replaceable per sprite**: a Gemini-made PNG in the same mask contract can replace any SVG without code changes (the asset forge's job; this feature defines the contract and the override order).
 
@@ -47,6 +47,7 @@ This feature owns CoW's *content* (what and where). DiaBgfx3D owns how sprites a
 - Colours limited to `#ff0000`, `#00ff00`, `#0000ff`, `#000000` (anti-aliased edges produce blends; the validator checks the *authored* colours only), no gradients, no text.
 - Outlines are black strokes of at least 2.4 units so the ink survives minification at the smallest on-screen size (about 12 px).
 - A sprite has a `rigid` flag (no sway) in `atlas.json`.
+- The atlas is written and loaded **linear** (no sRGB): the mask channels are data (DiaBgfx3D Feature B).
 
 ### Shipped v1 set
 

@@ -55,7 +55,9 @@ namespace Draoi::HexWorldRender3D {
         void SetDynamicSprites(SpriteLayer, const DynamicSprite*, uint32_t count);
         Dia::Attribute::AttributeSet& GetStyle();             // live-tweakable; includes layers.* toggles, dataView, post settings
         void SetStyle(const HexWorldStyle&);                 // load a whole style (parameter file); same fields as GetStyle()
-        void SetSeasonWeights(const float weights[4]);       // used as given, not normalised
+        void SetSeasonWeights(const float weights[4]);       // used as given, not normalised; drives the grade cross-fade only
+        void SetHighlight(uint16_t hoveredCell, uint16_t selectedCell);   // kNoOwner = none; drawn by the cell outline (Feature 2)
+        void SetCellOutline(bool on);                        // forwards to the surface (owner texture)
         void Draw(const Dia::Camera3D&, float heightScaleFactor, float timeSeconds);
         bool ScreenToWorld(const Dia::Camera3D&, float sx, float sy, float& wx, float& wy) const;
         uint16_t WorldToCell(float wx, float wy) const;      // kNoOwner outside
@@ -94,7 +96,7 @@ The caller owns time and the height-scale easing. `heightScaleFactor` (default 1
 
 ## Open Design Questions
 
-1. **Hex readability** (system ODQ 1). If cell highlighting becomes an outline from the owner texture, it lands here as a style layer that takes a hovered and a selected cell. CoW owns the selection state.
+1. ~~Hex readability~~ (system ODQ 1). Answered 2026-11-24: the outline and highlight live in Feature 2; `SetHighlight` here passes the hovered and selected cells. CoW owns the selection state.
 
 ## Tasks
 

@@ -9,7 +9,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/app.js` (input handlers, `camFor`, state, UI spec), `lookdev/README.md`
 
 ## Status
-`Draft` (2026-11-20). Drafted from the approved prototype; awaiting user review.
+`Approved` (2026-11-24, user, after spec review: capture and boil clock, height-scale factor, bake and relief tuning, render-thread commands). Drafted 2026-11-20 from the approved prototype. ODQ 4 to 7 (snapshot size spike, selection routing, markers, the `CellFieldRegistry` CPU tap) are implementation-time questions, not blockers for the first map.
 
 ### Amendment 2026-11-23: layer split (user)
 
@@ -19,19 +19,24 @@ DiaTerrainMap3D is gone. Its renderer is now the Draoi library DraoiHexWorldRend
 1. **Owning the map.** `StrategicMapModule` owns a `Draoi::HexWorldRender3D::HexWorldMap` and the DiaBgfx3D sprite renderer, particle system and post stack it draws with. No `ModuleRef<TerrainMap3DModule>`.
 2. **Bake jobs.** On a world snapshot, run DiaCellFieldBake `BakedWorld::Bake` with the DraoiHexWorldRelief post-pass on a worker job (never the render thread), report progress into `HexWorldMap::SetBakeState`, and call `SetWorld` when done. On a class change, `RebakeBegin` on a worker, then `Commit` and `HexWorldMap::ApplyRebake` at a frame boundary.
 3. **Stream contract.** The world and channel snapshots published by Feature 2 (`MapSnapshotPublisher`) are consumed here; versions pass through to `HexWorldMap::UpdateChannel`. Old ODQ 1 (snapshot size and cadence: about 150 KB world, 106 KB channel at Large; FrameStream copies by value, so either size the struct for the largest world or use a pointer-free blob on a ServiceStream) is now **ODQ 4 below**.
-4. **Map camera mechanism.** Zoom-dependent `pitch(z)` and `heightScale(z)` curves (smooth, monotonic, continuous), bounds clamp (`BoundsClamp3D`), smooth damping, on `DiaCamera3D` Orbit. The height scale is passed to `HexWorldMap::Draw` each frame. (Was `MapCamera` in DiaTerrainMap3D; one consumer, so it stays in CoW until a second game needs it.)
-5. **Capture.** `cow.map.capture {path, w, h, frames, seed}` renders `frames` frames at a fixed time, boil frame and seed, then reads the scene target back through DiaBgfx3D Feature A to a PNG. Two runs with the same arguments give byte-identical PNGs; a capture with post on matches the screen.
+4. **Map camera mechanism.** Zoom-dependent `pitch(z)` and `heightScale(z)` curves (smooth, monotonic, continuous), bounds clamp (`BoundsClamp3D`), smooth damping, on `DiaCamera3D` Orbit. The curve gives a **`heightScaleFactor`** that is passed to `HexWorldMap::Draw` each frame and multiplies the style's `heightScale`. (Was `MapCamera` in DiaTerrainMap3D; one consumer, so it stays in CoW until a second game needs it.)
+5. **Capture.** `cow.map.capture {path, w, h, frames, seed}` renders `frames` frames at a fixed time and seed (the boil and post-wobble frames derive from the time and the style's `boilHz` and `wobbleHz`; particles are driven with a fixed dt sequence), then reads the scene target back through DiaBgfx3D Feature A to a PNG. Two runs with the same arguments give byte-identical PNGs; a capture with post on matches the screen.
 6. **Status.** `cow.map.status` reports world, counts, versions and the bake state (Idle / Baking n of m / Ready) from `HexWorldMap::GetBakeState`.
 7. **Custom slots.** The module fills the 4 custom slots from CoW-only states (for example magic snow) through Feature 2's binding, and the style file binds each slot to a DiaToonShading technique.
 8. **Health.** The `IHealthReporter` also reports Failing when the world snapshot is invalid or GPU resources fail.
+
+9. **Style is the live `AttributeSet`.** `cow.map.style.set` and the other commands run on the render PU and write `HexWorldMap::GetStyle()` (TMAP-013); edits from other PUs reach them through the command registry, so the library takes no locks. `style.set` clamps from the sidecar, and the next frame reflects it.
+10. **Bake and relief tuning.** Style paths `bake.*` (DiaCellFieldBake `BakeParams`, resolution) and `relief.*` (DraoiHexWorldRelief `ReliefParams`, `RiverParams`, `reliefScale`) are live-tweakable. A change to any of them, or to the relief weights in `map_visuals.json`, schedules one coalesced `RebakeAll` on a worker (at most one pending), with a coarser `texelsPerUnit` preview while the value is changing and the full-resolution bake on release (the S-1 Map view behaviour of ODQ 7), then `Commit` and `ApplyRebake` at a frame boundary.
 
 **Additional acceptance criteria:**
 - **AC 13, bake off the render thread.** A world snapshot never blocks a render frame for the bake (frame time during a Large bake stays within budget); the bake state goes Idle → Baking → Ready; a rebake while one is pending merges.
 - **AC 14, camera curves.** `pitch(z)` and `heightScale(z)` are monotonic and continuous; at `zMin` and `zMax` they equal the near and far values; panning cannot leave the world rectangle plus margin.
 - **AC 15, capture determinism** as in item 5.
 - **AC 16, lifetime.** Module stop releases the `HexWorldMap` and every GPU resource; 20 start/stop cycles leak nothing.
+- **AC 17, rebake all.** Changing `relief.reliefScale` repeatedly during a drag causes at most one pending rebake at a time and exactly one full-resolution bake after release; the live world keeps drawing throughout; the final result equals a fresh bake with the final value (hash).
+- **AC 18, commands on the render PU.** `cow.map.style.set` called from E2E changes the style on the render PU with no lock held by `HexWorldMap` (a thread-affinity assert in test builds).
 
-**Additional tasks:** 9 bake jobs and frame-boundary commit (AC 13, sonnet); 10 camera curves and bounds (AC 14, sonnet); 11 capture command (AC 15, sonnet); 12 lifetime and health (AC 16, haiku).
+**Additional tasks:** 9 bake jobs and frame-boundary commit (AC 13, sonnet); 10 camera curves and bounds (AC 14, sonnet); 11 capture command (AC 15, sonnet); 12 lifetime and health (AC 16, haiku); 13 bake and relief tuning with coalesced `RebakeAll` (AC 17, sonnet); 14 render-PU command dispatch (AC 18, haiku).
 
 ## Summary
 

@@ -22,7 +22,9 @@ The hex terrain material: one fragment shader composed from DiaToonShading inclu
 | Class borders | margin field | edge ink, weight by stratum |
 | Strata look | stratum per cell | hatch coverage and ink weight per stratum, ambient grade per stratum |
 | Hillshade, slopes | elevation gradient | toon ramp, slope blend to rock with ink ticks, form lines, optional contours |
-| Biome colour | primary/secondary class, season weights | palette slots by noise, per-season palette blend |
+| Biome colour | primary/secondary class, the palette table (already blended for the current season by the game) | palette slots by noise |
+| Succession | Condition channel `fade` and `targetClass` | palette slots lerped from the class palette to the target class palette by `fade` |
+| Cell outline | owner texture, hovered and selected cell ids | edge ink where the owner changes; hover and selection highlight |
 | Ground marks | class | mark pattern per class |
 | Condition | Condition channel | band grade + bare blend with cracks |
 | Snow | Snow channel (pack, temperature) + elevation | masked overlay biased by elevation and temperature |
@@ -51,7 +53,9 @@ It also defines `HexWorldStyle` (the parameter file that holds every number, emb
 5. **`HexWorldStyle`** parameter file: every field documented and range-checked (DiaAttribute + DiaValueSchema sidecar); embeds DiaToonShading parameter groups. **Everything is live-tweakable (user 2026-11-24, TOON-006):** the style is an `AttributeSet`, so every field, including the per-stratum arrays, per-flow-state arrays and custom-slot bindings, can be changed at run time through the Inspector, DiaAPI or a parameter file, taking effect next frame with no rebuild or shader reload. The style is touched on the render thread only; edits from other PUs are marshalled over a stream by the game's module (Map Assembly goal 5b). **No look constant lives in the shaders:** every number that affects appearance (noise scales, drift and flow speeds, wave and foam size, crack density, cloud-shadow scale, relief tilt, the boil rate and so on) is a style field with a range and a neutral default. Only structural constants stay in code (array capacities, texture layouts).
 6. **Neutral defaults.** The defaults draw a plain, readable hex map with no game's identity (grey-green palette, one stratum, no season tint). CoW's look comes only from CoW's style file.
 7. **Shader root.** `Draoi/DraoiHexWorldRender3D/Shaders`, cooked by the standard pipeline, including DiaToonShading's root. This relies on the DiaCLI cook change that adds every `source_roots` entry as a `shaderc` include path (DiaToonShading Feature 1 task 1; sign-off given 2026-11-24).
-8. **Data views** for class, elevation, condition, stratum, temperature, margin, each standard channel and each custom slot.
+8. **Data views** for class, elevation, condition, stratum, temperature, margin, succession fade, each standard channel and each custom slot.
+9. **Succession fade (2026-11-24).** The Condition channel is `(health, vegetation, fade, targetClass)`. At `fade` 0 a cell shows its class palette, at 1 the target class palette, and in between a continuous lerp of each of the three palette slots; the class itself changes in the bake only after the fade ends (the game commits the rebake then).
+10. **Cell outline (2026-11-24, answers system ODQ 1).** An optional outline drawn from the owner texture where the owner id changes, at a constant pixel width, plus a highlight for one hovered and one selected cell id passed by the game. Off by default (the art hides the grid); needed by the `debug-flat` look and by selection.
 
 ## Non-Goals
 
@@ -82,13 +86,14 @@ It also defines `HexWorldStyle` (the parameter file that holds every number, emb
 | Events | `burnColour`, `scarColour`, `scarFade`, `burnGlowWidth` |
 | Custom | `slot[4] = { technique, colour, threshold, falloff, enabled }` |
 | Marks/grain | `marksOn`, DiaToonShading `MarkParams`, `GrainParams` |
+| Outline | `outlineOn`, `outlineColour`, `outlineWidthPx`, `hoverColour`, `selectColour`, `selectWidthPx` |
 | Debug | `dataView` |
 
 Other `HexWorldStyle` groups belong to the other features and sit in the same `AttributeSet`: **Props and Particles** (Feature 3: scatter, sway, density gains; DiaBgfx3D `SpriteStyle` and `ParticleKindParams`) and **Layers and Post** (Feature 4: `layers.*` toggles, DiaBgfx3D `CompositeParams` including `wobbleHz`). DiaBgfx3D's param structs are plain; `HexWorldMap` snapshots them from the style with `ParamBinding` each frame.
 
 The groups list the fields the prototype needs; the sidecar is the authoritative list, and any further look number found while building goes in as a field (goal 5), never as a shader literal.
 
-`HexWorldVisuals` (per class, from the game): `palette[class] = { primary, secondary, accent }`, per-season palette overrides, mark id and density, relief weights (passed to DraoiHexWorldRelief). Uploaded as a small uniform array or texture.
+`HexWorldVisuals` (per class, from the game): `palette[class] = { primary, secondary, accent }` **already blended for the current season by the game** (a small table, about 13 classes × 3 colours, re-pushed when the season weights change; the sprite palette table is filled from the same blend), mark id and density, a `wet` flag, relief weights (passed to DraoiHexWorldRelief). Uploaded as a small uniform array or texture. Draoi does not blend seasons per palette: the season weights drive the grade cross-fade only.
 
 ### Shader structure
 
@@ -118,6 +123,8 @@ Draoi/DraoiHexWorldRender3D/Shaders/
 15. **Performance (Debug, ballpark).** Fragment cost at 1080p is recorded (including the custom-slot branch). If Large with everything on misses 30 fps (GDD V-1 Test 7), a perf task is queued (cheaper noise, early water exit, a cached static layer), not silently accepted.
 16. **Observability.** Shader load failures log file and error (channel `HWR3D`); profile scope `HexTerrain.Material`; the style file hash is logged on `SetStyle`.
 17. **Live tweak, whole style.** Setting any `HexWorldStyle` field on the backing `AttributeSet` changes the next frame's output with no rebuild, shader reload or `SetStyle` call. A sweep test sets each field of the per-stratum tables, the per-flow-state tables and the custom-slot bindings in turn, and only that stratum, state or slot changes in the capture (no cross-talk). A scan test checks that the `hexterrain/` shaders contain no look literals outside a short allowlist of structural constants.
+18. **Succession fade.** Fade 0 renders the class palette and 1 the target palette (within 1/255); fade 0.5 is the channel-wise mean of the two palettes; the result is monotonic in `fade` per slot; a cell with `fade` 0 is byte-identical to a world with no fade data.
+19. **Cell outline.** With the outline on, a line appears exactly where the owner id changes, at `outlineWidthPx` at three zoom levels (within 1 px); the hovered and selected cells take their colours and no other cell is affected; with the outline off the output is byte-identical to a build without the feature.
 
 ## Binding Decisions
 
@@ -150,3 +157,5 @@ Draoi/DraoiHexWorldRender3D/Shaders/
 | 8 | Composition goldens; prototype parity with CoW data | AC 2, 13 | Not Started | sonnet | needs CoW Map Visual Data; user signs off; goldens gated on DiaBgfx3D Feature A readback |
 | 9 | Cost measurement and observability | AC 15, 16 | Not Started | haiku | |
 | 10 | Live-tweak sweep and literal scan | AC 17 | Not Started | sonnet | after tasks 2 to 6 |
+| 11 | Succession fade in palette slots | AC 18 | Not Started | sonnet | with task 3 |
+| 12 | Cell outline and hover/selection highlight | AC 19 | Not Started | sonnet | needs Surface task 6 |

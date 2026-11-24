@@ -45,7 +45,7 @@ The approved prototype (`docs/research/tile_renderin_art_pipeline/lookdev/`, use
 
 | Channel | Values per cell | Typical source |
 |---|---|---|
-| Condition | health, vegetation | DraoiHexWorldEcology |
+| Condition | health, vegetation, succession fade, target class | DraoiHexWorldEcology (fade and target from succession) |
 | Weather | cloud, precipitation, snow fraction, gust | DraoiHexWorldWeather |
 | Snow | snow pack, temperature | DraoiHexWorldWeather |
 | Water | lake level, river flow state, flood, ice | DraoiHexWorldHydrology |
@@ -154,7 +154,7 @@ Build order: DiaCellFieldBake 1 → DraoiHexWorldRelief → DiaBgfx3D A, E → D
 
 ## Open Design Questions
 
-1. **Hex readability.** Is cell highlighting an outline drawn from the owner texture (here), or a DiaCellLayers overlay?
+1. ~~Hex readability.~~ Answered 2026-11-24: an optional cell outline drawn from the owner texture, with hovered and selected cell highlights, in the Hex Terrain Material (Feature 2, goal 10). The game owns selection state; DiaCellLayers overlays stay for gameplay.
 2. **Channel update cadence.** Should the weather channel update every frame (smoothed blend computed on the CPU) or upload two snapshots and blend on the GPU by day?
 3. **Is four custom slots right?** One RGBA16F texture is the cheap layout. A game needing more than four CoW-only states would need a second texture. Revisit when CoW's list is known.
 

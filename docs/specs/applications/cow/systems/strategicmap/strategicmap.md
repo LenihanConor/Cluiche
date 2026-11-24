@@ -112,10 +112,10 @@ Every source implements `IMapChannelSource`, so the V-1 stand-ins and the live s
 | # | Feature | Summary | Spec | Status |
 |---|---|---|---|---|
 | 1 | Map Visual Data | Biome visual table keyed by Biome Registry ids: palette P/S/A, season callouts, ground marks, relief weights, prop sets; depth-zone ink and hatch; GDD season grade tokens; ecology bands. Schema'd files under `Global/Map/` | [map-visual-data.md](map-visual-data.md) | Draft |
-| 2 | Channel Binding | `IMapChannelSource`, S-1 binding, year clock, slots for A1/A3/A4/A5 (stand-ins provided by V-1) | [channel-binding.md](channel-binding.md) | Draft |
-| 3 | Props and Fauna Set | CoW palette-masked SVG props (Claude-authored first; Gemini only if needed through the asset forge) and placement rules; herd and bird sprites; cloud sprites | [props-and-fauna-set.md](props-and-fauna-set.md) | Draft |
-| 4 | StrategicMapModule and Camera | Render-side module; strategic camera (Orbit + zoom-dependent pitch, bounds); `cow.map.*` commands; style parameter file load/save/reload | [module-and-camera.md](module-and-camera.md) | Draft |
-| 5 | Presentation Presets | Tilt-shift, haze, sky, silhouettes, form lines, contours, boil: tuned defaults and named presets (strategic, cinematic, debug-flat) | [presentation-presets.md](presentation-presets.md) | Draft |
+| 2 | Channel Binding | `IMapChannelSource`, S-1 binding, year clock, slots for A1/A3/A4/A5 (stand-ins provided by V-1) | [channel-binding.md](channel-binding.md) | Approved 2026-11-24 |
+| 3 | Props and Fauna Set | CoW palette-masked SVG props (Claude-authored first; Gemini only if needed through the asset forge) and placement rules; herd and bird sprites; cloud sprites | [props-and-fauna-set.md](props-and-fauna-set.md) | Approved 2026-11-24 |
+| 4 | StrategicMapModule and Camera | Render-side module; strategic camera (Orbit + zoom-dependent pitch, bounds); `cow.map.*` commands; style parameter file load/save/reload | [module-and-camera.md](module-and-camera.md) | Approved 2026-11-24 |
+| 5 | Presentation Presets | Tilt-shift, haze, sky, silhouettes, form lines, contours, boil: tuned defaults and named presets (strategic, cinematic, debug-flat) | [presentation-presets.md](presentation-presets.md) | Approved 2026-11-24 |
 
 Build order: 1 → 2 → 4 (first map on S-1 data), then 3 and 5. Each feature can only start once the DraoiHexWorldRender3D feature it uses exists.
 
@@ -154,4 +154,4 @@ Build order: 1 → 2 → 4 (first map on S-1 data), then 3 and 5. Each feature c
 
 ## Status
 
-`Approved` (2026-11-20, user). The interview was done during the research session (2026-11-20). Specced now, built at CoW build order #18 (user decision).
+`Approved` (2026-11-20, user). The interview was done during the research session (2026-11-20). Specced now, built at CoW build order #18 (user decision). **Features 2 to 5 Approved 2026-11-24** after review against the Draoi and Dia approvals (Snow channel and succession-fade layout, CPU season blend, owner-texture cell outline, `RebakeAll` tuning). **Feature 1 stays Draft** until the three GDD naming answers arrive.

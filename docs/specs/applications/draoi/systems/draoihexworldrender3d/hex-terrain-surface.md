@@ -9,7 +9,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/app.js` (`buildWorldGPU`, `commonUniforms`)
 
 ## Status
-`Approved` (2026-11-23, user: placement re-confirmed). **Was DiaTerrainMap3D Feature 1 Heightfield Terrain, `Approved` 2026-11-22 (user)** after review: tile atlas, indirection table and eviction removed; whole-world textures with rectangle updates on `Commit`; coast-fraction texture added. **Layer split 2026-11-23:** the chunked mesh, displacement, skirt, culling and `HeightAt` moved to DiaBgfx3D Feature E (@docs/specs/applications/dia/systems/diabgfx3d/heightfield-mesh.md). This feature keeps the hex-world textures and adds the standard channels and custom slots (TMAP-010). The approved content is otherwise unchanged.
+`Approved` (2026-11-23, user: placement re-confirmed). **Amended 2026-11-24 (user):** Condition channel carries succession fade and target class; the owner texture is uploaded lazily for the cell outline. **Was DiaTerrainMap3D Feature 1 Heightfield Terrain, `Approved` 2026-11-22 (user)** after review: tile atlas, indirection table and eviction removed; whole-world textures with rectangle updates on `Commit`; coast-fraction texture added. **Layer split 2026-11-23:** the chunked mesh, displacement, skirt, culling and `HeightAt` moved to DiaBgfx3D Feature E (@docs/specs/applications/dia/systems/diabgfx3d/heightfield-mesh.md). This feature keeps the hex-world textures and adds the standard channels and custom slots (TMAP-010). The approved content is otherwise unchanged.
 
 ## Summary
 
@@ -50,11 +50,12 @@ It owns the *textures and their updates*. DiaBgfx3D E owns the *geometry*; Featu
 | Class (primary, secondary, margin) | baked world | RGBA8 | same |
 | Coast fractions (primary fractions, `kMaxPrimary` = 4) | baked world | RGBA8 | same. Needed for coast ink at fraction 0.5 |
 | River (dist, width, dir) | DraoiHexWorldRelief post-pass | RGBA8 | same, absent when the world has no rivers |
-| Standard channels: Condition (health, vegetation), Weather (cloud, precipitation, snow fraction, gust), Snow (pack, temperature), Water (lake level, flow state, flood, ice), Events (burn, scar) | game | RGBA16F each, one texel per cell, linear | `UpdateChannel` |
+| Standard channels: Condition (health, vegetation, succession fade, target class), Weather (cloud, precipitation, snow fraction, gust), Snow (pack, temperature), Water (lake level, flow state, flood, ice), Events (burn, scar) | game | RGBA16F each, one texel per cell, linear | `UpdateChannel` |
 | Custom slots 0–3 | game | RGBA16F, one texel per cell, linear | `UpdateCustomSlots` |
 | Per-cell class data (primary, secondary, stratum, health) | game | RGBA8, one texel per cell, nearest | `SetCellData` |
+| Owner (cell id per texel) | baked world | RG8 (low byte, high byte), 2 bytes per texel | lazily on first `SetCellOutline(true)`, then by rectangle on `Commit`; absent otherwise |
 
-The owner array (`uint16_t`) stays on the CPU for `OwnerAt` and is not uploaded. A bake with more than four scalars uses extra RGBA16F textures. A Large world is about 3.4 M texels, so the field texture is about 27 MB and well inside the D3D11 texture size limit. The material samples whole-world textures directly; there is no atlas or indirection table.
+The owner array (`uint16_t`) stays on the CPU for `OwnerAt`. It is uploaded as the RG8 owner texture only when the cell outline (Feature 2) is switched on (about 7 MB at Large), so there is no cost while the outline is off. A bake with more than four scalars uses extra RGBA16F textures. A Large world is about 3.4 M texels, so the field texture is about 27 MB and well inside the D3D11 texture size limit. The material samples whole-world textures directly; there is no atlas or indirection table.
 
 ### Draw order
 
@@ -73,6 +74,7 @@ namespace Draoi::HexWorldRender3D {
         void UpdateChannel(Channel, const float* rgbaPerCell);
         void UpdateCustomSlots(const float* rgbaPerCell);
         void SetCellData(const uint8_t* rgbaPerCell);
+        void SetCellOutline(bool on);                       // creates or releases the owner texture
         float HeightAt(float x, float y) const;            // DiaBgfx3D E helper over the baked elevation; basis of picking
         const Dia::Bgfx3D::HeightfieldMesh& Mesh() const;
     };
@@ -89,6 +91,8 @@ namespace Draoi::HexWorldRender3D {
 6. **Default material.** With DiaBgfx3D E's flat-lit material, a captured frame of a small S-1 world shows terrain relief with no holes or cracks (user taste check).
 7. **Performance (Debug, ballpark).** Upload bytes and ms on Large are logged to the plan notes.
 8. **Observability.** Log channel `HWR3D`; profile scope `HexTerrain.Upload`; metrics `hwr3d.upload_bytes`, `hwr3d.upload_ms`, `hwr3d.channel_uploads`.
+9. **Owner texture.** With the outline off no owner texture exists (resource counter). `SetCellOutline(true)` creates it and a read-back equals the baked owner array; `UpdateRect` after a `Commit` refreshes exactly the changed rectangle; `SetCellOutline(false)` releases it.
+10. **Condition layout.** The Condition channel texel is `(health, vegetation, fade, targetClass)`; `UpdateChannel(Condition)` round-trips all four components.
 
 ## Binding Decisions
 
@@ -113,5 +117,6 @@ namespace Draoi::HexWorldRender3D {
 | 1 | Package skeleton `Draoi/DraoiHexWorldRender3D/`, docs, deps | `dia check deps` | Not Started | haiku | |
 | 2 | Whole-world texture upload, `UpdateRect`, `HeightAt` | AC 3, 5 | Not Started | sonnet | needs DiaBgfx3D A, E |
 | 3 | Heightfield hookup and sea skirt | AC 1, 2, 6 | Not Started | sonnet | |
-| 4 | Standard channel, custom slot and cell-data textures | AC 4 | Not Started | sonnet | |
+| 4 | Standard channel, custom slot and cell-data textures | AC 4, 10 | Not Started | sonnet | |
+| 6 | Owner texture, lazily created for the cell outline | AC 9 | Not Started | sonnet | added 2026-11-24 (Strategic Map review) |
 | 5 | Observability and Large-world numbers | AC 7, 8 | Not Started | haiku | |

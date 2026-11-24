@@ -11,7 +11,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/alive.js` (`YearClock`), `js/weather.js` (`WeatherSim` output contract), `js/app.js` (`healthOf`, channel textures)
 
 ## Status
-`Draft` (2026-11-20). Drafted from the approved prototype; awaiting user review.
+`Approved` (2026-11-24, user, after spec review: Snow channel, Condition layout with succession fade, 4-float fill). Drafted 2026-11-20 from the approved prototype.
 
 ## Summary
 
@@ -52,7 +52,8 @@ The Strategic Map is a view of the simulation. This feature defines **how each s
 |---|---|---|---|
 | World class | `primary`, `secondary`, `reliefClass`, `depthZone` (4 × u8) | ids | S-1 |
 | World scalars | elevation, temperature, + river inputs (mask, flowDir, flowAccum) | 0..1 etc. | S-1 |
-| Condition | `health`, `succession fade` (0 = old class, 1 = new), `successionTarget` (class id) | 0..1 | A1 + A3 |
+| Condition | `health`, `vegetation`, `succession fade` (0 = old class, 1 = new), `successionTarget` (class id) | 0..1 | A1 + A3 |
+| Snow | `pack`, `temperature` (+ 2 spare) | 0..1 | A4 snow pack; temperature from the S-1 world scalars until A4 supplies it |
 | Weather | `cloud`, `precip`, `snowFraction`, `gust` | 0..1 | A4 smoothed |
 | Water state | `lakeLevel`, `flow state` (0..4), `flood`, `ice` | 0..1 / enum | A5 (year clock until built) |
 | Events | `burn`, `scar` | 0..1 | A1 natural fire: `burn` = `ecology.transient.fire_intensity`; `scar` = healing curve of `years_since_fire` (and the A3 `BurnedAshland` class); V-1 stand-in until A1 is built |
@@ -62,14 +63,14 @@ The Strategic Map is a view of the simulation. This feature defines **how each s
 
 ```cpp
 namespace CoW::Map {
-    enum class ChannelId : uint8_t { World, Condition, Weather, WaterState, Events, Season };
+    enum class ChannelId : uint8_t { World, Condition, Weather, Snow, WaterState, Events, Season };
     class IMapChannelSource {
     public:
         virtual ~IMapChannelSource() {}
         virtual ChannelId Channel() const = 0;
         virtual bool      IsLive() const = 0;                                 // false: renderer uses the neutral channel
         virtual uint64_t  Version() const = 0;                                // changes when content changes
-        virtual bool      Fill(float* rgbaPerCell, uint32_t cellCount) = 0;   // SimPU, inside the publisher's step
+        virtual bool      Fill(float* rgbaPerCell, uint32_t cellCount) = 0;   // 4 floats per cell, in the layout above; SimPU, inside the publisher's step
     };
     class MapSnapshotPublisher : public Dia::ApplicationFlow::Module {
     public:

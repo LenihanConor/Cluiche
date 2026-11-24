@@ -9,7 +9,7 @@
 **Prototype:** presentation controls in `docs/research/tile_renderin_art_pipeline/lookdev/js/app.js` (state defaults and the "Presentation" and "Style" panel sections); screenshots `lookdev/shots/` (overview, close, storms, collapsed, presentation)
 
 ## Status
-`Draft` (2026-11-20). Drafted from the approved prototype; awaiting user review.
+`Approved` (2026-11-24, user, after spec review: struct field paths, `sketch` fields). Drafted 2026-11-20 from the approved prototype.
 
 ## Summary
 
@@ -33,7 +33,7 @@ Presets are small override files applied over the defaults. They are the art dir
 1. **`map_presets/<name>.json`** (`cow.map_preset`): a sparse set of style overrides, with a description and a `basedOn` preset.
 2. **Four shipped presets** with the values below, reviewed by the user from the prototype.
 3. **Apply, list, save-as** through the commands in Feature 4; presets compose (`basedOn`), with cycle detection.
-4. **Cost tiers**: `sketch` documents which features it disables and by how much, so the cost story is explicit.
+4. **Cost tiers**: `sketch` documents which features it disables and by how much, so the cost story is explicit. It sets `quality.noiseOctaves` (a global cap fed into the DiaToonShading noise params, a `HexWorldStyle` field added with the Hex Terrain Material) and `props.densityScale` (a Draoi Props field), both live-tweakable.
 5. **A per-preset capture** set: one capture per preset at a fixed world and camera for the user's taste review.
 
 ## Non-Goals
@@ -49,11 +49,11 @@ Presets are small override files applied over the defaults. They are the art dir
 ```json
 { "format": "cow.map_preset", "version": 1, "name": "cinematic",
   "description": "Stronger depth cues for screenshots", "basedOn": "strategic",
-  "style": { "post.tiltShift.strength": 1.4, "post.haze.strength": 1.3, "camera.pitchNear": 48,
+  "style": { "post.tilt.strength": 1.4, "post.haze.strength": 1.3, "camera.pitchNear": 48,
              "post.sky.cloudAmount": 0.6, "particles.on": true } }
 ```
 
-Keys are the dotted style paths from Feature 4. Unknown keys are warnings (kept); out-of-range values are clamped with a warning. A preset never changes data (palette, biome rows) — only style.
+Keys are the dotted style paths from Feature 4, which are the field paths of the bound structs (`post.tilt.strength` is `CompositeParams::tilt.strength`; `props.densityScale`, `quality.noiseOctaves`, `outline.on` and so on). The presets also set `bake.*` and `relief.*` where a look needs them; those trigger a rebake when applied. Unknown keys are warnings (kept); out-of-range values are clamped with a warning. A preset never changes data (palette, biome rows) — only style.
 
 ### Shipped values
 
@@ -66,9 +66,9 @@ Keys are the dotted style paths from Feature 4. Unknown keys are warnings (kept)
 | Depth silhouettes | on | on | off | off |
 | Form lines / contours | on / off | on / off | off / off | off / off |
 | Line boil | on | on | **off** | off |
-| Props | on | on | **off** | on, density 0.6 |
+| Props | on | on | **off** | on, `props.densityScale` 0.6 |
 | Particles / clouds | on | on | off | **off** |
-| Hex grid overlay | off | off | **on** | off |
+| Hex grid overlay (`outline.on`) | off | off | **on** | off |
 | Data view | none | none | class | none |
 | Camera pitch near/far | 55° / 70° | 48° / 66° | 90° (top-down) | 55° / 70° |
 | Height factor far | 0.6 | 0.7 | 0 (flat) | 0.6 |
