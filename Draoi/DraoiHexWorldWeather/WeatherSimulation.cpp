@@ -260,8 +260,19 @@ void WeatherSimulation::Run(Dia::ParallelExecutor::IParallelExecutor& executor)
     context.fields = &mBuffers[1 - mCommittedIndex];
     context.handoff = &mHandoff;
     context.totals = &mTotals;
+    mProfile = WeatherStepProfile();   // the profile covers the last Run only
+    WeatherProfileAccumulator timing;
     context.profile = &mProfile;
+    context.timing = &timing;
     RunPipeline(context, executor);
+    uint64_t totalCpu = 0;
+    for (uint32_t i = 0; i < WeatherStepProfile::kPassCount; ++i)
+    {
+        mProfile.cpuMicros[i] = timing.cpuMicros[i].load(std::memory_order_relaxed);
+        totalCpu += mProfile.cpuMicros[i];
+    }
+    mProfile.totalCpuMicros = totalCpu;
+    mProfile.lastRangeCount = executor.GetLastRangeCount();
 }
 
 void WeatherSimulation::Commit()

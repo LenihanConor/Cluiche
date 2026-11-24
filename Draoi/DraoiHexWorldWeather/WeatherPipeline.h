@@ -11,6 +11,8 @@
 #include <DraoiHexWorldWeather/WeatherTypes.h>
 #include <DraoiHexWorldWeather/WindDirection.h>
 
+#include <atomic>
+
 namespace Draoi {
 namespace HexWorld {
 namespace Weather {
@@ -49,6 +51,14 @@ struct CapturedInputs
     ClimateOffsets    climate;             // per cell: tempOffset 0, evapMultiplier 1, windShift 0 by default
 };
 
+// Per-pass CPU microseconds summed across ranges (relaxed fetch_add). Used ONLY by timing; the simulation never reads it.
+// Run owns one on its stack and copies it into WeatherStepProfile at the end.
+struct WeatherProfileAccumulator
+{
+    std::atomic<uint64_t> cpuMicros[WeatherStepProfile::kPassCount];
+    WeatherProfileAccumulator() { for (uint32_t i = 0; i < WeatherStepProfile::kPassCount; ++i) cpuMicros[i].store(0, std::memory_order_relaxed); }
+};
+
 struct PassContext
 {
     const WeatherTerrain*   terrain = nullptr;
@@ -58,6 +68,7 @@ struct PassContext
     WeatherHandoff*         handoff = nullptr;
     WeatherGridTotals*      totals = nullptr;
     WeatherStepProfile*     profile = nullptr;
+    WeatherProfileAccumulator* timing = nullptr;   // null (and profile null) = passes run untimed
 };
 
 // Pass identifiers in run order (pass 10 is retired). Later pass tasks append their entries before kLast.
@@ -67,6 +78,11 @@ enum class PassId : uint8_t
     Orographic, Precipitation, SnowMelt, Finish,
     kLast = Finish
 };
+
+// Profile entry of a pass: the entries follow PassId order (0, 1, 2, 3, 4, 5a, 5b, 5c, 6a, 6b, 7, 8, 9, finish).
+constexpr uint32_t kProfileIndex(PassId id) { return static_cast<uint32_t>(id); }
+// Display name of profile entry `index` (0..kPassCount-1), "" past the end.
+const char* PassName(uint32_t index);
 
 // The ordered pass sequence (0, 1, 2, 3, 4, 5a..6b, 7, 8, 9, finish). Filled in by the pass tasks.
 void RunPipeline(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);

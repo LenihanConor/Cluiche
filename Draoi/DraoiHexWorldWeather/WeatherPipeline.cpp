@@ -1,6 +1,7 @@
 // A4 weather pipeline: cellular-automaton passes (solar, pressure, wind, evaporation, transport, etc).
 // Spec: docs/specs/applications/cow/systems/a4-weather/ca-pipeline.md
-// Run call tree rules: no heap allocation, no std containers, no RNG, no atomics. Every ParallelFor lambda captures a
+// Run call tree rules: no heap allocation, no std containers, no RNG, no atomics in the simulation (the timing
+// accumulator is atomic but write-only and never read by a pass). Every ParallelFor lambda captures a
 // single reference so it stays inside std::function's small buffer.
 #include <DraoiHexWorldWeather/WeatherPipeline.h>
 
@@ -8,6 +9,7 @@
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DraoiHexWorldWeather/WeatherSimulation.h>
 
+#include <chrono>
 #include <math.h>
 
 namespace Draoi {
@@ -24,6 +26,33 @@ namespace
     inline uint32_t Winner(const PassContext& context, ForcingKind kind, uint32_t cell)
     {
         return context.tables->claimed[static_cast<uint32_t>(kind) * context.tables->cellCount + cell];
+    }
+
+    inline uint64_t MicrosSince(std::chrono::steady_clock::time_point t0)
+    {
+        return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t0).count());
+    }
+
+    // One ParallelFor over every cell. When timing is on: wall on the calling thread around the call, and each range's
+    // elapsed micros added to the pass's CPU slot. The ParallelFor lambda captures one pointer (std::function small buffer).
+    template <class Fn>
+    void TimedFor(PassContext& context, PassId id, Dia::ParallelExecutor::IParallelExecutor& executor, const Fn& fn)
+    {
+        const uint32_t n = context.tables->cellCount;
+        if (!context.timing || !context.profile)
+        {
+            executor.ParallelFor(n, kMinRange, fn);
+            return;
+        }
+        struct Timed { const Fn* fn; std::atomic<uint64_t>* cpu; } timed = { &fn, &context.timing->cpuMicros[kProfileIndex(id)] };
+        const auto wall0 = std::chrono::steady_clock::now();
+        executor.ParallelFor(n, kMinRange, [&timed](uint32_t begin, uint32_t end)
+        {
+            const auto t0 = std::chrono::steady_clock::now();
+            (*timed.fn)(begin, end);
+            timed.cpu->fetch_add(MicrosSince(t0), std::memory_order_relaxed);
+        });
+        context.profile->wallMicros[kProfileIndex(id)] += MicrosSince(wall0);
     }
 
     inline float Clamp01(float v) { return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v); }
@@ -87,7 +116,7 @@ WindVector PressureGradient(uint32_t cell, const WeatherFields& fields, const Gr
 void RunSolarPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
 {
     DIA_PROFILE_SCOPE("Weather.Pass1.Solar", kWeatherCategory);
-    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    TimedFor(context, PassId::Solar, executor, [&context](uint32_t begin, uint32_t end)
     {
         const CapturedInputs& in = *context.inputs;
         const WeatherParameters& p = in.params;
@@ -115,7 +144,7 @@ void RunSolarPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor
 void RunPressurePass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
 {
     DIA_PROFILE_SCOPE("Weather.Pass2.Pressure", kWeatherCategory);
-    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    TimedFor(context, PassId::Pressure, executor, [&context](uint32_t begin, uint32_t end)
     {
         const float sensitivity = context.inputs->params.pressureSensitivity;
         WeatherFields& f = *context.fields;
@@ -134,7 +163,7 @@ void RunPressurePass(PassContext& context, Dia::ParallelExecutor::IParallelExecu
 void RunWindPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
 {
     DIA_PROFILE_SCOPE("Weather.Pass3.Wind", kWeatherCategory);
-    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    TimedFor(context, PassId::Wind, executor, [&context](uint32_t begin, uint32_t end)
     {
         const CapturedInputs& in = *context.inputs;
         const WeatherParameters& p = in.params;
@@ -177,7 +206,7 @@ void RunWindPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor&
 void RunEvaporationPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
 {
     DIA_PROFILE_SCOPE("Weather.Pass4.Evaporation", kWeatherCategory);
-    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    TimedFor(context, PassId::Evaporation, executor, [&context](uint32_t begin, uint32_t end)
     {
         const CapturedInputs& in = *context.inputs;
         const WeatherParameters& p = in.params;
@@ -211,7 +240,7 @@ void RunEvaporationPass(PassContext& context, Dia::ParallelExecutor::IParallelEx
 void RunMoistureOutPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
 {
     DIA_PROFILE_SCOPE("Weather.Pass5a.MoistureOut", kWeatherCategory);
-    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    TimedFor(context, PassId::MoistureOut, executor, [&context](uint32_t begin, uint32_t end)
     {
         const float rate = context.inputs->params.moistureTransportRate;
         const WeatherFields& f = *context.fields;
@@ -256,7 +285,7 @@ namespace
 void RunMoistureGatherPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
 {
     DIA_PROFILE_SCOPE("Weather.Pass5b.MoistureGather", kWeatherCategory);
-    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    TimedFor(context, PassId::MoistureGather, executor, [&context](uint32_t begin, uint32_t end)
     {
         const bool edge = context.inputs->params.edgeInflow;
         WeatherFields& f = *context.fields;
@@ -273,7 +302,7 @@ void RunMoistureGatherPass(PassContext& context, Dia::ParallelExecutor::IParalle
 void RunAnomalyDecayPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
 {
     DIA_PROFILE_SCOPE("Weather.Pass5c.AnomalyDecay", kWeatherCategory);
-    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    TimedFor(context, PassId::AnomalyDecay, executor, [&context](uint32_t begin, uint32_t end)
     {
         const WeatherParameters& p = context.inputs->params;
         WeatherFields& f = *context.fields;
@@ -291,7 +320,7 @@ void RunAnomalyDecayPass(PassContext& context, Dia::ParallelExecutor::IParallelE
 void RunHeatOutPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
 {
     DIA_PROFILE_SCOPE("Weather.Pass6a.HeatOut", kWeatherCategory);
-    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    TimedFor(context, PassId::HeatOut, executor, [&context](uint32_t begin, uint32_t end)
     {
         const float rate = context.inputs->params.heatTransportRate;
         const WeatherFields& f = *context.fields;
@@ -308,7 +337,7 @@ void RunHeatOutPass(PassContext& context, Dia::ParallelExecutor::IParallelExecut
 void RunHeatGatherPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
 {
     DIA_PROFILE_SCOPE("Weather.Pass6b.HeatGather", kWeatherCategory);
-    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    TimedFor(context, PassId::HeatGather, executor, [&context](uint32_t begin, uint32_t end)
     {
         const bool edge = context.inputs->params.edgeInflow;
         WeatherFields& f = *context.fields;
@@ -345,7 +374,7 @@ void RouteCondensate(PassContext& context, uint32_t cell, float amount)
 void RunOrographicPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
 {
     DIA_PROFILE_SCOPE("Weather.Pass7.Orographic", kWeatherCategory);
-    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    TimedFor(context, PassId::Orographic, executor, [&context](uint32_t begin, uint32_t end)
     {
         const CapturedInputs& in = *context.inputs;
         const WeatherParameters& p = in.params;
@@ -382,7 +411,7 @@ void RunOrographicPass(PassContext& context, Dia::ParallelExecutor::IParallelExe
 void RunPrecipitationPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
 {
     DIA_PROFILE_SCOPE("Weather.Pass8.Precipitation", kWeatherCategory);
-    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    TimedFor(context, PassId::Precipitation, executor, [&context](uint32_t begin, uint32_t end)
     {
         const WeatherParameters& p = context.inputs->params;
         WeatherFields& f = *context.fields;
@@ -407,7 +436,7 @@ void RunPrecipitationPass(PassContext& context, Dia::ParallelExecutor::IParallel
 void RunSnowMeltPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
 {
     DIA_PROFILE_SCOPE("Weather.Pass9.SnowMelt", kWeatherCategory);
-    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    TimedFor(context, PassId::SnowMelt, executor, [&context](uint32_t begin, uint32_t end)
     {
         const CapturedInputs& in = *context.inputs;
         const WeatherParameters& p = in.params;
@@ -453,9 +482,11 @@ namespace
 void RunFinishPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
 {
     DIA_PROFILE_SCOPE("Weather.Finish", kWeatherCategory);
+    const bool timed = context.timing && context.profile;
+    const auto wall0 = std::chrono::steady_clock::now();
     {
         DIA_PROFILE_SCOPE("Weather.Finish.Clamp", kWeatherCategory);
-        executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+        TimedFor(context, PassId::Finish, executor, [&context](uint32_t begin, uint32_t end)
         {
             WeatherFields& f = *context.fields;
             WeatherHandoff& h = *context.handoff;
@@ -478,6 +509,7 @@ void RunFinishPass(PassContext& context, Dia::ParallelExecutor::IParallelExecuto
     }
 
     // Serial totals, cell order, calling thread: bit-identical at any range count.
+    const auto totals0 = std::chrono::steady_clock::now();
     WeatherGridTotals& totals = *context.totals;
     const WeatherFields& f = *context.fields;
     const uint32_t n = context.tables->cellCount;
@@ -492,6 +524,22 @@ void RunFinishPass(PassContext& context, Dia::ParallelExecutor::IParallelExecuto
     totals.meanMoisture = n > 0 ? moistureSum / static_cast<double>(n) : 0.0;
     totals.totalSnowPack = snowSum;
     totals.rainingCellCount = raining;
+    if (timed)
+    {
+        // The serial totals count toward the finish entry's CPU (the clamp part was added by TimedFor) and its wall.
+        context.timing->cpuMicros[kProfileIndex(PassId::Finish)].fetch_add(MicrosSince(totals0), std::memory_order_relaxed);
+        context.profile->wallMicros[kProfileIndex(PassId::Finish)] = MicrosSince(wall0);
+    }
+}
+
+const char* PassName(uint32_t index)
+{
+    static const char* const kNames[WeatherStepProfile::kPassCount] =
+    {
+        "0 Influence", "1 Solar", "2 Pressure", "3 Wind", "4 Evaporation", "5a MoistureOut", "5b MoistureGather",
+        "5c AnomalyDecay", "6a HeatOut", "6b HeatGather", "7 Orographic", "8 Precipitation", "9 SnowMelt", "Finish"
+    };
+    return index < WeatherStepProfile::kPassCount ? kNames[index] : "";
 }
 
 void RunPipelineUntil(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor, PassId lastPass)
