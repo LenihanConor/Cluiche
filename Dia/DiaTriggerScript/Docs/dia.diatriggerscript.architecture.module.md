@@ -16,8 +16,6 @@ dependencies:
     - dia.geometry2d
     - dia.entityspatial
     - dia.streams
-    - dia.application
-    - dia.observation
   forbidden: []
 ---
 
@@ -31,7 +29,7 @@ Data-driven scripted level events. `TriggerScriptModule` owns a flat list of `Tr
 - `TriggerFiredEvent` — published on sim DiaStreams channel on each trigger fire
 - `ITriggerActionHandler` — dispatch interface; caller registers named handlers
 - `TriggerActionRegistry` — named handler registration and dispatch; explicitly constructed
-- `TriggerScriptModule` — IModule on SimPU; LoadFromJson, Update, IncrementCount, IsFired/IsActive
+- `TriggerScriptModule` (moved to CluicheTest `Modules/EngineModules/`) — IModule on SimPU; LoadFromJson, Update, IncrementCount, IsFired/IsActive
 
 ## Dependencies
 

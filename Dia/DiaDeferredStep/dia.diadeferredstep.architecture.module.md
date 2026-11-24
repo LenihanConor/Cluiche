@@ -14,8 +14,6 @@ dependencies:
     - dia.observation
     - dia.threading
     - dia.savegame
-    - dia.application
-    - dia.streams
   forbidden: []
 public_api:
   headers:
@@ -40,7 +38,6 @@ Namespace: `Dia::DeferredStep`. Runs on SimPU (deferred step channel subscribers
 - IStepLauncher seam for kicking deferred steps
 - DeferredStepScheduler: one step per channel, Kick/Tick/DrainAll
 - IParallelExecutor + SerialExecutor abstractions
-- DeferredStepModule: SimModule that hosts the scheduler on SimPU
 - StepChain: ordered stages (Capture, Run, Commit) inside one deferred step; capacity is a template parameter (default 8)
 
 ## Non-Responsibilities

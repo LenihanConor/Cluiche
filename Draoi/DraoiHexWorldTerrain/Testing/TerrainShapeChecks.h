@@ -7,7 +7,7 @@
 
 #include <DraoiHexWorldTerrain/TerrainGenerator.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -61,7 +61,7 @@ template <typename Pred>
 int CountConnectedGroups(Pred pred, GridDimensions d)
 {
     const int n = d.width * d.height;
-    const Dia::Pathfinding::HexTopology topo(d.width, d.height);
+    const Dia::Geometry2D::HexTopology topo(d.width, d.height);
     std::vector<uint8_t> seen(static_cast<size_t>(n), 0);
     int groups = 0;
     for (int i = 0; i < n; ++i)
@@ -75,7 +75,7 @@ int CountConnectedGroups(Pred pred, GridDimensions d)
             for (uint32_t k = 0; k < 6; ++k)
             {
                 const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(q[h]), k);
-                if (nb != Dia::Pathfinding::kNoCell && !seen[nb] && pred(static_cast<int>(nb)))
+                if (nb != Dia::Geometry2D::kNoCell && !seen[nb] && pred(static_cast<int>(nb)))
                 {
                     seen[nb] = 1;
                     q.push_back(static_cast<int>(nb));
@@ -91,7 +91,7 @@ inline void CheckContractAndBorderAndLand(const TerrainGenerator& g, const World
 {
     const int W = w.dimensions.width, H = w.dimensions.height;
     if (W <= 0 || H <= 0 || w.CellCount() != W * H) { f.Add("world has no cells"); return; }
-    const Dia::Pathfinding::HexTopology topo(W, H);
+    const Dia::Geometry2D::HexTopology topo(W, H);
     const float coast = rules.kCoastElev;
     const int border = TerrainRules::RoundToInt(rules.kBorderWidth);
     const uint32_t* lakeMask = ShapeU(g, "lakeMask");
@@ -134,7 +134,7 @@ inline void CheckContractAndBorderAndLand(const TerrainGenerator& g, const World
             for (uint32_t d = 0; d < 6; ++d)
             {
                 const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(i), d);
-                if (nb == Dia::Pathfinding::kNoCell) { continue; }
+                if (nb == Dia::Geometry2D::kNoCell) { continue; }
                 if (topo.NeighbourAt(nb, (d + 3) % 6) != static_cast<uint32_t>(i)) { f.Add("AC2 neighbour symmetry broken" + at); break; }
             }
         }
@@ -151,7 +151,7 @@ inline void CheckContractAndBorderAndLand(const TerrainGenerator& g, const World
 inline void CheckRiversReachAndDescend(const WorldStructure& w, ShapeFailures& f)
 {
     const int W = w.dimensions.width, H = w.dimensions.height;
-    const Dia::Pathfinding::HexTopology topo(W, H);
+    const Dia::Geometry2D::HexTopology topo(W, H);
     const int n = W * H;
     for (int i = 0; i < n; ++i)
     {
@@ -165,7 +165,7 @@ inline void CheckRiversReachAndDescend(const WorldStructure& w, ShapeFailures& f
             const Cell& cc = w.Cells()[cur];
             if (cc.downstream > 5) { f.Add("AC10 river cell without downstream" + at); break; }
             const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(cur), cc.downstream);
-            if (nb == Dia::Pathfinding::kNoCell) { f.Add("AC10 downstream leaves the map" + at); break; }
+            if (nb == Dia::Geometry2D::kNoCell) { f.Add("AC10 downstream leaves the map" + at); break; }
             const Cell& next = w.Cells()[nb];
             if (next.elevation > cc.elevation) { f.Add("AC10 elevation rises toward the mouth" + at); }
             if (next.waterSource == WaterSource::Ocean || next.waterSource == WaterSource::Lake) { reached = true; break; }

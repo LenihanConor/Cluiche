@@ -195,7 +195,7 @@ namespace
         // Plateau interiors: each connected group of unpinned interior cells (fixup 0) is one climate.
         if (shape.barrierForm == BarrierForm::Plateau && shape.barrier > 0.0f && mask != nullptr)
         {
-            const Dia::Pathfinding::HexTopology topo(dims.width, dims.height);
+            const Dia::Geometry2D::HexTopology topo(dims.width, dims.height);
             std::vector<int>                    comp(static_cast<size_t>(n), -1);
             int                                 comps = 0;
             for (int s = 0; s < n; ++s)
@@ -219,7 +219,7 @@ namespace
                     for (uint32_t d = 0; d < 6u; ++d)
                     {
                         const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(c), d);
-                        if (nb != Dia::Pathfinding::kNoCell && comp[nb] < 0 && mask[nb] >= rules.kPlateauInner && pin[nb] == BiomePin::None)
+                        if (nb != Dia::Geometry2D::kNoCell && comp[nb] < 0 && mask[nb] >= rules.kPlateauInner && pin[nb] == BiomePin::None)
                         {
                             comp[nb] = comps;
                             stack.push_back(static_cast<int>(nb));

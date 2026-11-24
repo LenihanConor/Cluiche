@@ -92,6 +92,8 @@
     <ClInclude Include="Shapes\Spline.h" />
     <ClInclude Include="Shapes\SplineFactory.h" />
     <ClInclude Include="Intersection\IntersectionTests.h" />
+    <ClInclude Include="Grid\CellCoord.h" />
+    <ClInclude Include="Grid\HexTopology.h" />
     <ClInclude Include="Transform\Transform.h" />
     <ClInclude Include="Spatial\ISpatialStructure.h" />
     <ClInclude Include="Spatial\SpatialGrid.h" />
@@ -122,6 +124,7 @@
     <ClCompile Include="Shapes\Spline.cpp" />
     <ClCompile Include="Shapes\SplineFactory.cpp" />
     <ClCompile Include="Intersection\IntersectionTests.cpp" />
+    <ClCompile Include="Grid\HexTopology.cpp" />
     <ClCompile Include="Transform\Transform.cpp" />
     <ClCompile Include="Spatial\SpatialGrid.cpp" />
     <ClCompile Include="Spatial\Quadtree.cpp" />

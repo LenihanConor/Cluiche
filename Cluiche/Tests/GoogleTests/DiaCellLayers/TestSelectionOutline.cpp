@@ -3,7 +3,7 @@
 #include <DiaCellLayers/SelectionOutline.h>
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
 #include <DiaCellLayers/Testing/SelectionTestSupport.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <chrono>
 #include <math.h>
@@ -11,8 +11,8 @@
 
 using namespace Dia::CellLayers;
 using namespace Dia::CellLayers::Testing;
-using Dia::Pathfinding::HexTopology;
-using Dia::Pathfinding::CellCoord;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::CellCoord;
 
 namespace
 {

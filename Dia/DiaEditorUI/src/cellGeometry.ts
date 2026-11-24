@@ -1,7 +1,7 @@
 // Pure cell-grid geometry for CellGridCanvas. Flat-top odd-q hex (odd columns shifted down half a cell) and square.
-// Index order is row-major (index = r * width + q), matching Dia::Pathfinding::HexTopology.
+// Index order is row-major (index = r * width + q), matching Dia::Geometry2D::HexTopology.
 
-/** Hex distance between two cell indices, flat-top odd-q. Mirrors HexTopology::Distance. */
+/** Hex distance between two cell indices, flat-top odd-q. Mirrors Dia::Geometry2D::HexTopology::Distance. */
 export function hexDistance(a: number, b: number, width: number): number {
   const aq = a % width;
   const bq = b % width;
@@ -123,7 +123,7 @@ export function cellFromPoint(layout: Layout, x: number, y: number): CellRef | n
     q = Math.floor(wx);
     r = Math.floor(wy);
   } else {
-    // Axial cube rounding (same as HexTopology::CellFromPoint), then axial -> odd-q offset.
+    // Axial cube rounding (same as Dia::Geometry2D::HexTopology::CellFromPoint), then axial -> odd-q offset.
     const qf = (2 / 3) * wx;
     const rf = -wx / 3 + (kSqrt3 / 3) * wy;
     const sf = -qf - rf;

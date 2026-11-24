@@ -15,7 +15,7 @@
 #include <vector>
 
 using namespace Dia::Graphics;
-using Dia::Pathfinding::HexTopology;
+using Dia::Geometry2D::HexTopology;
 
 namespace
 {
@@ -127,7 +127,7 @@ TEST(CellFieldGapsGeometry, NeighbourTablesMatchTopologyAtCornersAndEdges)
 					for (int m = 0; m < 3; ++m)
 					{
 						const uint32_t n = topo.NeighbourAt(c, dirs[m]);
-						const float expect = (n == Dia::Pathfinding::kNoCell) ? -1.0f : (float)n;
+						const float expect = (n == Dia::Geometry2D::kNoCell) ? -1.0f : (float)n;
 						EXPECT_EQ(expect, v.cellIndices[1 + m]) << s[0] << "x" << s[1] << " cell " << c << " k " << k;
 					}
 				}

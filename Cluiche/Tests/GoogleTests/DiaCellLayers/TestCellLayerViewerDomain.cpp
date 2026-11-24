@@ -7,7 +7,7 @@
 #include <DiaCellLayers/Testing/ViewValueSourceTestSupport.h>
 #include <DiaAPI/DiaAPI.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <string.h>
 
@@ -106,7 +106,7 @@ namespace
 
 	void PointAtCell(FakeDraw& draw, int q, int r)
 	{
-		const Dia::Maths::Vector2D c = Dia::Pathfinding::HexTopology::CellCenter(Dia::Pathfinding::CellCoord{ q, r }, 1.0f);
+		const Dia::Maths::Vector2D c = Dia::Geometry2D::HexTopology::CellCenter(Dia::Geometry2D::CellCoord{ q, r }, 1.0f);
 		float sx, sy;
 		WorldToScreen(TestView(), c.X(), c.Y(), sx, sy);
 		draw.mouse = Dia::Maths::Vector2D(sx, sy);

@@ -1,7 +1,7 @@
 // S-1 Nodes: Hunting and Resource fill. See NodesFill.h.
 #include <DraoiHexWorldTerrain/NodesFill.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <numeric>
@@ -9,8 +9,8 @@
 namespace Draoi {
 namespace HexWorld {
 
-using Dia::Pathfinding::CellCoord;
-using Dia::Pathfinding::HexTopology;
+using Dia::Geometry2D::CellCoord;
+using Dia::Geometry2D::HexTopology;
 
 namespace
 {

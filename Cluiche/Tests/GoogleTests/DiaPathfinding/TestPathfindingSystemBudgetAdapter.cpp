@@ -15,6 +15,7 @@
 #include <DiaSimTime/SimTimeBudget.h>
 
 using namespace Dia::Pathfinding;
+using Dia::Geometry2D::CellCoord;
 
 namespace
 {

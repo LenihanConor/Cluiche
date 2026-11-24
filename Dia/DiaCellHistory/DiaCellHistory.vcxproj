@@ -85,7 +85,6 @@
     <ClInclude Include="EventLog.h" />
     <ClInclude Include="CellHistoryRecorder.h" />
     <ClInclude Include="CellHistoryCommands.h" />
-    <ClInclude Include="CellHistoryModule.h" />
     <ClInclude Include="CellHistoryObservation.h" />
     <ClInclude Include="HistoryViewState.h" />
     <ClInclude Include="HistoryValueSource.h" />
@@ -131,7 +130,6 @@
     <ClCompile Include="EventLog.cpp" />
     <ClCompile Include="CellHistoryRecorder.cpp" />
     <ClCompile Include="CellHistoryCommands.cpp" />
-    <ClCompile Include="CellHistoryModule.cpp" />
     <ClCompile Include="CellHistoryObservation.cpp" />
     <ClCompile Include="HistoryViewState.cpp" />
     <ClCompile Include="HistoryValueSource.cpp" />

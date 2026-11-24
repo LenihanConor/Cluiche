@@ -22,14 +22,14 @@ namespace Dia::FlowField {
             mCells.Add(FlowCell{});
     }
 
-    const FlowCell& FlowField::Sample(Dia::Pathfinding::CellCoord cell) const
+    const FlowCell& FlowField::Sample(Dia::Geometry2D::CellCoord cell) const
     {
         if (cell.x < 0 || cell.x >= mWidth || cell.y < 0 || cell.y >= mHeight)
             return kDefaultCell;
         return mCells[(unsigned int)(cell.y * mWidth + cell.x)];
     }
 
-    FlowCell& FlowField::AccessCell(Dia::Pathfinding::CellCoord cell)
+    FlowCell& FlowField::AccessCell(Dia::Geometry2D::CellCoord cell)
     {
         DIA_ASSERT(cell.x >= 0 && cell.x < mWidth && cell.y >= 0 && cell.y < mHeight,
                    "FlowField::AccessCell out of bounds (%d,%d) for %dx%d grid", cell.x, cell.y, mWidth, mHeight);

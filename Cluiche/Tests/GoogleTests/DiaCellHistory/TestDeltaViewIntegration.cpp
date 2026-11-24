@@ -20,7 +20,7 @@
 #include <DiaCellLayers/Testing/ViewStateTestSupport.h>
 #include <DiaCellLayers/Testing/ViewerCommands.h>
 #include <DiaAPI/DiaAPI.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <cmath>
 #include <cstring>
@@ -264,7 +264,7 @@ TEST_F(DeltaViewIntegration, NowSideDeltaUsesLiveValuesAndFollowsThem)
 TEST_F(DeltaViewIntegration, HoverOverAnUnchangedCellShowsZero)
 {
 	DeltaRig r; r.Setup("veg");
-	const Dia::Maths::Vector2D c = Dia::Pathfinding::HexTopology::CellCenter(Dia::Pathfinding::CellCoord{ 2, 1 }, 1.0f);
+	const Dia::Maths::Vector2D c = Dia::Geometry2D::HexTopology::CellCenter(Dia::Geometry2D::CellCoord{ 2, 1 }, 1.0f);
 	float sx, sy;
 	Dia::CellLayers::Testing::WorldToScreen(TestView(), c.X(), c.Y(), sx, sy);
 	r.draw.mouse = Dia::Maths::Vector2D(sx, sy);
@@ -279,7 +279,7 @@ TEST_F(DeltaViewIntegration, HoverOverAnUnchangedCellShowsZero)
 TEST_F(DeltaViewIntegration, HoverOverAChangedCellShowsTheNegativeDelta)
 {
 	DeltaRig r; r.Setup("veg");
-	const Dia::Maths::Vector2D c = Dia::Pathfinding::HexTopology::CellCenter(Dia::Pathfinding::CellCoord{ 1, 0 }, 1.0f);
+	const Dia::Maths::Vector2D c = Dia::Geometry2D::HexTopology::CellCenter(Dia::Geometry2D::CellCoord{ 1, 0 }, 1.0f);
 	float sx, sy;
 	Dia::CellLayers::Testing::WorldToScreen(TestView(), c.X(), c.Y(), sx, sy);
 	r.draw.mouse = Dia::Maths::Vector2D(sx, sy);
@@ -701,7 +701,7 @@ namespace
 {
 	void PointAt(DomainRig& r, int q, int c)
 	{
-		const Dia::Maths::Vector2D p = Dia::Pathfinding::HexTopology::CellCenter(Dia::Pathfinding::CellCoord{ q, c }, 1.0f);
+		const Dia::Maths::Vector2D p = Dia::Geometry2D::HexTopology::CellCenter(Dia::Geometry2D::CellCoord{ q, c }, 1.0f);
 		float sx, sy;
 		Dia::CellLayers::Testing::WorldToScreen(TestView(), p.X(), p.Y(), sx, sy);
 		r.draw.mouse = Dia::Maths::Vector2D(sx, sy);

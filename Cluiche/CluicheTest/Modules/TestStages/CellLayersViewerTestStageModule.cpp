@@ -7,7 +7,7 @@
 #include <DiaGraphics/CellField/CellFieldRegistry.h>
 #include <DiaCellHistory/CellHistoryRecorder.h>
 #include <DiaValueSchema/ValueSchemaService.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #ifdef DIA_DEBUG
 #include <DiaAPI/DiaAPI.h>
@@ -36,8 +36,8 @@ namespace
 {
     using Dia::CellLayers::CellValueKind;
     using Dia::Maths::Vector2D;
-    using Dia::Pathfinding::CellCoord;
-    using Dia::Pathfinding::HexTopology;
+    using Dia::Geometry2D::CellCoord;
+    using Dia::Geometry2D::HexTopology;
 
     const char* const kLayerTemperature = "temperature";
     const char* const kLayerRainfall    = "rainfall";
@@ -131,7 +131,7 @@ void CellLayersViewerTestStageModule::BuildGrid(GridStorage& g, int w, int h, fl
         for (uint32_t d = 0; d < 6u; ++d)
         {
             const uint32_t n = topo.NeighbourAt(i, d);
-            g.neighbours[6u * i + d] = (n == Dia::Pathfinding::kNoCell) ? -1 : static_cast<int32_t>(n);
+            g.neighbours[6u * i + d] = (n == Dia::Geometry2D::kNoCell) ? -1 : static_cast<int32_t>(n);
         }
     }
     g.desc = Dia::Graphics::CellGridDesc();

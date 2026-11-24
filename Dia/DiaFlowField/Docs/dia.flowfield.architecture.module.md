@@ -71,8 +71,8 @@ dependencies:
     - dia.maths
     - dia.observation
     - dia.pathfinding
-  forbidden:
     - dia.geometry2d
+  forbidden:
     - dia.blackboard
     - dia.command
     - dia.streams

@@ -32,7 +32,7 @@
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaCellLayers/Testing/ViewValueSourceTestSupport.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <cstdlib>
 #include <cstring>
@@ -162,7 +162,7 @@ namespace
 
 	void ViewerPointAt(ViewerDraw& draw, int q, int r)
 	{
-		const Dia::Maths::Vector2D c = Dia::Pathfinding::HexTopology::CellCenter(Dia::Pathfinding::CellCoord{ q, r }, 1.0f);
+		const Dia::Maths::Vector2D c = Dia::Geometry2D::HexTopology::CellCenter(Dia::Geometry2D::CellCoord{ q, r }, 1.0f);
 		float sx, sy;
 		Dia::CellLayers::Testing::WorldToScreen(ViewerView(), c.X(), c.Y(), sx, sy);
 		draw.mouse = Dia::Maths::Vector2D(sx, sy);

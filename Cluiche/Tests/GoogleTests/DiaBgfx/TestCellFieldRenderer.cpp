@@ -4,7 +4,7 @@
 
 #include <DiaBgfx/Renderers/CellFieldRenderer.h>
 #include <DiaGraphics/Frame/CellFieldFrameData.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 #include "../DiaGraphics/HexTopologyToCellGridDesc.h"
 
 #include <limits>
@@ -75,7 +75,7 @@ namespace
 
         Dia::Core::CellFieldLayerHandle Make(uint32_t w, uint32_t h, CellFieldValueKind kind = CellFieldValueKind::Float)
         {
-            Dia::Pathfinding::HexTopology topo(w, h);
+            Dia::Geometry2D::HexTopology topo(w, h);
             CellGridDesc d = HexTopologyToCellGridDesc(topo, 1.0f, storage);
             Dia::Core::CellFieldLayerHandle handle;
             EXPECT_TRUE(registry.CreateLayer(d, kind, handle).ok);
@@ -650,7 +650,7 @@ namespace
 
     void BuildGrid(uint32_t w, uint32_t h, float size, BuiltGrid& g)
     {
-        Dia::Pathfinding::HexTopology topo(w, h);
+        Dia::Geometry2D::HexTopology topo(w, h);
         g.desc = HexTopologyToCellGridDesc(topo, size, g.storage);
         HexFlatTopOddQBuilder builder;
         ASSERT_TRUE(builder.Build(g.desc, g.geo));

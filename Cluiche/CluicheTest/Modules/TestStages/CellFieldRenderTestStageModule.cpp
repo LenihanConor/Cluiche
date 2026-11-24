@@ -8,7 +8,7 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaGraphics/CellField/CellFieldRegistry.h>
 #include <DiaGraphics/Frame/SpriteDrawCommand.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <windows.h>
 
@@ -30,8 +30,8 @@ namespace
     using Dia::Graphics::CellFieldRegistry;
     using Dia::Graphics::CellFieldValueKind;
     using Dia::Maths::Vector2D;
-    using Dia::Pathfinding::CellCoord;
-    using Dia::Pathfinding::HexTopology;
+    using Dia::Geometry2D::CellCoord;
+    using Dia::Geometry2D::HexTopology;
 
     constexpr uint32_t Pack(uint32_t r, uint32_t g, uint32_t b, uint32_t a = 255u)
     {
@@ -74,7 +74,7 @@ namespace
             for (uint32_t d = 0; d < 6u; ++d)
             {
                 const uint32_t n = topo.NeighbourAt(i, d);
-                s.neighbours[6u * i + d] = (n == Dia::Pathfinding::kNoCell) ? -1 : static_cast<int32_t>(n);
+                s.neighbours[6u * i + d] = (n == Dia::Geometry2D::kNoCell) ? -1 : static_cast<int32_t>(n);
             }
         }
         Dia::Graphics::CellGridDesc desc;

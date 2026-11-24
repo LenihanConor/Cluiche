@@ -8,7 +8,7 @@
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaCellLayers/Testing/LogCapture.h>
 #include <DiaCellLayers/Testing/SelectionTestSupport.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <string.h>
 #include <string>
@@ -19,8 +19,8 @@
 using namespace Dia::CellLayers;
 using namespace Dia::CellLayers::Testing;
 using Dia::Core::StringCRC;
-using Dia::Pathfinding::CellCoord;
-using Dia::Pathfinding::HexTopology;
+using Dia::Geometry2D::CellCoord;
+using Dia::Geometry2D::HexTopology;
 typedef LogCapture::Level Level;
 
 namespace

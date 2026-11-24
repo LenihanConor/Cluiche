@@ -3,7 +3,7 @@
 #include <DraoiHexWorldTerrain/TerrainGenerator.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <cmath>
 #include <set>
@@ -356,8 +356,8 @@ TEST(TerrainGenerator, MapWidthIsAspectOfGrid)
     TerrainGenerator g(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     RandomStream rng(1);
     g.Update(1, WorldShapeParams{}, GridDimensions{ 64, 64 }, rng);
-    const float maxY = Dia::Pathfinding::HexTopology::CellCenter({ 1, 63 }, 1.0f).y;
-    const float maxX = Dia::Pathfinding::HexTopology::CellCenter({ 63, 63 }, 1.0f).x;
+    const float maxY = Dia::Geometry2D::HexTopology::CellCenter({ 1, 63 }, 1.0f).y;
+    const float maxX = Dia::Geometry2D::HexTopology::CellCenter({ 63, 63 }, 1.0f).x;
     EXPECT_NEAR(g.GetSeedFields().mapWidth, maxX / maxY, 1e-5f);
 }
 

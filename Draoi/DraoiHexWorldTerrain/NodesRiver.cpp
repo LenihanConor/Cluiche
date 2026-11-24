@@ -3,7 +3,7 @@
 
 #include <DiaPathfinding/AdjacencyGraph.h>
 #include <DiaPathfinding/GridSearch.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <vector>
@@ -11,8 +11,8 @@
 namespace Draoi {
 namespace HexWorld {
 
-using Dia::Pathfinding::HexTopology;
-using Dia::Pathfinding::kNoCell;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::kNoCell;
 
 namespace
 {
@@ -128,7 +128,7 @@ RiverNodeResult PlaceRiverNodes(WorldStructure& world, const TerrainRules& rules
             if (c.landmass != world.mainLandmass || (hasRegions && c.region == kNoRegion)) { ++out.skippedUnclaimable; continue; }
 
             const bool crossing = (c.terrainFlags & TerrainFlag::RiverCrossesBarrier) != 0;
-            const Dia::Pathfinding::CellCoord here = topo.ToCoord(cell);
+            const Dia::Geometry2D::CellCoord here = topo.ToCoord(cell);
             bool tooClose = false;
             if (!crossing)
             {

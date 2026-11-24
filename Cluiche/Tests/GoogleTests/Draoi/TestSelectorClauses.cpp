@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 #include <DraoiHexWorld/CellSelector.h>
 #include <DraoiHexWorld/CellVocabulary.h>
 #include <DraoiHexWorld/WorldCellFields.h>
@@ -25,7 +25,7 @@
 namespace
 {
     using Dia::Core::StringCRC;
-    using Dia::Pathfinding::HexTopology;
+    using Dia::Geometry2D::HexTopology;
     using Draoi::HexWorld::CellSelectorSet;
     using Draoi::HexWorld::FieldReader;
     using Draoi::HexWorld::SelectorError;

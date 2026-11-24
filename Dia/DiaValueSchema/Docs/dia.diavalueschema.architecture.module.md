@@ -11,12 +11,10 @@ version: "1.0"
 dependencies:
   required:
     - dia.core
-    - dia.streams
     - dia.observation
     - dia.api
     - dia.entity
     - dia.dia.diadebugserver
-    - dia.application
   forbidden: []
 public_api:
   headers:
@@ -38,12 +36,10 @@ public_api:
     - DiaValueSchema/ValueSchemaExporter.h
     - DiaValueSchema/DescribeMode.h
     - DiaValueSchema/DescribeSession.h
-    - DiaValueSchema/ValueSchemaModule.h
   namespaces:
     - Dia::ValueSchema::
   entry_points:
     - kFormatVersion
-    - ValueSchemaModule
     - ValueSchemaService
     - IValueSchemaContributor
     - ValueSchemaQueryHandler

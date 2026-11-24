@@ -13,6 +13,8 @@
 #include "GridSearchAllocCounter.h"
 
 using namespace Dia::Pathfinding;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::kNoCell;
 using namespace Dia::Pathfinding::Testing;
 
 namespace {

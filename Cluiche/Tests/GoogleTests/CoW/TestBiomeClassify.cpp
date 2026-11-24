@@ -7,7 +7,7 @@
 #include <Shared/WorldGeneration/Testing/BiomeTestGrids.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <cmath>
 #include <cstring>
@@ -29,9 +29,9 @@ namespace
 
     int Nb(const BiomeGrid& g, int c, int d)
     {
-        const Dia::Pathfinding::HexTopology topo(g.dims.width, g.dims.height);
+        const Dia::Geometry2D::HexTopology topo(g.dims.width, g.dims.height);
         const uint32_t                      nb = topo.NeighbourAt(static_cast<uint32_t>(c), static_cast<uint32_t>(d));
-        return nb == Dia::Pathfinding::kNoCell ? -1 : static_cast<int>(nb);
+        return nb == Dia::Geometry2D::kNoCell ? -1 : static_cast<int>(nb);
     }
 
     bool Adjacent(const BiomeGrid& g, int a, int b)

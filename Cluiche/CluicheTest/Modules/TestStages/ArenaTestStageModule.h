@@ -11,7 +11,7 @@
 #include <DiaUtilityAI/UtilitySet.h>
 #include <DiaRules/RuleSet.h>
 #include <DiaRules/RuleActionRegistry.h>
-#include <DiaTriggerScript/TriggerScriptModule.h>
+#include "Modules/EngineModules/TriggerScriptModule.h"
 #include <DiaTriggerScript/TriggerActionRegistry.h>
 #include <DiaTriggerScript/ITriggerActionHandler.h>
 #include <DiaObjective/ObjectiveSet.h>
@@ -21,7 +21,7 @@
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
-#include <DiaSimTime/DiaSimTimeModule.h>
+#include "Modules/DiaSimTimeModule.h"
 #include <DiaSimTime/ISimTimeBudgetedSystem.h>
 
 #include <functional>

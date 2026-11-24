@@ -86,7 +86,6 @@
     <ClInclude Include="IValueSchemaContributor.h" />
     <ClInclude Include="SchemaDirectoryLoader.h" />
     <ClInclude Include="ValueSchemaHealth.h" />
-    <ClInclude Include="ValueSchemaModule.h" />
     <ClInclude Include="Testing\SchemaTempDirectory.h" />
     <ClInclude Include="RampData.h" />
     <ClInclude Include="RampLoader.h" />
@@ -117,7 +116,6 @@
     <ClCompile Include="ValueSchemaService.cpp" />
     <ClCompile Include="SchemaDirectoryLoader.cpp" />
     <ClCompile Include="ValueSchemaHealth.cpp" />
-    <ClCompile Include="ValueSchemaModule.cpp" />
     <ClCompile Include="RampData.cpp" />
     <ClCompile Include="RampLoader.cpp" />
     <ClCompile Include="RampRegistry.cpp" />

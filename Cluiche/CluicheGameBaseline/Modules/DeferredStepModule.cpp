@@ -1,4 +1,4 @@
-#include <DiaDeferredStep/DeferredStepModule.h>
+#include <Modules/DeferredStepModule.h>
 
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>

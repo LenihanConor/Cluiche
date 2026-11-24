@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <iostream>
+#include <DiaObservation/Log/DiaLog.h>
 #include <functional>
 #include <limits>
 #include <queue>
@@ -13,9 +13,10 @@
 #include "DiaPathfinding/GridSearch.h"
 #include "DiaPathfinding/GridSearchScratch.h"
 #include "DiaPathfinding/HexNeighbours.h"
-#include "DiaPathfinding/HexTopology.h"
+#include "DiaGeometry2D/Grid/HexTopology.h"
 
 using namespace Dia::Pathfinding;
+using Dia::Geometry2D::HexTopology;
 
 // Ballpark check (AC 8) on a Large map (104 x 64). Debug build, warm scratch, best of 3.
 namespace {
@@ -59,12 +60,12 @@ TEST(GridSearchPerf, MultiSourceStepsLargeMap)
 
     run(); // warm
     const double ms = BestOfThreeMs(run);
-    std::cout << "[GridSearchPerf] MultiSourceSteps 104x64: " << ms << " ms\n";
+    DIA_LOG_INFO("Test", "[GridSearchPerf] MultiSourceSteps 104x64: %g ms", ms);
     RecordProperty("MultiSourceStepsMs", std::to_string(ms));
 
     EXPECT_EQ(std::count(steps.begin(), steps.end(), kUnreached), 0);
     EXPECT_EQ(steps[0], 0u);
-    if (ms >= kTargetMs) { std::cout << "[GridSearchPerf] above AC 8 target (" << kTargetMs << " ms)" << std::endl; }
+    if (ms >= kTargetMs) { DIA_LOG_INFO("Test", "[GridSearchPerf] above AC 8 target (%g ms)", kTargetMs); }
     EXPECT_LT(ms, kStepsGuardMs);
 }
 
@@ -88,7 +89,7 @@ TEST(GridSearchPerf, MultiSourceDijkstraLargeMap)
 
     run(); // warm
     const double ms = BestOfThreeMs(run);
-    std::cout << "[GridSearchPerf] MultiSourceDijkstra<float> 104x64: " << ms << " ms\n";
+    DIA_LOG_INFO("Test", "[GridSearchPerf] MultiSourceDijkstra<float> 104x64: %g ms", ms);
     RecordProperty("MultiSourceDijkstraMs", std::to_string(ms));
 
     // Reference: plain std::priority_queue Dijkstra over the same graph and step cost (what the helper replaced).
@@ -113,14 +114,13 @@ TEST(GridSearchPerf, MultiSourceDijkstraLargeMap)
     };
     refRun(); // warm
     const double refMs = BestOfThreeMs(refRun);
-    std::cout << "[GridSearchPerf] std::priority_queue reference Dijkstra 104x64: " << refMs
-              << " ms (helper/reference = " << (ms / refMs) << "x)\n";
+    DIA_LOG_INFO("Test", "[GridSearchPerf] std::priority_queue reference Dijkstra 104x64: %g ms (helper/reference = %gx)", refMs, ms / refMs);
     RecordProperty("ReferenceDijkstraMs", std::to_string(refMs));
     EXPECT_EQ(refCost, cost);
 
     EXPECT_EQ(std::count(cost.begin(), cost.end(), std::numeric_limits<float>::infinity()), 0);
     EXPECT_EQ(std::count(seedId.begin(), seedId.end(), kUnreached), 0);
     EXPECT_EQ(cost[0], 0.0f);
-    if (ms >= kTargetMs) { std::cout << "[GridSearchPerf] above AC 8 target (" << kTargetMs << " ms)" << std::endl; }
+    if (ms >= kTargetMs) { DIA_LOG_INFO("Test", "[GridSearchPerf] above AC 8 target (%g ms)", kTargetMs); }
     EXPECT_LT(ms, kDijkstraGuardMs);
 }

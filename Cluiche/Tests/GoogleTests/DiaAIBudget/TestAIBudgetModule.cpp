@@ -2,7 +2,7 @@
 
 #include <DiaAIBudget/IAIBudgetedSystem.h>
 #include <DiaAIBudget/AIBudgetScheduler.h>
-#include <DiaAIBudget/AIBudgetModule.h>
+#include <Modules/AIBudgetModule.h>
 
 // -------------------------------------------------------------------------
 // Mock

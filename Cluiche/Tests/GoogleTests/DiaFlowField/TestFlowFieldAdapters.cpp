@@ -7,11 +7,11 @@
 #include <DiaFlowField/ComputeFlowField.h>
 #include <DiaPathfinding/SquarePathGrid.h>
 #include <DiaPathfinding/HexPathGrid.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 #include <DiaPathfinding/IPathCostProvider.h>
 
 using namespace Dia::FlowField;
-using Dia::Pathfinding::CellCoord;
+using Dia::Geometry2D::CellCoord;
 using Dia::Pathfinding::FlatCostProvider;
 using Dia::Maths::Vector2D;
 
@@ -101,14 +101,14 @@ TEST(HexFlowAdapterRect, WorldMapping_MatchesHexTopology) {
         for (int y = 0; y < 15; ++y) {
             for (int x = 0; x < 20; ++x) {
                 CellCoord c{ x, y };
-                Vector2D expected = Dia::Pathfinding::HexTopology::CellCenter(c, size);
+                Vector2D expected = Dia::Geometry2D::HexTopology::CellCenter(c, size);
                 Vector2D actual = adapter.CellToWorldPosition(c, size);
                 EXPECT_FLOAT_EQ(actual.X(), expected.X());
                 EXPECT_FLOAT_EQ(actual.Y(), expected.Y());
                 CellCoord back = adapter.WorldToCell(actual, size);
                 EXPECT_EQ(back.x, x);
                 EXPECT_EQ(back.y, y);
-                CellCoord ref = Dia::Pathfinding::HexTopology::CellFromPoint(expected, size);
+                CellCoord ref = Dia::Geometry2D::HexTopology::CellFromPoint(expected, size);
                 EXPECT_EQ(back.x, ref.x);
                 EXPECT_EQ(back.y, ref.y);
             }
@@ -128,9 +128,9 @@ TEST(HexFlowAdapterRect, FlowField_EveryReachableCellGetsCloserToGoal) {
             if (c.x == goal.x && c.y == goal.y) continue;
             ASSERT_TRUE(f.Sample(c).reachable) << x << "," << y;
             CellCoord n = StepAlongField(f, c);
-            EXPECT_EQ(Dia::Pathfinding::HexTopology::Distance(c, n), 1u) << x << "," << y;
-            EXPECT_LT(Dia::Pathfinding::HexTopology::Distance(n, goal),
-                      Dia::Pathfinding::HexTopology::Distance(c, goal)) << x << "," << y;
+            EXPECT_EQ(Dia::Geometry2D::HexTopology::Distance(c, n), 1u) << x << "," << y;
+            EXPECT_LT(Dia::Geometry2D::HexTopology::Distance(n, goal),
+                      Dia::Geometry2D::HexTopology::Distance(c, goal)) << x << "," << y;
         }
     }
 }
@@ -161,5 +161,5 @@ TEST(HexFlowAdapterRect, FlowField_RoutesAroundWall) {
     }
     EXPECT_TRUE(c.x == goal.x && c.y == goal.y);
     EXPECT_TRUE(passedGap);
-    EXPECT_GT(steps, (int)Dia::Pathfinding::HexTopology::Distance(start, goal));
+    EXPECT_GT(steps, (int)Dia::Geometry2D::HexTopology::Distance(start, goal));
 }

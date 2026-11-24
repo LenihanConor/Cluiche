@@ -18,7 +18,7 @@
 #include "Modules/WorldGen/WorldGenMirrorRegistrar.h"
 #include "Modules/Camera2DModule.h"
 #include "Modules/SimQueryHostModule.h"
-#include <DiaCellLayers/CellLayersModule.h>
+#include "Modules/CellLayersModule.h"
 #include <memory>
 #endif
 

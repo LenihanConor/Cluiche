@@ -13,9 +13,9 @@
 namespace Draoi {
 namespace HexWorld {
 
-using Dia::Pathfinding::CellCoord;
+using Dia::Geometry2D::CellCoord;
 using Dia::Pathfinding::HexPathGrid;
-using Dia::Pathfinding::HexTopology;
+using Dia::Geometry2D::HexTopology;
 using Dia::Pathfinding::IPathCostProvider;
 
 namespace
@@ -88,7 +88,7 @@ bool NavigationQuery::Search(size_t profileIndex, uint32_t from, std::span<const
     opts.outCost = dist.data();
     opts.outPrev = prev.data();
     opts.stopAt = isTarget.data();
-    uint32_t stoppedAt = Dia::Pathfinding::kNoCell;
+    uint32_t stoppedAt = Dia::Geometry2D::kNoCell;
     opts.outStoppedAt = &stoppedAt;
 
     // HexPathGrid (offset layout, all cells passable) yields HexTopology directions 0..5 with off-grid skipped,
@@ -100,7 +100,7 @@ bool NavigationQuery::Search(size_t profileIndex, uint32_t from, std::span<const
         [&](uint32_t a, uint32_t b) -> float { return costs.GetCost(mTopology.ToCoord(a), mTopology.ToCoord(b)); },
         opts, scratch);
 
-    if (stoppedAt == Dia::Pathfinding::kNoCell) { return false; }
+    if (stoppedAt == Dia::Geometry2D::kNoCell) { return false; }
 
     out.from = from;
     out.to = stoppedAt;

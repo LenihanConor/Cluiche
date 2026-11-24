@@ -1,9 +1,9 @@
 #pragma once
-#include "DiaPathfinding/CellCoord.h"
+#include "DiaGeometry2D/Grid/CellCoord.h"
 #include <DiaMaths/Vector/Vector2D.h>
 #include <cstdint>
 
-namespace Dia::Pathfinding {
+namespace Dia::Geometry2D {
     constexpr uint32_t kNoCell        = 0xFFFFFFFFu;
     constexpr uint32_t kHexDirections = 6;
 

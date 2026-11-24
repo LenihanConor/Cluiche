@@ -23,7 +23,7 @@
 #include <DiaEntity/ComponentPool.h>
 #include <DiaEntity/IBlueprintLoader.h>
 #include <DiaEntitySpawner/EntitySpawnerImpl.h>
-#include <DiaEntitySpawner/EntitySpawnerModule.h>
+#include <Modules/EngineModules/EntitySpawnerModule.h>
 #include <DiaEntitySpawner/SpawnEmitterComponent.h>
 #include <DiaEntitySpawner/SpawnerTypes.h>
 #include <DiaEntitySpatial/SpatialComponent.h>

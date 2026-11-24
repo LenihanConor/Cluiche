@@ -7,7 +7,7 @@
 #include <DiaMaths/Noise/Noise.h>
 #include <DiaPathfinding/GridSearch.h>
 #include <DiaPathfinding/HexNeighbours.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <cmath>
@@ -81,8 +81,8 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
     const float coastline = shape.coastline;
 
     // Map space: centres divided by the maximum centre Y (matches stage 0).
-    const Dia::Pathfinding::CellCoord maxYCell{ w > 1 ? 1 : 0, h - 1 };
-    float maxY = Dia::Pathfinding::HexTopology::CellCenter(maxYCell, 1.0f).y;
+    const Dia::Geometry2D::CellCoord maxYCell{ w > 1 ? 1 : 0, h - 1 };
+    float maxY = Dia::Geometry2D::HexTopology::CellCenter(maxYCell, 1.0f).y;
     if (maxY < 1e-6f)
     {
         maxY = 1.0f;
@@ -123,7 +123,7 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
             }
 
             const Dia::Maths::Vector2D centre =
-                Dia::Pathfinding::HexTopology::CellCenter(Dia::Pathfinding::CellCoord{ x, y }, 1.0f);
+                Dia::Geometry2D::HexTopology::CellCenter(Dia::Geometry2D::CellCoord{ x, y }, 1.0f);
             const float px = centre.x / maxY;
             const float py = centre.y / maxY;
 
@@ -202,7 +202,7 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
 
     // ---- Part B ----
     effective.continents = continents;
-    const Dia::Pathfinding::HexTopology topo(w, h);
+    const Dia::Geometry2D::HexTopology topo(w, h);
     const float minEdge = borderWidth + 1.0f;
     auto edgeSteps = [w, h](int i)
     {
@@ -233,10 +233,10 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
     }
     auto nextToRef = [&](int c)
     {
-        for (uint32_t d = 0; d < Dia::Pathfinding::kHexDirections; ++d)
+        for (uint32_t d = 0; d < Dia::Geometry2D::kHexDirections; ++d)
         {
             const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(c), d);
-            if (nb != Dia::Pathfinding::kNoCell && out.refMainland[nb]) { return true; }
+            if (nb != Dia::Geometry2D::kNoCell && out.refMainland[nb]) { return true; }
         }
         return false;
     };
@@ -247,7 +247,7 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
     for (int k = 0; k < kIslandCandidates && static_cast<int>(effective.islandCentres.size()) < wantedIslands; ++k)
     {
         const IslandCandidate& cand = seeds.islands[k];
-        const Dia::Pathfinding::CellCoord cc = Dia::Pathfinding::HexTopology::CellFromPoint(
+        const Dia::Geometry2D::CellCoord cc = Dia::Geometry2D::HexTopology::CellFromPoint(
             Dia::Maths::Vector2D{ cand.x * maxY, cand.y * maxY }, 1.0f);
         const int cx = std::clamp(cc.x, 0, w - 1);
         const int cy = std::clamp(cc.y, 0, h - 1);
@@ -259,7 +259,7 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
         bool spaced = true;
         for (int other : effective.islandCentres)
         {
-            if (static_cast<float>(Dia::Pathfinding::HexTopology::Distance(
+            if (static_cast<float>(Dia::Geometry2D::HexTopology::Distance(
                     topo.ToCoord(static_cast<uint32_t>(cell)), topo.ToCoord(static_cast<uint32_t>(other)))) < rules.kIslandSpacing)
             {
                 spaced = false;
@@ -285,7 +285,7 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
         for (int i = 0; i < n; ++i)
         {
             const Dia::Maths::Vector2D c =
-                Dia::Pathfinding::HexTopology::CellCenter(Dia::Pathfinding::CellCoord{ i % w, i / w }, 1.0f);
+                Dia::Geometry2D::HexTopology::CellCenter(Dia::Geometry2D::CellCoord{ i % w, i / w }, 1.0f);
             float best = 0.0f;
             for (int b = 0; b < cand.blobCount; ++b)
             {
@@ -317,10 +317,10 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
     for (int i = 0; i < n; ++i)
     {
         if (!eligible[static_cast<size_t>(i)]) { continue; }
-        for (uint32_t d = 0; d < Dia::Pathfinding::kHexDirections; ++d)
+        for (uint32_t d = 0; d < Dia::Geometry2D::kHexDirections; ++d)
         {
             const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(i), d);
-            if (nb == Dia::Pathfinding::kNoCell || !eligible[nb] || owner[nb] == owner[static_cast<size_t>(i)]) { continue; }
+            if (nb == Dia::Geometry2D::kNoCell || !eligible[nb] || owner[nb] == owner[static_cast<size_t>(i)]) { continue; }
             const float mine = islandPot[static_cast<size_t>(i)], theirs = islandPot[nb];
             if (mine < theirs || (mine == theirs && static_cast<uint32_t>(i) > nb)) { keep[static_cast<size_t>(i)] = 0; break; }
         }
@@ -402,7 +402,7 @@ void CleanUpLand(std::vector<uint8_t>& land, GridDimensions dims, int minLandmas
 {
     const int w = dims.width, h = dims.height;
     if (w <= 0 || h <= 0 || land.size() != static_cast<size_t>(w) * static_cast<size_t>(h)) { return; }
-    const Dia::Pathfinding::HexTopology topo(w, h);
+    const Dia::Geometry2D::HexTopology topo(w, h);
     const int n = w * h;
 
     const Dia::Pathfinding::HexNeighbours graph(topo);
@@ -452,7 +452,7 @@ int LabelLandmasses(const std::vector<uint8_t>& land, GridDimensions dims, uint3
 {
     const int w = dims.width, h = dims.height;
     if (w <= 0 || h <= 0 || out == nullptr) { return 0; }
-    const Dia::Pathfinding::HexTopology topo(w, h);
+    const Dia::Geometry2D::HexTopology topo(w, h);
     const int n = w * h;
     const Dia::Pathfinding::HexNeighbours graph(topo);
     Dia::Pathfinding::GridSearchScratch scratch;
@@ -472,7 +472,7 @@ void ComputeCoastDistance(const std::vector<uint8_t>& land, GridDimensions dims,
 {
     const int w = dims.width, h = dims.height;
     if (w <= 0 || h <= 0 || out == nullptr) { return; }
-    const Dia::Pathfinding::HexTopology topo(w, h);
+    const Dia::Geometry2D::HexTopology topo(w, h);
     const int n = w * h;
     std::fill(out, out + n, 0u);
     const Dia::Pathfinding::HexNeighbours graph(topo);

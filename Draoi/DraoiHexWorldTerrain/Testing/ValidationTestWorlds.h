@@ -8,7 +8,7 @@
 #include <DraoiHexWorld/Sites.h>
 #include <DraoiHexWorldTerrain/ValidationTypes.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <cstdint>
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
@@ -63,8 +63,8 @@ inline WorldStructure MakeChannelWorld(int w, int h, int x0, int channel)
 // Hex steps between two cells of the world.
 inline uint32_t HexSteps(const WorldStructure& world, uint32_t a, uint32_t b)
 {
-    const Dia::Pathfinding::HexTopology topo(world.dimensions.width, world.dimensions.height);
-    return Dia::Pathfinding::HexTopology::Distance(topo.ToCoord(a), topo.ToCoord(b));
+    const Dia::Geometry2D::HexTopology topo(world.dimensions.width, world.dimensions.height);
+    return Dia::Geometry2D::HexTopology::Distance(topo.ToCoord(a), topo.ToCoord(b));
 }
 
 // True if every consecutive pair of the path is a hex neighbour and the path runs from -> to.

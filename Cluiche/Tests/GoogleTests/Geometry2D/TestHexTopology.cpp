@@ -1,13 +1,13 @@
-// TestHexTopology.cpp — GoogleTest coverage for Dia::Pathfinding::HexTopology.
+// TestHexTopology.cpp — GoogleTest coverage for Dia::Geometry2D::HexTopology.
 
 #include <gtest/gtest.h>
 #include <cmath>
 #include <queue>
 #include <vector>
 
-#include "DiaPathfinding/HexTopology.h"
+#include "DiaGeometry2D/Grid/HexTopology.h"
 
-using namespace Dia::Pathfinding;
+using namespace Dia::Geometry2D;
 
 namespace {
     constexpr float kPi = 3.14159265358979f;

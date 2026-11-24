@@ -1,6 +1,6 @@
 #include "HistoryTestRig.h"
-#include <DiaCellHistory/CellHistoryModule.h>
-#include <DiaCellLayers/CellLayersModule.h>
+#include <Modules/EngineModules/CellHistoryModule.h>
+#include <Modules/CellLayersModule.h>
 #include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
 #include <DiaCellLayers/Testing/LogCapture.h>
 #include <DiaStreams/IStreamConnector.h>

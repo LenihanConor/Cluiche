@@ -15,22 +15,21 @@ summary: >
   Typed message routing layer for gameplay systems and entity components on the sim thread.
 
 intent: >
-  Owns one Dia::Mailbox::Mailbox instance per MessageBusModule, registers BroadcastRouter
+  Owns one Dia::Mailbox::Mailbox instance per host module (Cluiche::AppFlow::MessageBusHostModule, application layer), registers BroadcastRouter
   and an EntityRouter registration point, and runs a two-pass per-tick flush
   (pre-Primary flush adapters -> Primary pass -> Reaction pass).
   The primary build surface is the generated RegisterMessages wiring produced by
   dia codegen messages from a .diagamemessages IDL document.
 
 responsibilities:
-  - Own one Dia::Mailbox::Mailbox instance per MessageBusModule (sim-thread-scoped)
+  - Own one Dia::Mailbox::Mailbox instance per host module (Cluiche::AppFlow::MessageBusHostModule, application layer) (sim-thread-scoped)
   - Register BroadcastRouter and provide the EntityRouter registration point
   - Run two-pass flush per sim tick (pre-Primary, Primary, Reaction)
   - Provide Bus::Post<T>, Bus::Broadcast<T>, Bus::Subscribe<T>, Bus::RegisterType<T, kCapacity> API
   - Expose last-tick LedgerSnapshot via GetLastTickLedger() (double-buffered)
-  - Implement IModule on SimPU (MessageBusModule)
   - Provide IFlushAdapter interface for physics and input adapters
   - Retain the last kLedgerCapacity (3600) completed-tick LedgerSnapshots in a
-    Debug-only ring buffer (LedgerHistory), owned by MessageBusModule and
+    Debug-only ring buffer (LedgerHistory), owned by the application host module and
     pushed to from DoUpdate() right after Bus::Update() returns. Compiles out
     of Release entirely (#ifdef DIA_DEBUG). Backing storage is a single
     fixed-capacity heap allocation made once at LedgerHistory construction
@@ -60,7 +59,6 @@ dependent_modules: []
 public_api:
   headers:
     - Dia/DiaMessageBus/Bus.h
-    - Dia/DiaMessageBus/MessageBusModule.h
     - Dia/DiaMessageBus/IFlushAdapter.h
     - Dia/DiaMessageBus/LedgerSnapshot.h
     - Dia/DiaMessageBus/LedgerHistory.h
@@ -73,7 +71,6 @@ public_api:
     - Dia::MessageBus
   entry_points:
     - Bus
-    - MessageBusModule
     - IFlushAdapter
     - LedgerSnapshot
     - LedgerHistory
@@ -88,7 +85,6 @@ dependencies:
     - dia.core
     - dia.streams
     - dia.observation
-    - dia.application
     - dia.debug.visualdebugger
   optional:
   forbidden:

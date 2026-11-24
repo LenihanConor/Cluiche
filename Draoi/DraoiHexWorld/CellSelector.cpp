@@ -307,12 +307,12 @@ bool CellSelectorSet::Resolve(WorldCellFields& fields, uint32_t cellCount, Selec
     return ResolveImpl(fields, cellCount, nullptr, err);
 }
 
-bool CellSelectorSet::Resolve(WorldCellFields& fields, const Dia::Pathfinding::HexTopology& topology, SelectorError& err)
+bool CellSelectorSet::Resolve(WorldCellFields& fields, const Dia::Geometry2D::HexTopology& topology, SelectorError& err)
 {
     return ResolveImpl(fields, topology.CellCount(), &topology, err);
 }
 
-bool CellSelectorSet::ResolveImpl(WorldCellFields& fields, uint32_t cellCount, const Dia::Pathfinding::HexTopology* topology, SelectorError& err)
+bool CellSelectorSet::ResolveImpl(WorldCellFields& fields, uint32_t cellCount, const Dia::Geometry2D::HexTopology* topology, SelectorError& err)
 {
     using namespace Dia::Pathfinding;
     ClearResolved();
@@ -409,7 +409,7 @@ bool CellSelectorSet::ResolveImpl(WorldCellFields& fields, uint32_t cellCount, c
                         const float f = fields.GetFloat(kTerrainSlot, kFlowDirectionField);
                         if (!(f >= 0.0f && f < 5.5f)) continue;   // no outflow (also rejects NaN)
                         const uint32_t to = topology->NeighbourAt(c, static_cast<uint32_t>(f + 0.5f));
-                        if (to != kNoCell) edges[edgeCount++] = AdjacencyEdge{ to, c };   // reversed: outflow -> cell
+                        if (to != Dia::Geometry2D::kNoCell) edges[edgeCount++] = AdjacencyEdge{ to, c };   // reversed: outflow -> cell
                     }
                     reversedFlow.Build(cellCount, edges.get(), edgeCount);
                     flowBuilt = true;

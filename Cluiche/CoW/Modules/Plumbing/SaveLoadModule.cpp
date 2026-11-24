@@ -4,7 +4,7 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
-#include <DiaSimTime/DiaSimTimeModule.h>
+#include "Modules/DiaSimTimeModule.h"
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>

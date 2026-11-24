@@ -2,7 +2,7 @@
 #include <DraoiHexWorld/WorldHexGrid.h>
 
 #include <DiaCore/CRC/StringCRC.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <cmath>
@@ -11,7 +11,7 @@ namespace Draoi {
 namespace HexWorld {
 
 using Dia::Maths::Vector2D;
-using Dia::Pathfinding::HexTopology;
+using Dia::Geometry2D::HexTopology;
 
 WorldHexGrid::WorldHexGrid(GridDimensions dims, float cellSize)
     : mDims(dims)
@@ -42,7 +42,7 @@ WorldHexGrid::WorldHexGrid(GridDimensions dims, float cellSize)
         for (uint32_t d = 0; d < 6u; ++d)
         {
             const uint32_t n = topo.NeighbourAt(i, d);
-            mNeighbours[6u * i + d] = (n == Dia::Pathfinding::kNoCell) ? -1 : static_cast<int32_t>(n);
+            mNeighbours[6u * i + d] = (n == Dia::Geometry2D::kNoCell) ? -1 : static_cast<int32_t>(n);
         }
     }
     if (count > 0)
@@ -68,7 +68,7 @@ Vector2D WorldHexGrid::CellCenter(uint32_t cell) const
 
 int32_t WorldHexGrid::CellFromPoint(Vector2D point) const
 {
-    const Dia::Pathfinding::CellCoord c = HexTopology::CellFromPoint(point, mCellSize);
+    const Dia::Geometry2D::CellCoord c = HexTopology::CellFromPoint(point, mCellSize);
     if (c.x < 0 || c.y < 0 || c.x >= mDims.width || c.y >= mDims.height)
         return -1;
     return static_cast<int32_t>(c.y) * mDims.width + c.x;

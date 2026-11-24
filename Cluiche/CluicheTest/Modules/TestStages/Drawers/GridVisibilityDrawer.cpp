@@ -5,7 +5,7 @@
 #include <DiaCore/Colour/RGBA.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGridVisibility/VisibilityState.h>
-#include <DiaPathfinding/CellCoord.h>
+#include <DiaGeometry2D/Grid/CellCoord.h>
 #include <cmath>
 #include <cstdio>
 
@@ -170,7 +170,7 @@ void GridVisibilityDrawer::Draw(Dia::Core::IDebugDraw& draw)
     {
         for (int row = 0; row < H; ++row)
         {
-            const Dia::Pathfinding::CellCoord cell{col, row};
+            const Dia::Geometry2D::CellCoord cell{col, row};
             if (mVisSystem.GetCellState(cell, kGroupRed)  == VS::Visible) ++redVis;
             if (mVisSystem.GetCellState(cell, kGroupBlue) == VS::Visible) ++blueVis;
         }

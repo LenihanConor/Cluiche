@@ -3,11 +3,9 @@
   <ItemGroup>
     <ClInclude Include="IAIBudgetedSystem.h" />
     <ClInclude Include="AIBudgetScheduler.h" />
-    <ClInclude Include="AIBudgetModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AIBudgetScheduler.cpp" />
-    <ClCompile Include="AIBudgetModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.aibudget.architecture.module.md" />

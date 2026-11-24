@@ -16,9 +16,6 @@
     <ClCompile Include="LedgerHistory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MessageBusModule.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MessageBusDebugDomain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -48,9 +45,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BroadcastRouter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MessageBusModule.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MessageBusDebugDomain.h">

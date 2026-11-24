@@ -25,7 +25,7 @@ namespace Dia::Pathfinding {
     {
     }
 
-    void HexPathGrid::SetPassable(CellCoord cell, bool passable)
+    void HexPathGrid::SetPassable(Dia::Geometry2D::CellCoord cell, bool passable)
     {
         if (IsInBounds(cell))
         {
@@ -40,7 +40,7 @@ namespace Dia::Pathfinding {
         }
     }
 
-    bool HexPathGrid::IsPassable(CellCoord cell) const
+    bool HexPathGrid::IsPassable(Dia::Geometry2D::CellCoord cell) const
     {
         if (!IsInBounds(cell))
         {
@@ -53,8 +53,8 @@ namespace Dia::Pathfinding {
         return mPassable[CellIndex(cell)];
     }
 
-    void HexPathGrid::GetNeighbours(CellCoord cell,
-                                    Dia::Core::Containers::DynamicArrayC<CellCoord, 16>& outNeighbours) const
+    void HexPathGrid::GetNeighbours(Dia::Geometry2D::CellCoord cell,
+                                    Dia::Core::Containers::DynamicArrayC<Dia::Geometry2D::CellCoord, 16>& outNeighbours) const
     {
         outNeighbours.RemoveAll();
 
@@ -65,10 +65,10 @@ namespace Dia::Pathfinding {
                 return;
             }
             const uint32_t index = mTopology.ToIndex(cell);
-            for (uint32_t d = 0; d < kHexDirections; ++d)
+            for (uint32_t d = 0; d < Dia::Geometry2D::kHexDirections; ++d)
             {
                 const uint32_t n = mTopology.NeighbourAt(index, d);
-                if (n != kNoCell && mOffsetPassable[n] != 0)
+                if (n != Dia::Geometry2D::kNoCell && mOffsetPassable[n] != 0)
                 {
                     outNeighbours.Add(mTopology.ToCoord(n));
                 }
@@ -81,7 +81,7 @@ namespace Dia::Pathfinding {
 
         for (int i = 0; i < 6; ++i)
         {
-            CellCoord nc{ cell.x + kDq[i], cell.y + kDr[i] };
+            Dia::Geometry2D::CellCoord nc{ cell.x + kDq[i], cell.y + kDr[i] };
             if (IsInBounds(nc) && IsPassable(nc))
             {
                 outNeighbours.Add(nc);
@@ -112,7 +112,7 @@ namespace Dia::Pathfinding {
         return mTopology.Height();
     }
 
-    bool HexPathGrid::IsInBounds(CellCoord cell) const
+    bool HexPathGrid::IsInBounds(Dia::Geometry2D::CellCoord cell) const
     {
         if (mLayout == HexLayout::kOffsetRectangle)
         {
@@ -123,7 +123,7 @@ namespace Dia::Pathfinding {
             && std::abs(cell.x + cell.y) <= mRadius;
     }
 
-    int HexPathGrid::CellIndex(CellCoord cell) const
+    int HexPathGrid::CellIndex(Dia::Geometry2D::CellCoord cell) const
     {
         if (mLayout == HexLayout::kOffsetRectangle)
         {

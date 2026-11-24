@@ -1,14 +1,14 @@
 #include <gtest/gtest.h>
 #include <DiaCellLayers/CellPicker.h>
 #include <DiaCellLayers/Testing/CellPickerTestSupport.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <limits>
 
 using namespace Dia::CellLayers;
 using namespace Dia::CellLayers::Testing;
-using Dia::Pathfinding::CellCoord;
-using Dia::Pathfinding::HexTopology;
+using Dia::Geometry2D::CellCoord;
+using Dia::Geometry2D::HexTopology;
 
 namespace
 {

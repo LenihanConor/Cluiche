@@ -42,6 +42,7 @@ dependencies:
   required:
     - dia.core
     - dia.pathfinding
+    - dia.geometry2d
     - dia.debug.visualdebugger
     - dia.maths.vector
   forbidden:

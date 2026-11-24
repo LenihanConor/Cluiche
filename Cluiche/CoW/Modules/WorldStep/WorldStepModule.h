@@ -10,7 +10,7 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Architecture/Observer.h>
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaDeferredStep/DeferredStepModule.h>
+#include <Modules/DeferredStepModule.h>
 #include <DiaDeferredStep/DeferredStepScheduler.h>
 #include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaDeferredStep/IStepKeySource.h>

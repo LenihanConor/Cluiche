@@ -74,7 +74,6 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="CellCoord.h" />
     <ClInclude Include="CPathGraph.h" />
     <ClInclude Include="IPathCostProvider.h" />
     <ClInclude Include="PathResult.h" />
@@ -88,7 +87,6 @@
       <Filter>Testing</Filter>
     </ClInclude>
     <ClInclude Include="PathfindingSystemBudgetAdapter.h" />
-    <ClInclude Include="HexTopology.h" />
     <ClInclude Include="GridSearch.h" />
     <ClInclude Include="GridSearch.inl" />
     <ClInclude Include="GridSearchScratch.h" />
@@ -100,7 +98,6 @@
     <ClCompile Include="SquarePathGrid.cpp" />
     <ClCompile Include="HexPathGrid.cpp" />
     <ClCompile Include="PathResult.cpp" />
-    <ClCompile Include="HexTopology.cpp" />
     <ClCompile Include="GridSearchScratch.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -109,6 +106,10 @@
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
       <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaGeometry2D\DiaGeometry2D.vcxproj">
+      <Project>{A3C4D5E6-F7B8-9012-CDEF-012345678901}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\DiaMaths\DiaMaths.vcxproj">

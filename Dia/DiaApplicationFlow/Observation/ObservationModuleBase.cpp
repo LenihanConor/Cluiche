@@ -1,4 +1,4 @@
-#include "ObservationModule.h"
+#include "ObservationModuleBase.h"
 
 #include <DiaApplicationFlow/IApplicationControl.h>
 
@@ -29,9 +29,9 @@ namespace {
     }
 }
 
-ObservationModule::ObservationModule(const Dia::Core::StringCRC& instanceId,
-                                     const char* appName,
-                                     const char* configAssetRelPath)
+ObservationModuleBase::ObservationModuleBase(const Dia::Core::StringCRC& instanceId,
+                                             const char* appName,
+                                             const char* configAssetRelPath)
     : Module(instanceId)
     , mAppName(appName)
     , mConfigAssetRelPath(configAssetRelPath)
@@ -54,7 +54,7 @@ ObservationModule::ObservationModule(const Dia::Core::StringCRC& instanceId,
     }
 }
 
-Dia::ApplicationFlow::StartResult ObservationModule::DoStart()
+Dia::ApplicationFlow::StartResult ObservationModuleBase::DoStart()
 {
     Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
     logger.RegisterThreadBuffer();
@@ -126,7 +126,7 @@ Dia::ApplicationFlow::StartResult ObservationModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void ObservationModule::DoUpdate(float dt)
+void ObservationModuleBase::DoUpdate(float dt)
 {
     mSessionManager.Tick(dt);
     mSessionManager.IncrementFrameCount();
@@ -138,7 +138,7 @@ void ObservationModule::DoUpdate(float dt)
     }
 }
 
-Dia::ApplicationFlow::StopResult ObservationModule::DoStop()
+Dia::ApplicationFlow::StopResult ObservationModuleBase::DoStop()
 {
     DIA_LOG_INFO("Application", "ObservationModule DoStop");
 
@@ -177,6 +177,6 @@ Dia::ApplicationFlow::StopResult ObservationModule::DoStop()
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
-const Dia::Core::StringCRC ObservationModule::kTypeId("ObservationModule");
+const Dia::Core::StringCRC ObservationModuleBase::kTypeId("ObservationModule");
 
 } } // namespace Dia::ApplicationFlow

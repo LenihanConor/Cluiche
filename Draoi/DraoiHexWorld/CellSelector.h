@@ -13,7 +13,7 @@
 #include <cstdint>
 #include <memory>
 
-namespace Dia { namespace Pathfinding { class HexTopology; } }
+namespace Dia { namespace Geometry2D { class HexTopology; } }
 
 namespace Draoi {
 namespace HexWorld {
@@ -104,7 +104,7 @@ public:
     // Matches TerrainDrainage / TerrainRivers (flowDirection is uint32, >= 6 = sink or grid edge). The upstream search
     // runs MultiSourceSteps from the `of` cells over the reversed flow graph (AdjacencyGraph, edge outflow -> cell).
     // A set with an upstream field requires terrain.flow_direction to be registered (err.kind "resolve" otherwise).
-    bool Resolve(WorldCellFields& fields, const Dia::Pathfinding::HexTopology& topology, SelectorError& err);
+    bool Resolve(WorldCellFields& fields, const Dia::Geometry2D::HexTopology& topology, SelectorError& err);
 
     // Computed derived array for derivedIndex (cellCount floats) after a successful topology Resolve; nullptr otherwise.
     const float* DerivedValues(uint32_t derivedIndex) const
@@ -139,7 +139,7 @@ private:
     };
 
     void ClearResolved();
-    bool ResolveImpl(WorldCellFields& fields, uint32_t cellCount, const Dia::Pathfinding::HexTopology* topology, SelectorError& err);
+    bool ResolveImpl(WorldCellFields& fields, uint32_t cellCount, const Dia::Geometry2D::HexTopology* topology, SelectorError& err);
 
     Selector     mSelectors[kMaxSelectors + 1];
     DerivedField mDerived[kMaxDerived];

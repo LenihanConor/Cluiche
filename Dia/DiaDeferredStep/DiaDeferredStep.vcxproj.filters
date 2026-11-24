@@ -45,7 +45,6 @@
       <Filter>Testing</Filter>
     </ClInclude>
     <ClInclude Include="IStepKeySource.h" />
-    <ClInclude Include="DeferredStepModule.h" />
     <ClInclude Include="DeferredStepMetrics.h" />
     <ClInclude Include="DeferredStepHealth.h" />
     <ClInclude Include="StepSummary.h" />
@@ -65,7 +64,6 @@
     <ClCompile Include="CappedParallelExecutor.cpp" />
     <ClCompile Include="JobStepLauncher.cpp" />
     <ClCompile Include="DeferredStepSaveParticipant.cpp" />
-    <ClCompile Include="DeferredStepModule.cpp" />
     <ClCompile Include="DeferredStepMetrics.cpp" />
     <ClCompile Include="DeferredStepHealth.cpp" />
     <ClCompile Include="StepSummary.cpp" />

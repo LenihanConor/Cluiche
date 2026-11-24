@@ -32,7 +32,7 @@
 // logged on CEL at Warning), then query_check / query_run {n: partCount}; a part count mismatch records "incomplete query (panel transport)".
 // GetJSONState "selection": {count, tool, group, groups[{id,label,selected}], tooLarge, tooLargeText (only when tooLarge)}.
 // The registry is borrowed; CellLayersModule owns and publishes it on a ServiceStream (CL-006). A consumer module resolves it
-// with FindCellLayerRegistry(reader) (CellLayersModule.h) and passes *registry to the constructor.
+// with FindCellLayerRegistry(reader) (CellLayersModule.h, in CluicheGameBaseline) and passes *registry to the constructor.
 //
 // Health "dia.celllayers.viewer": Degraded while the active base's upload fails (UploadResult::ReadFailed, including a
 // CellField-rejected command). Metrics "dia.celllayers.viewer.*" and "dia.celllayers.query.*". Log channel CEL.

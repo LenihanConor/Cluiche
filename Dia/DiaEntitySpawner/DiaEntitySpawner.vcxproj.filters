@@ -15,12 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="EntitySpawnerModule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Health\EntitySpawnerHealth.h">
-      <Filter>Health</Filter>
-    </ClInclude>
     <ClInclude Include="SpawnEmitterComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -32,12 +26,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="EntitySpawnerModule.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Health\EntitySpawnerHealth.cpp">
-      <Filter>Health</Filter>
-    </ClCompile>
     <ClCompile Include="SpawnEmitterComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

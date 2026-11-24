@@ -1,4 +1,4 @@
-#include <DiaSimTime/DiaRenderTime.h>
+#include "Modules/DiaRenderTime.h"
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 

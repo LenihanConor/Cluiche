@@ -53,6 +53,6 @@ dependencies:
     - dia.maths
     - dia.core
     - dia.entity
-    - dia.pathfinding
+    - dia.geometry2d
   forbidden: []
 ---

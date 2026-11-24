@@ -10,14 +10,14 @@
 #include <DiaFlowField/Testing/FlowFieldTestHelpers.h>
 #include <DiaPathfinding/SquarePathGrid.h>
 #include <DiaPathfinding/HexPathGrid.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 #include <DiaPathfinding/IPathCostProvider.h>
 #include <DiaMaths/Vector/Vector2D.h>
 
 using namespace Dia::FlowField;
-using Dia::Pathfinding::CellCoord;
+using Dia::Geometry2D::CellCoord;
 using Dia::Pathfinding::FlatCostProvider;
-using Dia::Pathfinding::HexTopology;
+using Dia::Geometry2D::HexTopology;
 using Dia::Maths::Vector2D;
 using namespace Dia::FlowField::Testing;
 

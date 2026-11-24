@@ -6,7 +6,7 @@
 #include <DraoiHexWorldTerrain/BiomeClassify.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <cstdint>
 #include <cstdio>
@@ -808,7 +808,7 @@ TEST(WorldGenSessionQueries, CellNeighboursEdgeAndSymmetric)
     Generate(s);
     const int w = s.Dimensions().width;
     const int h = s.Dimensions().height;
-    const Dia::Pathfinding::HexTopology topo(w, h);
+    const Dia::Geometry2D::HexTopology topo(w, h);
 
     const Json::Value corner = s.Cell(Obj("index", 0));
     ASSERT_TRUE(Ok(corner));

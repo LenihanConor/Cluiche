@@ -1,4 +1,4 @@
-#include <DiaCellLayers/CellLayersModule.h>
+#include "Modules/CellLayersModule.h"
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaObservation/Health/HealthRegistry.h>

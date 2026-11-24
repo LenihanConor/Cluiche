@@ -9,7 +9,7 @@
 #include <memory>
 
 using namespace Dia::FlowField;
-using Dia::Pathfinding::CellCoord;
+using Dia::Geometry2D::CellCoord;
 using Dia::Pathfinding::FlatCostProvider;
 using namespace Dia::FlowField::Testing;
 

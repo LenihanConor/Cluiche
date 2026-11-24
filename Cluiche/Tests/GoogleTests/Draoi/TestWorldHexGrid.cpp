@@ -2,12 +2,12 @@
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/WorldHexGrid.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <cmath>
 
 using namespace Draoi::HexWorld;
-using Dia::Pathfinding::HexTopology;
+using Dia::Geometry2D::HexTopology;
 
 namespace
 {
@@ -38,7 +38,7 @@ TEST(WorldHexGrid, NeighbourTableMatchesHexTopology)
             for (uint32_t dir = 0; dir < 6; ++dir)
             {
                 const uint32_t n = topo.NeighbourAt(c, dir);
-                const int32_t expected = n == Dia::Pathfinding::kNoCell ? -1 : static_cast<int32_t>(n);
+                const int32_t expected = n == Dia::Geometry2D::kNoCell ? -1 : static_cast<int32_t>(n);
                 ASSERT_EQ(g.Neighbour(c, dir), expected) << "cell " << c << " dir " << dir;
                 ASSERT_EQ(g.Desc().neighbours[6u * c + dir], expected);
             }

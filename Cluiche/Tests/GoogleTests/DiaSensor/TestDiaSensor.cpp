@@ -10,7 +10,7 @@
 #include <DiaEntitySpatial/SpatialComponent.h>
 #include <DiaEntitySpatial/EntitySpatialIndex.h>
 #include <DiaEntitySpatial/Testing/SpatialTestHelpers.h>
-#include <DiaSensor/SensorModule.h>
+#include <Modules/SensorModule.h>
 #include <DiaSensor/SensorResultsComponent.h>
 #include <DiaSensor/SightSensorComponent.h>
 #include <DiaSensor/ProximitySensorComponent.h>

@@ -205,6 +205,122 @@
       "type_id": "behaviour-tree-component"
     },
     {
+      "debug_name": "SightSensorComponent",
+      "default_values": {
+        "halfAngle": 0.785398006439209,
+        "layerMask": 2147483647,
+        "range": 10,
+        "tickInterval": 3
+      },
+      "description": "",
+      "fields": [
+        {
+          "default": 10,
+          "kind": "primitive",
+          "name": "range"
+        },
+        {
+          "default": 0.785398006439209,
+          "kind": "primitive",
+          "name": "halfAngle"
+        },
+        {
+          "default": 2147483647,
+          "kind": "primitive",
+          "name": "layerMask"
+        },
+        {
+          "default": 3,
+          "kind": "primitive",
+          "name": "tickInterval"
+        }
+      ],
+      "type_id": "sight-sensor-component"
+    },
+    {
+      "debug_name": "ProximitySensorComponent",
+      "default_values": {
+        "layerMask": 2147483647,
+        "radius": 5,
+        "tickInterval": 3
+      },
+      "description": "",
+      "fields": [
+        {
+          "default": 5,
+          "kind": "primitive",
+          "name": "radius"
+        },
+        {
+          "default": 2147483647,
+          "kind": "primitive",
+          "name": "layerMask"
+        },
+        {
+          "default": 3,
+          "kind": "primitive",
+          "name": "tickInterval"
+        }
+      ],
+      "type_id": "proximity-sensor-component"
+    },
+    {
+      "debug_name": "DamageSensorComponent",
+      "default_values": {
+        "pruneWindowFrames": 30,
+        "tickInterval": 1
+      },
+      "description": "",
+      "fields": [
+        {
+          "default": 30,
+          "kind": "primitive",
+          "name": "pruneWindowFrames"
+        },
+        {
+          "default": 1,
+          "kind": "primitive",
+          "name": "tickInterval"
+        }
+      ],
+      "type_id": "damage-sensor-component"
+    },
+    {
+      "debug_name": "SoundSensorComponent",
+      "default_values": {
+        "hearingRadius": 8,
+        "tickInterval": 2
+      },
+      "description": "",
+      "fields": [
+        {
+          "default": 8,
+          "kind": "primitive",
+          "name": "hearingRadius"
+        },
+        {
+          "default": 2,
+          "kind": "primitive",
+          "name": "tickInterval"
+        }
+      ],
+      "type_id": "sound-sensor-component"
+    },
+    {
+      "debug_name": "SensorResultsComponent",
+      "default_values": {},
+      "description": "",
+      "fields": [],
+      "type_id": "sensor-results-component"
+    },
+    {
+      "debug_name": "DamageReceivedComponent",
+      "default_values": {},
+      "description": "",
+      "fields": [],
+      "type_id": "damage-received-component"
+    },
+    {
       "debug_name": "AttributeSetComponent",
       "default_values": {
         "schema_name": null
@@ -408,6 +524,41 @@
       "type_id": "TestResultReporterModule"
     },
     {
+      "allowed_pus": "sim",
+      "description": "Owns the CellHistoryRecorder and publishes it on the CellHistoryRecorderService ServiceStream.",
+      "type_id": "CellHistoryModule"
+    },
+    {
+      "allowed_pus": "any",
+      "description": "Loads *.schema.json sidecars from the configured schema_roots aliases and publishes the read-only ValueSchemaService.",
+      "type_id": "ValueSchemaModule"
+    },
+    {
+      "allowed_pus": "render",
+      "description": "Sole reader of the sim-time FrameStream on RenderPU; pushes RenderTimeContext into the owning ProcessingUnit each tick.",
+      "type_id": "DiaRenderTime"
+    },
+    {
+      "allowed_pus": "main",
+      "description": "Trivial MainPU presence module; MainTimeContext is computed directly by ProcessingUnit.",
+      "type_id": "DiaMainTime"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Umbrella SimPU module: assembles the sim-time scheduler, budget, and registry into the per-tick gate loop and publishes SimTimeContext onto the SimTime FrameStream.",
+      "type_id": "DiaSimTime"
+    },
+    {
+      "allowed_pus": "any",
+      "description": "Owns the CellLayerRegistry and publishes it on the CellLayerRegistryService ServiceStream.",
+      "type_id": "CellLayersModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "SimPU host for deferred world-step jobs: schedules steps by key, runs them on the JobSystem, applies results at a later key.",
+      "type_id": "DeferredStepModule"
+    },
+    {
       "allowed_pus": "main",
       "description": "Owns the stage catalogue and last stage results; persists results and publishes a catalogue snapshot.",
       "type_id": "StageCatalogueModule"
@@ -581,36 +732,11 @@
       "allowed_pus": "main",
       "description": "Drives automated test sequences and script-based input replay.",
       "type_id": "AutomationModule"
-    },
-    {
-      "allowed_pus": "any",
-      "description": "Owns the CellLayerRegistry and publishes it on the CellLayerRegistryService ServiceStream.",
-      "type_id": "CellLayersModule"
-    },
-    {
-      "allowed_pus": "sim",
-      "description": "Owns the CellHistoryRecorder and publishes it on the CellHistoryRecorderService ServiceStream.",
-      "type_id": "CellHistoryModule"
-    },
-    {
-      "allowed_pus": "sim",
-      "description": "SimPU host for deferred world-step jobs: schedules steps by key, runs them on the JobSystem, applies results at a later key.",
-      "type_id": "DeferredStepModule"
-    },
-    {
-      "allowed_pus": "any",
-      "description": "Loads *.schema.json sidecars from the configured schema_roots aliases and publishes the read-only ValueSchemaService.",
-      "type_id": "ValueSchemaModule"
-    },
-    {
-      "allowed_pus": "sim",
-      "description": "Umbrella SimPU module: assembles the sim-time scheduler, budget, and registry into the per-tick gate loop and publishes SimTimeContext onto the SimTime FrameStream.",
-      "type_id": "DiaSimTime"
     }
   ],
   "processing_units": [],
   "version": {
     "major": 2,
-    "minor": 3
+    "minor": 4
   }
 }

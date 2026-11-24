@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <DiaValueSchema/RampSetLoader.h>
 #include <DiaValueSchema/RampRegistry.h>
-#include <DiaValueSchema/ValueSchemaModule.h>
+#include <Modules/ValueSchemaModule.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 #include <DiaValueSchema/Testing/SchemaTempDirectory.h>
 #include <DiaApplicationFlow/Application.h>

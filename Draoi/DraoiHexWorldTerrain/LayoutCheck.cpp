@@ -6,7 +6,7 @@
 #include <DraoiHexWorldTerrain/RegionPartition.h>
 #include <DraoiHexWorld/Sites.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <set>
@@ -14,8 +14,8 @@
 namespace Draoi {
 namespace HexWorld {
 
-using Dia::Pathfinding::HexTopology;
-using Dia::Pathfinding::kNoCell;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::kNoCell;
 
 namespace
 {

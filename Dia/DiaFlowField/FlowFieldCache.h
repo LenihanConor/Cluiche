@@ -4,7 +4,7 @@
 #include "DiaFlowField/ComputeFlowField.h"
 #include "DiaFlowField/FlowFieldLogChannel.h"
 #include <DiaPathfinding/IPathCostProvider.h>
-#include <DiaPathfinding/CellCoord.h>
+#include <DiaGeometry2D/Grid/CellCoord.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <memory>
@@ -31,7 +31,7 @@ namespace Dia::FlowField {
         {}
 
         // Returns existing field if clean; recomputes if dirty or absent.
-        const FlowField& GetOrCompute(FlowFieldKey key, Dia::Pathfinding::CellCoord goalCell)
+        const FlowField& GetOrCompute(FlowFieldKey key, Dia::Geometry2D::CellCoord goalCell)
         {
             auto it = mEntries.find(key);
             if (it == mEntries.end())
@@ -86,8 +86,8 @@ namespace Dia::FlowField {
         }
 
         // Mark all fields dirty whose goal cell falls within [topLeft, bottomRight] inclusive.
-        void InvalidateRegion(Dia::Pathfinding::CellCoord topLeft,
-                              Dia::Pathfinding::CellCoord bottomRight)
+        void InvalidateRegion(Dia::Geometry2D::CellCoord topLeft,
+                              Dia::Geometry2D::CellCoord bottomRight)
         {
             int count = 0;
             for (auto& [key, entry] : mEntries)
@@ -113,7 +113,7 @@ namespace Dia::FlowField {
         {
             std::unique_ptr<FlowField> field;
             bool dirty = true;
-            Dia::Pathfinding::CellCoord goalCell{};
+            Dia::Geometry2D::CellCoord goalCell{};
         };
 
         const TGraph&                          mGraph;

@@ -1,4 +1,4 @@
-#include "AIBudgetModule.h"
+#include "Modules/AIBudgetModule.h"
 
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/Gauge.h>

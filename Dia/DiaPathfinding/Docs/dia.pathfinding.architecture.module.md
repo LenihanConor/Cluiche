@@ -64,13 +64,11 @@ dependent_modules:
 
 public_api:
   headers:
-    - Dia/DiaPathfinding/CellCoord.h
     - Dia/DiaPathfinding/CPathGraph.h
     - Dia/DiaPathfinding/IPathCostProvider.h
     - Dia/DiaPathfinding/PathResult.h
     - Dia/DiaPathfinding/SquarePathGrid.h
     - Dia/DiaPathfinding/HexPathGrid.h
-    - Dia/DiaPathfinding/HexTopology.h
     - Dia/DiaPathfinding/FindPath.h
     - Dia/DiaPathfinding/IPathResultObserver.h
     - Dia/DiaPathfinding/PathfindingSystem.h
@@ -82,7 +80,6 @@ public_api:
   namespaces:
     - Dia::Pathfinding
   entry_points:
-    - CellCoord
     - CPathGraph
     - IPathCostProvider
     - FlatCostProvider
@@ -90,9 +87,6 @@ public_api:
     - SquarePathGrid
     - HexPathGrid
     - HexLayout
-    - HexTopology
-    - kNoCell
-    - kHexDirections
     - FindPath
     - PathfindingSystem
     - IPathResultObserver
@@ -122,8 +116,8 @@ dependencies:
     - dia.maths
     - dia.observation
     - dia.simtime
-  forbidden:
     - dia.geometry2d
+  forbidden:
     - dia.blackboard
     - dia.command
     - dia.streams

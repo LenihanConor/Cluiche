@@ -13,7 +13,7 @@
 #include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
 #include <DiaCellLayers/Testing/ViewerCommands.h>
 #include <DiaAPI/DiaAPI.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <cstring>
 #include <memory>
@@ -262,7 +262,7 @@ TEST_F(HistoryViewIntegration, HoverShowsTheViewedValueAndStatusCarriesTheSample
 {
 	ViewRig r; r.Setup(false);
 	// Hover cell (2,1) = index 6.
-	const Dia::Maths::Vector2D c = Dia::Pathfinding::HexTopology::CellCenter(Dia::Pathfinding::CellCoord{ 2, 1 }, 1.0f);
+	const Dia::Maths::Vector2D c = Dia::Geometry2D::HexTopology::CellCenter(Dia::Geometry2D::CellCoord{ 2, 1 }, 1.0f);
 	float sx, sy;
 	Dia::CellLayers::Testing::WorldToScreen(TestView(), c.X(), c.Y(), sx, sy);
 	r.draw.mouse = Dia::Maths::Vector2D(sx, sy);

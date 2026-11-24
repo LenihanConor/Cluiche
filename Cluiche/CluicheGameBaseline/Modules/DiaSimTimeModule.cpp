@@ -1,4 +1,4 @@
-#include <DiaSimTime/DiaSimTimeModule.h>
+#include "Modules/DiaSimTimeModule.h"
 
 #include <DiaSimTime/ISimTimeBudgetedSystem.h>
 #include <DiaApplicationFlow/Application.h>

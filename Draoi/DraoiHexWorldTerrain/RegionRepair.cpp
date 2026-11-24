@@ -5,7 +5,7 @@
 
 #include <DraoiHexWorld/BiomeRegistry.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <cstring>
@@ -13,9 +13,9 @@
 namespace Draoi {
 namespace HexWorld {
 
-using Dia::Pathfinding::CellCoord;
-using Dia::Pathfinding::HexTopology;
-using Dia::Pathfinding::kNoCell;
+using Dia::Geometry2D::CellCoord;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::kNoCell;
 
 namespace
 {

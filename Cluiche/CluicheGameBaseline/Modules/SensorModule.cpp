@@ -1,4 +1,4 @@
-#include <DiaSensor/SensorModule.h>
+#include "Modules/SensorModule.h"
 
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>

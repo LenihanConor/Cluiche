@@ -9,7 +9,7 @@
 namespace Cluiche { namespace AppFlow {
 
 ObservationModule::ObservationModule(const Dia::Core::StringCRC& instanceId)
-    : Dia::ApplicationFlow::ObservationModule(
+    : Dia::ApplicationFlow::ObservationModuleBase(
         instanceId,
         CurrentAppIdentity().name.c_str(),
         CurrentAppIdentity().observationAssetRelPath.c_str())

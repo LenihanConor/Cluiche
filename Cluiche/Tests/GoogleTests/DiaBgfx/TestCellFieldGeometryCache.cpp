@@ -3,7 +3,7 @@
 
 #include <DiaBgfx/Resources/CellFieldGeometryCache.h>
 #include <DiaGraphics/CellField/HexFlatTopOddQBuilder.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 #include "../DiaGraphics/HexTopologyToCellGridDesc.h"
 
 #include <set>
@@ -41,7 +41,7 @@ namespace
 
         Dia::Graphics::CellGridDesc Desc(uint32_t w, uint32_t h)
         {
-            Dia::Pathfinding::HexTopology topo(w, h);
+            Dia::Geometry2D::HexTopology topo(w, h);
             return HexTopologyToCellGridDesc(topo, 1.0f, storage);
         }
     };

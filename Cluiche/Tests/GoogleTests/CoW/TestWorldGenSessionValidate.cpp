@@ -11,7 +11,7 @@
 #include <DraoiHexWorldTerrain/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <atomic>
@@ -69,14 +69,14 @@ protected:
         TestSession probe;
         Generate(probe, seed);
         const WorldStructure& w = probe.World();
-        const Dia::Pathfinding::HexTopology topo(w.dimensions.width, w.dimensions.height);
+        const Dia::Geometry2D::HexTopology topo(w.dimensions.width, w.dimensions.height);
         for (int i = 0; i < w.CellCount(); ++i)
         {
             if (w.Cells()[i].terrain != TerrainType::Lowland) { continue; }
             for (uint32_t dir = 0; dir < 6; ++dir)
             {
                 const uint32_t n = topo.NeighbourAt(static_cast<uint32_t>(i), dir);
-                if (n != Dia::Pathfinding::kNoCell && w.Cells()[n].terrain == TerrainType::Lowland)
+                if (n != Dia::Geometry2D::kNoCell && w.Cells()[n].terrain == TerrainType::Lowland)
                 {
                     a = static_cast<uint32_t>(i);
                     b = n;

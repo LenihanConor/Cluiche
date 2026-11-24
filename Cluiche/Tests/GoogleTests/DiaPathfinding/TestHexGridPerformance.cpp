@@ -1,14 +1,17 @@
 #include <gtest/gtest.h>
 #include <DiaPathfinding/FindPath.h>
 #include <DiaPathfinding/HexPathGrid.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <iostream>
+#include <DiaObservation/Log/DiaLog.h>
 #include <vector>
 
 using namespace Dia::Pathfinding;
+using Dia::Geometry2D::CellCoord;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::kHexDirections;
 using Dia::Core::Containers::DynamicArrayC;
 
 namespace {
@@ -75,8 +78,7 @@ TEST(SLOW_HexGridPerformance, NeighbourSweep_FullGrid)
         sink = sink + sum;
     });
 
-    std::cout << "[HexGridPerformance] NeighbourAt sweep (6656 x 6): " << topoMs << " ms, "
-              << "GetNeighbours sweep: " << gridMs << " ms\n";
+    DIA_LOG_INFO("Test", "[HexGridPerformance] NeighbourAt sweep (6656 x 6): %g ms, GetNeighbours sweep: %g ms", topoMs, gridMs);
     RecordProperty("NeighbourAtSweepMs", std::to_string(topoMs));
     RecordProperty("GetNeighboursSweepMs", std::to_string(gridMs));
 
@@ -116,8 +118,7 @@ TEST(SLOW_HexGridPerformance, FindPath_1000Queries_ScatteredObstacles)
     auto t1 = std::chrono::steady_clock::now();
     const double totalMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
 
-    std::cout << "[HexGridPerformance] 1000 FindPath calls: " << totalMs << " ms total, "
-              << successes << " succeeded\n";
+    DIA_LOG_INFO("Test", "[HexGridPerformance] 1000 FindPath calls: %g ms total, %d succeeded", totalMs, successes);
     RecordProperty("FindPath1000TotalMs", std::to_string(totalMs));
     RecordProperty("FindPath1000Successes", successes);
 

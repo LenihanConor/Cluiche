@@ -5,7 +5,7 @@
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
-#include <DiaSimTime/DiaSimTimeModule.h>
+#include "Modules/DiaSimTimeModule.h"
 #include <Modules/Plumbing/SaveLoadModule.h>
 #include <filesystem>
 #include <fstream>

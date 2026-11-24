@@ -9,7 +9,7 @@
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaCore/SimTime/SimTimeDomain.h>
-#include <DiaSimTime/DiaSimTimeModule.h>
+#include "Modules/DiaSimTimeModule.h"
 #include <Modules/GameSpeed/GameSpeedControllerModule.h>
 #include <Modules/GameSpeed/GameSpeedMessages.h>
 #include <Modules/MessageBusHostModule.h>

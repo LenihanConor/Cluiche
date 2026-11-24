@@ -1,4 +1,4 @@
-#include <DiaEntitySpawner/EntitySpawnerModule.h>
+#include <Modules/EngineModules/EntitySpawnerModule.h>
 #include <DiaEntitySpawner/SpawnEmitterComponent.h>
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/IBlueprintLoader.h>

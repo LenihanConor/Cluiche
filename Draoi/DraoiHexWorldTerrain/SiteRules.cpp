@@ -1,7 +1,7 @@
 // Generic special-site guarantee rules. See SiteRules.h.
 #include <DraoiHexWorldTerrain/SiteRules.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <cctype>
@@ -12,7 +12,7 @@ namespace Draoi {
 namespace HexWorld {
 
 using Dia::Core::StringCRC;
-using Dia::Pathfinding::HexTopology;
+using Dia::Geometry2D::HexTopology;
 
 namespace
 {

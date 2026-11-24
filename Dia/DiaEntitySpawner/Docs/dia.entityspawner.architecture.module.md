@@ -14,7 +14,6 @@ dependencies:
     - dia.maths
     - dia.entity
     - dia.entityspatial
-    - dia.application
     - dia.observation
     - dia.messagebus
   forbidden: []
@@ -22,13 +21,11 @@ public_api:
   headers:
     - DiaEntitySpawner/SpawnerTypes.h
     - DiaEntitySpawner/SpawnEmitterComponent.h
-    - DiaEntitySpawner/EntitySpawnerModule.h
     - DiaEntitySpawner/EntitySpawnerImpl.h
   namespaces:
     - Dia::Entity::
     - Dia::EntitySpawner::
   entry_points:
-    - EntitySpawnerModule
     - IEntitySpawner
     - SpawnEmitterComponent
 responsibilities:

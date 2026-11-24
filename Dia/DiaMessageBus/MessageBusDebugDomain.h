@@ -13,14 +13,15 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Colour/RGBA.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
-#include <DiaMessageBus/MessageBusModule.h>
+#include <DiaMessageBus/Bus.h>
+#include <DiaMessageBus/LedgerHistory.h>
 
 namespace Dia::MessageBus {
 
     ////////////////////////////////////////////////////////////////////////////////
     // MessageBusDebugDomain
     //
-    // Reads MessageBusModule's owned Bus and LedgerHistory on the sim thread
+    // Reads the host module's owned Bus and LedgerHistory on the sim thread
     // only: GetJSONState() and OnCommand() are both called by SimPU's
     // VisualDebuggerModule, which publishes the result to Main as a
     // DomainStateSnapshot over a FrameStream (see domain-state-snapshots.md).
@@ -32,12 +33,12 @@ namespace Dia::MessageBus {
     //   - Schema tab  : Bus::ForEachRegisteredType/ForEachProducerForType/
     //                   ForEachSubscriberForType (routing graph metadata)
     //   - Live tab    : Bus::GetLastTickLedger() (last completed tick)
-    //   - History tab : MessageBusModule::GetLedgerHistory() (ring buffer)
+    //   - History tab : host module's LedgerHistory (ring buffer)
     ////////////////////////////////////////////////////////////////////////////////
     class MessageBusDebugDomain : public Dia::VisualDebugger::IDebugDomain
     {
     public:
-        explicit MessageBusDebugDomain(const MessageBusModule& module);
+        MessageBusDebugDomain(const Bus& bus, const LedgerHistory& history);
 
         Dia::Core::StringCRC GetDomainId()     const override;
         const char*          GetDisplayName()  const override;
@@ -62,7 +63,8 @@ namespace Dia::MessageBus {
         void WriteHistoryTab(Json::Value& out) const;
         void WriteRecorderSection(Json::Value& live) const;
 
-        const MessageBusModule& mModule;
+        const Bus&               mBus;
+        const LedgerHistory&     mHistory;
         Tab                      mActiveTab          = Tab::Live;
         uint16_t                 mHistoryWindowTicks = 60;
     };

@@ -10,8 +10,8 @@
 #include <cmath>
 
 using namespace Dia::Graphics;
-using Dia::Pathfinding::HexTopology;
-using Dia::Pathfinding::CellCoord;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::CellCoord;
 
 namespace
 {
@@ -70,8 +70,8 @@ namespace
 				for (int j = 0; j < 3; ++j)
 				{
 					const uint32_t n = topo.NeighbourAt(c, dirs[j]);
-					expected[1 + j] = (n == Dia::Pathfinding::kNoCell) ? -1.0f : static_cast<float>(n);
-					present[1 + j] = n != Dia::Pathfinding::kNoCell;
+					expected[1 + j] = (n == Dia::Geometry2D::kNoCell) ? -1.0f : static_cast<float>(n);
+					present[1 + j] = n != Dia::Geometry2D::kNoCell;
 				}
 				for (int j = 0; j < 3; ++j)
 					for (int m = 0; m < 4; ++m)

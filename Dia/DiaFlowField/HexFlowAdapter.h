@@ -2,7 +2,7 @@
 
 #include <DiaFlowField/CFlowFieldGraph.h>
 #include <DiaPathfinding/HexPathGrid.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaCore/Core/Assert.h>
 #include <cmath>
@@ -13,7 +13,7 @@ namespace Dia::FlowField {
     // Supports both HexPathGrid layouts:
     //  - axial hexagon: coordinates are (q, r). NOTE: the axial CellToWorldPosition (pointy-top
     //    formula) and WorldToCell (flat-top formula) are known to be inconsistent; tracked in the backlog.
-    //  - rectangular flat-top odd-q: delegates to HexTopology::CellCenter / CellFromPoint.
+    //  - rectangular flat-top odd-q: delegates to Dia::Geometry2D::HexTopology::CellCenter / CellFromPoint.
     // The caller owns the grid's lifetime; this adapter holds a const reference.
     class HexFlowAdapter {
     public:
@@ -24,13 +24,13 @@ namespace Dia::FlowField {
 
         // --- CPathGraph forwarding ---
 
-        void GetNeighbours(Dia::Pathfinding::CellCoord cell,
-                           Dia::Core::Containers::DynamicArrayC<Dia::Pathfinding::CellCoord, 16>& out) const
+        void GetNeighbours(Dia::Geometry2D::CellCoord cell,
+                           Dia::Core::Containers::DynamicArrayC<Dia::Geometry2D::CellCoord, 16>& out) const
         {
             mGrid.GetNeighbours(cell, out);
         }
 
-        bool IsPassable(Dia::Pathfinding::CellCoord cell) const
+        bool IsPassable(Dia::Geometry2D::CellCoord cell) const
         {
             return mGrid.IsPassable(cell);
         }
@@ -40,10 +40,10 @@ namespace Dia::FlowField {
         // Flat-top hex axial to world:
         //   x = cellSize * (q + r / 2)
         //   y = cellSize * (r * sqrt(3) / 2)   [sqrt(3)/2 ≈ 0.866025]
-        Dia::Maths::Vector2D CellToWorldPosition(Dia::Pathfinding::CellCoord cell, float cellSize) const
+        Dia::Maths::Vector2D CellToWorldPosition(Dia::Geometry2D::CellCoord cell, float cellSize) const
         {
             if (IsOffsetLayout())
-                return Dia::Pathfinding::HexTopology::CellCenter(cell, cellSize);
+                return Dia::Geometry2D::HexTopology::CellCenter(cell, cellSize);
 
             float x = cellSize * (cell.x + cell.y * 0.5f);
             float y = cellSize * (cell.y * 0.866025f);  // sqrt(3)/2
@@ -53,10 +53,10 @@ namespace Dia::FlowField {
         // Reverse flat-top formula with cube-rounding to nearest hex.
         // q_frac = (2/3 * wx) / cellSize
         // r_frac = (-1/3 * wx + (1/sqrt(3)) * wy) / cellSize   [1/sqrt(3) ≈ 0.577350]
-        Dia::Pathfinding::CellCoord WorldToCell(Dia::Maths::Vector2D worldPos, float cellSize) const
+        Dia::Geometry2D::CellCoord WorldToCell(Dia::Maths::Vector2D worldPos, float cellSize) const
         {
             if (IsOffsetLayout())
-                return Dia::Pathfinding::HexTopology::CellFromPoint(worldPos, cellSize);
+                return Dia::Geometry2D::HexTopology::CellFromPoint(worldPos, cellSize);
 
             float wx = worldPos.X();
             float wy = worldPos.Y();
@@ -79,7 +79,7 @@ namespace Dia::FlowField {
                 r = -q - s;
             // s is derived; no need to recompute it
 
-            return Dia::Pathfinding::CellCoord{ q, r };
+            return Dia::Geometry2D::CellCoord{ q, r };
         }
 
         // --- Convenience accessor ---

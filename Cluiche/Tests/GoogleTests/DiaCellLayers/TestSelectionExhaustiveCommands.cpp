@@ -10,7 +10,7 @@
 #include <DiaCellLayers/Testing/LogCapture.h>
 #include <DiaCellLayers/Testing/SelectionTestSupport.h>
 #include <DiaAPI/DiaAPI.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <atomic>
 #include <memory>
@@ -26,8 +26,8 @@ using namespace Dia::CellLayers;
 using namespace Dia::CellLayers::Testing;
 using Dia::Core::StringCRC;
 using Dia::Graphics::CellFieldRegistry;
-using Dia::Pathfinding::CellCoord;
-using Dia::Pathfinding::HexTopology;
+using Dia::Geometry2D::CellCoord;
+using Dia::Geometry2D::HexTopology;
 typedef LogCapture::Level Level;
 
 // ---------------------------------------------------------------- registry selection store (not DIA_DEBUG-only)

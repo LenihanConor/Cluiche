@@ -15,7 +15,7 @@
 #include <algorithm>
 
 #include "DiaPathfinding/SquarePathGrid.h"
-#include "DiaPathfinding/CellCoord.h"
+#include "DiaGeometry2D/Grid/CellCoord.h"
 
 #include "DiaEntity/Domain.h"
 #include "DiaEntity/ComponentPool.h"
@@ -32,7 +32,7 @@ using Dia::GridVisibility::VisibilityState;
 using Dia::GridVisibility::Testing::AssertCellVisible;
 using Dia::GridVisibility::Testing::AssertCellRevealed;
 using Dia::GridVisibility::Testing::AssertCellUnexplored;
-using Dia::Pathfinding::CellCoord;
+using Dia::Geometry2D::CellCoord;
 using Dia::Pathfinding::SquarePathGrid;
 
 namespace

@@ -24,8 +24,8 @@ namespace {
     }
 }
 
-MessageBusDebugDomain::MessageBusDebugDomain(const MessageBusModule& module)
-    : mModule(module)
+MessageBusDebugDomain::MessageBusDebugDomain(const Bus& bus, const LedgerHistory& history)
+    : mBus(bus), mHistory(history)
 {}
 
 Dia::Core::StringCRC MessageBusDebugDomain::GetDomainId()     const { return Dia::Core::StringCRC("MessageBus"); }
@@ -85,7 +85,7 @@ void MessageBusDebugDomain::WriteSchemaTab(Json::Value& out) const
         std::vector<Dia::Core::StringCRC> subscriberIds;
     };
 
-    const Bus& bus = mModule.GetBus();
+    const Bus& bus = mBus;
 
     std::vector<Row> rows;
     bus.ForEachRegisteredType([&](const Bus::RegisteredTypeInfo& info) {
@@ -128,7 +128,7 @@ void MessageBusDebugDomain::WriteSchemaTab(Json::Value& out) const
 
 void MessageBusDebugDomain::WriteLiveTab(Json::Value& out) const
 {
-    const LedgerSnapshot& snapshot = mModule.GetBus().GetLastTickLedger();
+    const LedgerSnapshot& snapshot = mBus.GetLastTickLedger();
 
     std::vector<const LedgerMessageEntry*> sorted;
     sorted.reserve(snapshot.entries.Size());
@@ -170,7 +170,7 @@ void MessageBusDebugDomain::WriteLiveTab(Json::Value& out) const
 void MessageBusDebugDomain::WriteRecorderSection(Json::Value& live) const
 {
     Json::Value recorder(Json::objectValue);
-    const IBusRecorder* installed = mModule.GetBus().GetRecorder();
+    const IBusRecorder* installed = mBus.GetRecorder();
     recorder["attached"] = (installed != nullptr);
 
     if (installed)
@@ -199,7 +199,7 @@ void MessageBusDebugDomain::WriteRecorderSection(Json::Value& live) const
 
 void MessageBusDebugDomain::WriteHistoryTab(Json::Value& out) const
 {
-    const LedgerHistory& history = mModule.GetLedgerHistory();
+    const LedgerHistory& history = mHistory;
     const uint32_t total  = history.Count();
     const uint32_t window = mHistoryWindowTicks;
     const uint32_t skip   = (total > window) ? (total - window) : 0;

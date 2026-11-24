@@ -27,7 +27,7 @@
 #include <vector>
 
 #include <DiaMessageBus/LedgerHistory.h>
-#include <DiaMessageBus/MessageBusModule.h>
+#include <Modules/MessageBusHostModule.h>
 #include <DiaMessageBus/Bus.h>
 
 namespace Dia::MessageBus::Testing {
@@ -36,7 +36,7 @@ namespace Dia::MessageBus::Testing {
     // Testable module subclass — exposes protected lifecycle hooks, mirroring
     // TestDiaMessageBusCore.cpp's TestableMessageBusModule.
     // -------------------------------------------------------------------------
-    class TestableMessageBusModule : public Dia::MessageBus::MessageBusModule {
+    class TestableMessageBusModule : public Cluiche::AppFlow::MessageBusHostModule {
     public:
         void Start() { DoStart(); }
         void Update(float dt)

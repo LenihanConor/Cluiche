@@ -4,14 +4,14 @@
 #include <DraoiHexWorldTerrain/WorldGenSession.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <cmath>
-#include <iostream>
+#include <DiaObservation/Log/DiaLog.h>
 
 using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld;
-using Dia::Pathfinding::HexTopology;
+using Dia::Geometry2D::HexTopology;
 
 namespace
 {
@@ -43,7 +43,7 @@ TEST(WorldOverlayGeometry, RiverSegmentsEqualDownstreamLinesSmall)
         const Cell& c = w.Cells()[i];
         if (c.waterSource != WaterSource::River || c.downstream > 5) continue;
         const uint32_t n = topo.NeighbourAt(static_cast<uint32_t>(i), c.downstream);
-        if (n == Dia::Pathfinding::kNoCell) continue;
+        if (n == Dia::Geometry2D::kNoCell) continue;
         expected.push_back({ grid.CellCenter(static_cast<uint32_t>(i)), grid.CellCenter(n) });
     }
     const std::vector<LineSegment> got = BuildRiverSegments(w, grid);
@@ -102,7 +102,7 @@ TEST(WorldOverlayGeometry, EvenAndOddColumnsMatchHexTopology)
         for (uint32_t d = 0; d < 6; ++d)
         {
             const uint32_t n = topo.NeighbourAt(static_cast<uint32_t>(cell), d);
-            ASSERT_NE(n, Dia::Pathfinding::kNoCell);
+            ASSERT_NE(n, Dia::Geometry2D::kNoCell);
             EXPECT_TRUE(o.hasLabel[d]);
             EXPECT_EQ(o.neighbourCell[d], static_cast<int>(n));
             EXPECT_TRUE(Same(o.labelAnchor[d], grid.CellCenter(n))) << cell << " dir " << d;
@@ -126,7 +126,7 @@ TEST(WorldOverlayGeometry, LargeWorldSegmentCountUnderDebugDrawBudget)
     WorldHexGrid grid(s.World().dimensions);
     const size_t rivers = BuildRiverSegments(s.World(), grid).size();
     const size_t outline = BuildNeighbourOutline(grid, 50 * 104 + 51).neighbourOutlines.size() + 6;
-    std::cout << "[ INFO ] Large river segments=" << rivers << " outline segments=" << outline << "\n";
+    DIA_LOG_INFO("Test", "[ INFO ] Large river segments=%zu outline segments=%zu", rivers, outline);
     EXPECT_LT(rivers + outline + 6u, 8192u / 2u);
 }
 
@@ -273,6 +273,6 @@ TEST(WorldOverlayGeometry, LargeRegionEdgesAndSitesUnderDebugDrawBudget)
     size_t lines = BuildRiverSegments(s.World(), grid).size() + BuildRegionEdges(s.World(), grid).size();
     for (const SiteKindInfo& k : ListSiteKinds(s.Registry()))
         lines += BuildSiteMarkers(s.World(), grid, k.kindCrc, k.debugShape, grid.CellSize() * 0.45f).size();
-    std::cout << "[ INFO ] Large rivers+region edges+site markers=" << lines << "\n";
+    DIA_LOG_INFO("Test", "[ INFO ] Large rivers+region edges+site markers=%zu", lines);
     EXPECT_LT(lines, 8192u) << "IDebugDraw line budget";
 }

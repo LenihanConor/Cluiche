@@ -1,4 +1,4 @@
-#include <DiaValueSchema/ValueSchemaModule.h>
+#include "Modules/ValueSchemaModule.h"
 #include <DiaValueSchema/IValueSchemaContributor.h>
 
 #include <DiaApplicationFlow/Application.h>

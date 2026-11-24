@@ -193,6 +193,10 @@
       <Project>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGeometry2D\DiaGeometry2D.vcxproj">
+      <Project>{A3C4D5E6-F7B8-9012-CDEF-012345678901}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaPathfinding\DiaPathfinding.vcxproj">
       <Project>{B5C6D7E8-F9A0-1234-5678-9ABCDEF01234}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

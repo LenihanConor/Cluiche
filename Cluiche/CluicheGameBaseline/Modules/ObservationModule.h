@@ -1,9 +1,9 @@
 #pragma once
-#include <DiaApplicationFlow/Observation/ObservationModule.h>
+#include <DiaApplicationFlow/Observation/ObservationModuleBase.h>
 
 namespace Cluiche { namespace AppFlow {
 
-class ObservationModule : public Dia::ApplicationFlow::ObservationModule {
+class ObservationModule : public Dia::ApplicationFlow::ObservationModuleBase {
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kAny;

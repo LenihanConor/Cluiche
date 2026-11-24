@@ -189,10 +189,10 @@ namespace Dia::Pathfinding {
         const uint32_t cellCount = graph.CellCount();
         for (uint32_t i = 0; i < cellCount; ++i) {
             options.outCost[i] = std::numeric_limits<Cost>::infinity();
-            if (options.outPrev) options.outPrev[i] = kNoCell;
+            if (options.outPrev) options.outPrev[i] = Dia::Geometry2D::kNoCell;
             if (options.outSeedId) options.outSeedId[i] = kUnreached;
         }
-        if (options.outStoppedAt) *options.outStoppedAt = kNoCell;
+        if (options.outStoppedAt) *options.outStoppedAt = Dia::Geometry2D::kNoCell;
 
         scratch.Reset();
         scratch.SetDijkstraRunCostSize(static_cast<uint32_t>(sizeof(Cost)));
@@ -202,13 +202,13 @@ namespace Dia::Pathfinding {
             const CostSeed<Cost>& s = seeds[i];
             if (s.cell >= cellCount) continue;
             if (options.pushAll) {   // every seed is queued; outputs are written when it settles
-                heap.Push(DijkstraEntry<Cost>{ s.startCost, s.cell, s.id, kNoCell });
+                heap.Push(DijkstraEntry<Cost>{ s.startCost, s.cell, s.id, Dia::Geometry2D::kNoCell });
                 continue;
             }
             if (!(s.startCost < options.outCost[s.cell])) continue;
             options.outCost[s.cell] = s.startCost;
             if (options.outSeedId) options.outSeedId[s.cell] = s.id;
-            heap.Push(DijkstraEntry<Cost>{ s.startCost, s.cell, s.id, kNoCell });
+            heap.Push(DijkstraEntry<Cost>{ s.startCost, s.cell, s.id, Dia::Geometry2D::kNoCell });
         }
         Detail::RunDijkstra<Cost>(graph, stepCost, options, scratch, onSettle);
     }

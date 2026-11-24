@@ -6,7 +6,7 @@
 #include <DiaBgfx/Renderers/CellFieldViewOrder.h>
 #include <DiaBgfx/Renderers/Ortho2D.h>
 #include <DiaGraphics/CellField/HexFlatTopOddQBuilder.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 #include "../DiaGraphics/HexTopologyToCellGridDesc.h"
 
 #include <limits>
@@ -245,7 +245,7 @@ TEST(CellFieldGapsParams, GridBoundsOddQStaggerOddColumnSitsHalfHexLower)
 {
     // 2x1 flat-top odd-q: the odd column (x = 1) is shifted down half a hex height, so the
     // bounds' lower edge comes from column 1 and the upper edge from column 0.
-    Dia::Pathfinding::HexTopology topo(2, 1);
+    Dia::Geometry2D::HexTopology topo(2, 1);
     HexDescStorage storage;
     const CellGridDesc d = HexTopologyToCellGridDesc(topo, 1.0f, storage);
     const float y0 = d.centresXY[1], y1 = d.centresXY[3];
@@ -259,7 +259,7 @@ TEST(CellFieldGapsParams, GridBoundsOddQStaggerOddColumnSitsHalfHexLower)
 
 TEST(CellFieldGapsParams, GridBoundsHugeGridMatchesBuiltGeometry)
 {
-    Dia::Pathfinding::HexTopology topo(128, 128);
+    Dia::Geometry2D::HexTopology topo(128, 128);
     HexDescStorage storage;
     const CellGridDesc d = HexTopologyToCellGridDesc(topo, 1.5f, storage);
     CellFieldBounds b;

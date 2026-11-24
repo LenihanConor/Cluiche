@@ -16,7 +16,7 @@
 #include <DiaCellLayers/Testing/CellPickerTestSupport.h>
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 #include <Modules/TestStages/CellLayersPointerQueue.h>
 #include <Types/SimRegistrationMessage.h>
 
@@ -58,8 +58,8 @@ using Dia::DebugServer::SimQueryHost;
 using Dia::DebugServer::SimReplyEvent;
 using Dia::DebugServer::SimRequestEvent;
 using Dia::Graphics::CellFieldRegistry;
-using Dia::Pathfinding::CellCoord;
-using Dia::Pathfinding::HexTopology;
+using Dia::Geometry2D::CellCoord;
+using Dia::Geometry2D::HexTopology;
 
 namespace
 {

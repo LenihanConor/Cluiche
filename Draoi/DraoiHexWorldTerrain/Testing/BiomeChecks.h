@@ -6,7 +6,7 @@
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <DraoiHexWorld/WorldStructure.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <cstdint>
 #include <utility>
@@ -48,14 +48,14 @@ inline std::vector<std::pair<int, int>> FindForbiddenPairs(GridDimensions dims, 
     {
         return pairs;
     }
-    const Dia::Pathfinding::HexTopology topo(dims.width, dims.height);
+    const Dia::Geometry2D::HexTopology topo(dims.width, dims.height);
     const int                           n = dims.width * dims.height;
     for (int c = 0; c < n; ++c)
     {
         for (uint32_t d = 0; d < 6u; ++d)
         {
             const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(c), d);
-            if (nb == Dia::Pathfinding::kNoCell || static_cast<int>(nb) <= c)
+            if (nb == Dia::Geometry2D::kNoCell || static_cast<int>(nb) <= c)
             {
                 continue;
             }
@@ -78,7 +78,7 @@ inline std::vector<int> CheckWetlandRule(const TerrainRules& rules, const Stage1
     {
         return bad;
     }
-    const Dia::Pathfinding::HexTopology topo(in.dims.width, in.dims.height);
+    const Dia::Geometry2D::HexTopology topo(in.dims.width, in.dims.height);
     const int                           n = in.dims.width * in.dims.height;
     const ::Draoi::HexWorld::BiomeIndex      wetland = ::Draoi::HexWorld::Testing::B(reg, "Biome.Wetland");
     for (int c = 0; c < n; ++c)
@@ -91,7 +91,7 @@ inline std::vector<int> CheckWetlandRule(const TerrainRules& rules, const Stage1
         for (uint32_t d = 0; d < 6u && !source; ++d)
         {
             const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(c), d);
-            if (nb == Dia::Pathfinding::kNoCell)
+            if (nb == Dia::Geometry2D::kNoCell)
             {
                 continue;
             }

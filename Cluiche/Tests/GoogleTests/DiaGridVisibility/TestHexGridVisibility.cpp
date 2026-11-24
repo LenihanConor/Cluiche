@@ -12,8 +12,8 @@
 #include "DiaGridVisibility/Testing/VisibilityTestHelpers.h"
 
 #include "DiaPathfinding/HexPathGrid.h"
-#include "DiaPathfinding/HexTopology.h"
-#include "DiaPathfinding/CellCoord.h"
+#include "DiaGeometry2D/Grid/HexTopology.h"
+#include "DiaGeometry2D/Grid/CellCoord.h"
 
 #include "DiaEntity/Domain.h"
 #include "DiaEntity/ComponentPool.h"
@@ -28,9 +28,9 @@ using Dia::GridVisibility::CVisibilityGraph;
 using Dia::GridVisibility::GridVisibilitySystem;
 using Dia::GridVisibility::VisibilityGroupId;
 using Dia::GridVisibility::VisibilityState;
-using Dia::Pathfinding::CellCoord;
+using Dia::Geometry2D::CellCoord;
 using Dia::Pathfinding::HexPathGrid;
-using Dia::Pathfinding::HexTopology;
+using Dia::Geometry2D::HexTopology;
 using Dia::GridVisibility::Testing::AssertCellVisible;
 using Dia::GridVisibility::Testing::AssertCellUnexplored;
 

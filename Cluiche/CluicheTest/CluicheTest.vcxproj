@@ -82,6 +82,10 @@
     <ClCompile Include="Modules\TestStages\DeferredStepClockModule.cpp" />
     <ClCompile Include="Modules\TestResultChangeTracker.cpp" />
     <ClCompile Include="Modules\TestResultReporterModule.cpp" />
+    <ClCompile Include="Modules\EngineModules\CellHistoryModule.cpp" />
+    <ClCompile Include="Modules\EngineModules\EntitySpawnerHealth.cpp" />
+    <ClCompile Include="Modules\EngineModules\EntitySpawnerModule.cpp" />
+    <ClCompile Include="Modules\EngineModules\TriggerScriptModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\TestMainStateProducerModule.h" />
@@ -150,6 +154,10 @@
     <ClInclude Include="Modules\TestStages\DeferredStepClockModule.h" />
     <ClInclude Include="Modules\TestResultChangeTracker.h" />
     <ClInclude Include="Modules\TestResultReporterModule.h" />
+    <ClInclude Include="Modules\EngineModules\CellHistoryModule.h" />
+    <ClInclude Include="Modules\EngineModules\EntitySpawnerHealth.h" />
+    <ClInclude Include="Modules\EngineModules\EntitySpawnerModule.h" />
+    <ClInclude Include="Modules\EngineModules\TriggerScriptModule.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Messages\order_messages.diagamemessages" />
@@ -393,6 +401,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaAICalloutVisualDebugger\DiaAICalloutVisualDebugger.vcxproj">
       <Project>{01A2B3C4-D5E6-7890-A1B2-C3D4E5F06789}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSensor\DiaSensor.vcxproj">
+      <Project>{F3A4B5C6-D7E8-9012-ABCD-EF0123456789}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">

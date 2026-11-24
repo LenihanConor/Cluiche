@@ -12,7 +12,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CellCoord.h" />
     <ClInclude Include="CPathGraph.h" />
     <ClInclude Include="IPathCostProvider.h" />
     <ClInclude Include="PathResult.h" />
@@ -28,7 +27,6 @@
     <ClInclude Include="PathfindingSystemBudgetAdapter.h">
       <Filter>DiaPathfinding</Filter>
     </ClInclude>
-    <ClInclude Include="HexTopology.h" />
     <ClInclude Include="GridSearch.h" />
     <ClInclude Include="GridSearch.inl" />
     <ClInclude Include="GridSearchScratch.h" />
@@ -42,7 +40,6 @@
     <ClCompile Include="SquarePathGrid.cpp" />
     <ClCompile Include="HexPathGrid.cpp" />
     <ClCompile Include="PathResult.cpp" />
-    <ClCompile Include="HexTopology.cpp" />
     <ClCompile Include="GridSearchScratch.cpp" />
   </ItemGroup>
   <ItemGroup>

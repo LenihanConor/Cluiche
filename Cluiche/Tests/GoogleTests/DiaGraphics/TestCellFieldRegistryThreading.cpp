@@ -8,7 +8,7 @@
 #include <DiaBgfx/Renderers/CellFieldRenderer.h>
 #include <DiaGraphics/CellField/CellFieldRegistry.h>
 #include <DiaGraphics/Frame/CellFieldFrameData.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 #include "HexTopologyToCellGridDesc.h"
 
 #include <algorithm>
@@ -433,7 +433,7 @@ namespace
 		CellGridDesc desc;
 		RendererFixture()
 		{
-			Dia::Pathfinding::HexTopology topo(4, 3);
+			Dia::Geometry2D::HexTopology topo(4, 3);
 			desc = HexTopologyToCellGridDesc(topo, 1.0f, storage);
 		}
 	};

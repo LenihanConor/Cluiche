@@ -28,6 +28,9 @@
     <Filter Include="Modules\TestStages">
       <UniqueIdentifier>{25fbad14-3a7a-4c01-990b-66f8f704baab}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Modules\EngineModules">
+      <UniqueIdentifier>{3ec0f1a4-103e-48f8-b68f-33877f5bf872}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -213,6 +216,18 @@
     </ClCompile>
     <ClCompile Include="Modules\TestResultReporterModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\EngineModules\CellHistoryModule.cpp">
+      <Filter>Modules\EngineModules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\EngineModules\EntitySpawnerHealth.cpp">
+      <Filter>Modules\EngineModules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\EngineModules\EntitySpawnerModule.cpp">
+      <Filter>Modules\EngineModules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\EngineModules\TriggerScriptModule.cpp">
+      <Filter>Modules\EngineModules</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -413,6 +428,18 @@
     </ClInclude>
     <ClInclude Include="Modules\TestResultReporterModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\EngineModules\CellHistoryModule.h">
+      <Filter>Modules\EngineModules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\EngineModules\EntitySpawnerHealth.h">
+      <Filter>Modules\EngineModules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\EngineModules\EntitySpawnerModule.h">
+      <Filter>Modules\EngineModules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\EngineModules\TriggerScriptModule.h">
+      <Filter>Modules\EngineModules</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

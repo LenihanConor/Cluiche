@@ -304,7 +304,7 @@ void MessageBusTestStageModule::OnStart(Dia::Automation::AutomationService* serv
     if (auto* vd = mVisualDebuggerRef.Get())
         vd->GetLayerManager().Register(&mDebugLayer, 10);
 
-    mDebugDomain      = std::make_unique<Dia::MessageBus::MessageBusDebugDomain>(mBusModule);
+    mDebugDomain      = std::make_unique<Dia::MessageBus::MessageBusDebugDomain>(mBusModule.GetBus(), mBusModule.GetLedgerHistory());
     mDomainRegistered = false;
 #endif
 

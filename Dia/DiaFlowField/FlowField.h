@@ -2,7 +2,7 @@
 
 #include <DiaFlowField/FlowCell.h>
 #include <DiaFlowField/CFlowFieldGraph.h>
-#include <DiaPathfinding/CellCoord.h>
+#include <DiaGeometry2D/Grid/CellCoord.h>
 #include <DiaCore/Containers/Arrays/DynamicArray.h>
 
 namespace Dia
@@ -20,7 +20,7 @@ namespace Dia
             // Sample the flow direction at a cell.
             // Returns a reference to a static default unreachable FlowCell when
             // the coord is out of bounds.
-            const FlowCell& Sample(Dia::Pathfinding::CellCoord cell) const;
+            const FlowCell& Sample(Dia::Geometry2D::CellCoord cell) const;
 
             // Convenience: sample direction from a world position using a uniform
             // square-grid cell size.  Does not need graph access — uses integer
@@ -31,7 +31,7 @@ namespace Dia
             {
                 int col = static_cast<int>(worldPos.X() / cellSize);
                 int row = static_cast<int>(worldPos.Y() / cellSize);
-                return Sample(Dia::Pathfinding::CellCoord{col, row}).direction;
+                return Sample(Dia::Geometry2D::CellCoord{col, row}).direction;
             }
 
             // Graph-aware sampling: converts the position with the graph's own WorldToCell,
@@ -39,7 +39,7 @@ namespace Dia
             template<CFlowFieldGraph TGraph>
             const FlowCell& Sample(const TGraph& graph, Dia::Maths::Vector2D worldPos, float cellSize) const
             {
-                Dia::Pathfinding::CellCoord cell = graph.WorldToCell(worldPos, cellSize);
+                Dia::Geometry2D::CellCoord cell = graph.WorldToCell(worldPos, cellSize);
                 return Sample(cell);
             }
 
@@ -70,7 +70,7 @@ namespace Dia
 
             // Return a mutable reference to the cell at (cell.x, cell.y).
             // Called by ComputeFlowField while building the field.
-            FlowCell& AccessCell(Dia::Pathfinding::CellCoord cell);
+            FlowCell& AccessCell(Dia::Geometry2D::CellCoord cell);
 
         private:
             int mWidth;

@@ -16,13 +16,11 @@ dependencies:
     - dia.entityspatial
     - dia.blackboard
     - dia.observation
-    - dia.application
     - dia.geometry2d
   forbidden: []
 public_api:
   headers:
     - DiaSensor/SensorResultsComponent.h
-    - DiaSensor/SensorModule.h
     - DiaSensor/SensorBlackboardAdapter.h
     - DiaSensor/SightSensorComponent.h
     - DiaSensor/ProximitySensorComponent.h
@@ -31,7 +29,6 @@ public_api:
   namespaces:
     - Dia::Sensor::
   entry_points:
-    - SensorModule
     - SensorResultsComponent
     - SensorBlackboardAdapter
 responsibilities:

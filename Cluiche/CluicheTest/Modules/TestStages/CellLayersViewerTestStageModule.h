@@ -3,8 +3,8 @@
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaStreams/ServiceStreamReader.h>
-#include <DiaCellLayers/CellLayersModule.h>
-#include <DiaCellHistory/CellHistoryModule.h>
+#include "Modules/CellLayersModule.h"
+#include "Modules/EngineModules/CellHistoryModule.h"
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Memory/UniquePtr.h>
 #include <DiaGraphics/CellField/CellGridDesc.h>

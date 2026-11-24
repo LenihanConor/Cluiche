@@ -6,7 +6,7 @@
 
 #include <DiaPathfinding/GridSearch.h>
 #include <DiaPathfinding/HexNeighbours.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 
@@ -15,8 +15,8 @@ namespace HexWorld {
 
 namespace {
 
-using Dia::Pathfinding::HexTopology;
-using Dia::Pathfinding::kNoCell;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::kNoCell;
 
 } // namespace
 

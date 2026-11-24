@@ -37,7 +37,6 @@
     <ClInclude Include="EventLog.h" />
     <ClInclude Include="CellHistoryRecorder.h" />
     <ClInclude Include="CellHistoryCommands.h" />
-    <ClInclude Include="CellHistoryModule.h" />
     <ClInclude Include="Dia\DiaCellHistory\CellHistoryObservation.h">
       <Filter>Dia</Filter>
     </ClInclude>
@@ -97,7 +96,6 @@
     <ClCompile Include="EventLog.cpp" />
     <ClCompile Include="CellHistoryRecorder.cpp" />
     <ClCompile Include="CellHistoryCommands.cpp" />
-    <ClCompile Include="CellHistoryModule.cpp" />
     <ClCompile Include="Dia\DiaCellHistory\CellHistoryObservation.cpp">
       <Filter>Dia</Filter>
     </ClCompile>

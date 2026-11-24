@@ -71,7 +71,7 @@ public:
         {
             const WorldStructure& w;
             explicit Costs(const WorldStructure& world) : w(world) {}
-            float GetCost(Dia::Pathfinding::CellCoord, Dia::Pathfinding::CellCoord to) const override
+            float GetCost(Dia::Geometry2D::CellCoord, Dia::Geometry2D::CellCoord to) const override
             {
                 if (to.x < 0 || to.y < 0 || to.x >= w.dimensions.width || to.y >= w.dimensions.height) { return kImpassableCost; }
                 return w.At(to.x, to.y).terrain == TerrainType::DeepWater ? kImpassableCost : 0.0f;

@@ -24,7 +24,7 @@
 namespace {
 
     struct CellCoordHash {
-        size_t operator()(Dia::Pathfinding::CellCoord c) const noexcept {
+        size_t operator()(Dia::Geometry2D::CellCoord c) const noexcept {
             return std::hash<int>{}(c.x) ^ (std::hash<int>{}(c.y) << 16);
         }
     };
@@ -34,10 +34,10 @@ namespace {
 namespace Dia::Pathfinding {
 
     template<CPathGraph TGraph>
-    PathResult FindPath(const TGraph& graph, CellCoord from, CellCoord to, IPathCostProvider& costs)
+    PathResult FindPath(const TGraph& graph, Dia::Geometry2D::CellCoord from, Dia::Geometry2D::CellCoord to, IPathCostProvider& costs)
     {
         // --- heuristic selection via if constexpr ---
-        auto heuristic = [&](CellCoord a, CellCoord b) -> float
+        auto heuristic = [&](Dia::Geometry2D::CellCoord a, Dia::Geometry2D::CellCoord b) -> float
         {
             const int dx = std::abs(a.x - b.x);
             const int dy = std::abs(a.y - b.y);
@@ -59,7 +59,7 @@ namespace Dia::Pathfinding {
             {
                 if (graph.GetLayout() == HexLayout::kOffsetRectangle)
                 {
-                    return static_cast<float>(HexTopology::Distance(a, b));
+                    return static_cast<float>(Dia::Geometry2D::HexTopology::Distance(a, b));
                 }
                 // Axial hex cube distance: (|dq| + |dr| + |dq+dr|) / 2 (signed dq, dr)
                 const int dq = a.x - b.x;
@@ -83,8 +83,8 @@ namespace Dia::Pathfinding {
             return result;
         }
 
-        // --- A* open set: (f_score, CellCoord), min-heap ---
-        using OpenEntry = std::pair<float, CellCoord>;
+        // --- A* open set: (f_score, Dia::Geometry2D::CellCoord), min-heap ---
+        using OpenEntry = std::pair<float, Dia::Geometry2D::CellCoord>;
         struct MinHeap {
             bool operator()(const OpenEntry& a, const OpenEntry& b) const noexcept {
                 return a.first > b.first; // greater = lower priority in std::priority_queue
@@ -92,13 +92,13 @@ namespace Dia::Pathfinding {
         };
         std::priority_queue<OpenEntry, std::vector<OpenEntry>, MinHeap> openSet;
 
-        std::unordered_map<CellCoord, float,     CellCoordHash> gScore;
-        std::unordered_map<CellCoord, CellCoord, CellCoordHash> cameFrom;
+        std::unordered_map<Dia::Geometry2D::CellCoord, float,     CellCoordHash> gScore;
+        std::unordered_map<Dia::Geometry2D::CellCoord, Dia::Geometry2D::CellCoord, CellCoordHash> cameFrom;
 
         gScore[from] = 0.0f;
         openSet.push({ heuristic(from, to), from });
 
-        Dia::Core::Containers::DynamicArrayC<CellCoord, 16> neighbours;
+        Dia::Core::Containers::DynamicArrayC<Dia::Geometry2D::CellCoord, 16> neighbours;
 
         while (!openSet.empty())
         {
@@ -109,8 +109,8 @@ namespace Dia::Pathfinding {
             if (current == to)
             {
                 // Reconstruct path from `to` back to `from`
-                std::vector<CellCoord> reversed;
-                CellCoord step = to;
+                std::vector<Dia::Geometry2D::CellCoord> reversed;
+                Dia::Geometry2D::CellCoord step = to;
                 while (!(step == from))
                 {
                     reversed.push_back(step);
@@ -130,7 +130,7 @@ namespace Dia::Pathfinding {
                 PathResult result;
                 result.success   = true;
                 result.totalCost = gScore[to];
-                for (const CellCoord& cell : reversed)
+                for (const Dia::Geometry2D::CellCoord& cell : reversed)
                 {
                     result.cells.Add(cell);
                 }
@@ -149,7 +149,7 @@ namespace Dia::Pathfinding {
             const int neighbourCount = neighbours.Size();
             for (int i = 0; i < neighbourCount; ++i)
             {
-                const CellCoord neighbour = neighbours[i];
+                const Dia::Geometry2D::CellCoord neighbour = neighbours[i];
 
                 const float edgeCost = costs.GetCost(current, neighbour);
                 if (edgeCost < 0.0f) // IPathCostProvider::kImpassableCost sentinel

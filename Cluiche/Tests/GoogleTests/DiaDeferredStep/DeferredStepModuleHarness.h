@@ -2,7 +2,7 @@
 
 // Shared harness for the DeferredStepModule test files (Application + provider + DSM_Probe).
 #include <gtest/gtest.h>
-#include <DiaDeferredStep/DeferredStepModule.h>
+#include <Modules/DeferredStepModule.h>
 #include <DiaDeferredStep/DeferredStepScheduler.h>
 #include <DiaDeferredStep/IStepKeySource.h>
 #include <DiaDeferredStep/JobStepLauncher.h>

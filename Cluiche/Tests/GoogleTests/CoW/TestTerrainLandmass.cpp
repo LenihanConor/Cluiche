@@ -3,7 +3,7 @@
 #include <DraoiHexWorldTerrain/TerrainGenerator.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <cmath>
@@ -56,9 +56,9 @@ int EdgeSteps(int x, int y, GridDimensions d)
 struct MapPoint { float x, y; };
 MapPoint ToMap(int x, int y, GridDimensions d)
 {
-    const Dia::Pathfinding::CellCoord maxYCell{ d.width > 1 ? 1 : 0, d.height - 1 };
-    const float maxY = Dia::Pathfinding::HexTopology::CellCenter(maxYCell, 1.0f).y;
-    const auto c = Dia::Pathfinding::HexTopology::CellCenter(Dia::Pathfinding::CellCoord{ x, y }, 1.0f);
+    const Dia::Geometry2D::CellCoord maxYCell{ d.width > 1 ? 1 : 0, d.height - 1 };
+    const float maxY = Dia::Geometry2D::HexTopology::CellCenter(maxYCell, 1.0f).y;
+    const auto c = Dia::Geometry2D::HexTopology::CellCenter(Dia::Geometry2D::CellCoord{ x, y }, 1.0f);
     return { c.x / maxY, c.y / maxY };
 }
 
@@ -382,9 +382,9 @@ TEST(SLOW_TerrainLandmass, WideSweepBudgetsSubsetsAndBorder)
 // ===========================================================================
 namespace {
 
-using Dia::Pathfinding::HexTopology;
-using Dia::Pathfinding::CellCoord;
-using Dia::Pathfinding::kNoCell;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::CellCoord;
+using Dia::Geometry2D::kNoCell;
 
 const uint32_t* UIntLayer(const TerrainGenerator& g, const char* name)
 {
@@ -397,7 +397,7 @@ const float* FloatLayer(const TerrainGenerator& g, const char* name)
 
 bool NextTo(const HexTopology& t, int cell, const std::vector<uint8_t>& mask)
 {
-    for (uint32_t d = 0; d < Dia::Pathfinding::kHexDirections; ++d)
+    for (uint32_t d = 0; d < Dia::Geometry2D::kHexDirections; ++d)
     {
         const uint32_t nb = t.NeighbourAt(static_cast<uint32_t>(cell), d);
         if (nb != kNoCell && mask[nb]) { return true; }

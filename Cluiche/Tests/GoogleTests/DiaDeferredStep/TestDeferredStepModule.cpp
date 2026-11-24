@@ -3,7 +3,7 @@
 // AC 7 (code-review check): DeferredStepModule.cpp/.h add no singleton and no file static beyond kTypeId.
 #include "DeferredStepModuleHarness.h"
 #include <gtest/gtest.h>
-#include <DiaDeferredStep/DeferredStepModule.h>
+#include <Modules/DeferredStepModule.h>
 #include <DiaDeferredStep/DeferredStepScheduler.h>
 #include <DiaDeferredStep/IStepKeySource.h>
 #include <DiaDeferredStep/JobStepLauncher.h>

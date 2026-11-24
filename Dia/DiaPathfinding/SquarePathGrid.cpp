@@ -23,7 +23,7 @@ namespace Dia::Pathfinding {
         }
     }
 
-    void SquarePathGrid::SetPassable(CellCoord cell, bool passable)
+    void SquarePathGrid::SetPassable(Dia::Geometry2D::CellCoord cell, bool passable)
     {
         if (IsInBounds(cell))
         {
@@ -31,7 +31,7 @@ namespace Dia::Pathfinding {
         }
     }
 
-    bool SquarePathGrid::IsPassable(CellCoord cell) const
+    bool SquarePathGrid::IsPassable(Dia::Geometry2D::CellCoord cell) const
     {
         if (!IsInBounds(cell))
         {
@@ -40,8 +40,8 @@ namespace Dia::Pathfinding {
         return mPassable[(unsigned int)CellIndex(cell)];
     }
 
-    void SquarePathGrid::GetNeighbours(CellCoord cell,
-                                       Dia::Core::Containers::DynamicArrayC<CellCoord, 16>& outNeighbours) const
+    void SquarePathGrid::GetNeighbours(Dia::Geometry2D::CellCoord cell,
+                                       Dia::Core::Containers::DynamicArrayC<Dia::Geometry2D::CellCoord, 16>& outNeighbours) const
     {
         outNeighbours.RemoveAll();
 
@@ -53,7 +53,7 @@ namespace Dia::Pathfinding {
 
         for (int i = 0; i < 4; ++i)
         {
-            CellCoord nc{ cell.x + kCardinalDx[i], cell.y + kCardinalDy[i] };
+            Dia::Geometry2D::CellCoord nc{ cell.x + kCardinalDx[i], cell.y + kCardinalDy[i] };
             if (IsInBounds(nc) && IsPassable(nc))
             {
                 outNeighbours.Add(nc);
@@ -64,7 +64,7 @@ namespace Dia::Pathfinding {
         {
             for (int i = 0; i < 4; ++i)
             {
-                CellCoord nc{ cell.x + kDiagonalDx[i], cell.y + kDiagonalDy[i] };
+                Dia::Geometry2D::CellCoord nc{ cell.x + kDiagonalDx[i], cell.y + kDiagonalDy[i] };
                 if (IsInBounds(nc) && IsPassable(nc))
                 {
                     outNeighbours.Add(nc);
@@ -88,12 +88,12 @@ namespace Dia::Pathfinding {
         return mConnectivity;
     }
 
-    bool SquarePathGrid::IsInBounds(CellCoord cell) const
+    bool SquarePathGrid::IsInBounds(Dia::Geometry2D::CellCoord cell) const
     {
         return cell.x >= 0 && cell.x < mWidth && cell.y >= 0 && cell.y < mHeight;
     }
 
-    int SquarePathGrid::CellIndex(CellCoord cell) const
+    int SquarePathGrid::CellIndex(Dia::Geometry2D::CellCoord cell) const
     {
         return cell.y * mWidth + cell.x;
     }

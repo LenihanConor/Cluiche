@@ -17,6 +17,7 @@ dependencies:
     - dia.core
     - dia.maths
     - dia.pathfinding
+    - dia.geometry2d
     - dia.flowfield
     - dia.debug.visualdebugger
   forbidden:

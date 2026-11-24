@@ -7,7 +7,7 @@
 
 #include <DiaPathfinding/GridSearch.h>
 #include <DiaPathfinding/HexNeighbours.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <cmath>
@@ -22,8 +22,8 @@ constexpr float kPi = 3.14159265358979f;
 constexpr float kReachStep = 0.25f;
 constexpr int   kInradiusDirections = 24;
 
-using Dia::Pathfinding::HexTopology;
-using Dia::Pathfinding::CellCoord;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::CellCoord;
 
 float PointSegDist(Vec2 p, Vec2 a, Vec2 b)
 {

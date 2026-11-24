@@ -6,7 +6,7 @@
 
 #include <DiaPathfinding/GridSearch.h>
 #include <DiaPathfinding/HexNeighbours.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <cmath>
@@ -16,7 +16,7 @@
 namespace Draoi {
 namespace HexWorld {
 
-using Dia::Pathfinding::HexTopology;
+using Dia::Geometry2D::HexTopology;
 
 void ComputeZoneCost(const TerrainRules& rules, GridDimensions dims, float barrier, const uint32_t* landmass,
                      const uint32_t* coastDistance, const float* ridgeMask, const float* barrierMask,

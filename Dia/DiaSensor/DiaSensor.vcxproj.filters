@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Header Files">
@@ -10,15 +10,12 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{7C1E5B2A-3D4F-4A60-9B81-2C3D4E5F6A7B}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DamageReceivedComponent.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DamageSensorComponent.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ProximitySensorComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SensorResults.h">
@@ -27,48 +24,66 @@
     <ClInclude Include="SensorResultsComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ProximitySensorComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="SightSensorComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SoundType.h">
-    <ClInclude Include="SoundEventList.h" />
-    <ClInclude Include="SoundSensorComponent.h" />
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DamageSensorComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundEventList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundSensorComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="SensorBlackboardAdapter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SensorModule.h">
-    <ClInclude Include="ThreatBoard.h" />
-    <ClInclude Include="AwarenessBoard.h" />
-    <ClInclude Include="DefaultSensorBlackboardAdapter.h" />
+    <ClInclude Include="ThreatBoard.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AwarenessBoard.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DefaultSensorBlackboardAdapter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Testing\SensorTestHelpers.h">
       <Filter>Testing</Filter>
-    </ClInclude>
-      <Filter>Header Files</Filter>
-    </ClInclude>
-      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DamageReceivedComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DamageSensorComponent.cpp">
+    <ClCompile Include="SensorResultsComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ProximitySensorComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SensorResultsComponent.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SightSensorComponent.cpp">
-    <ClCompile Include="SoundEventList.cpp" />
-    <ClCompile Include="SoundSensorComponent.cpp" />
-    <ClCompile Include="SensorModule.cpp">
-    <ClCompile Include="DefaultSensorBlackboardAdapter.cpp" />
-    <ClCompile Include="SensorBlackboardAdapter.cpp" />
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DamageSensorComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundEventList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundSensorComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DefaultSensorBlackboardAdapter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SensorBlackboardAdapter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

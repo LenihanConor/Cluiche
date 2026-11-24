@@ -14,6 +14,7 @@ dependencies:
     - dia.core
     - dia.maths
     - dia.pathfinding
+    - dia.geometry2d
     - dia.attribute
     - dia.observation
   forbidden: []

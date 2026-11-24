@@ -1,7 +1,7 @@
 #pragma once
 #include "DiaPathfinding/PathResult.h"
 #include "DiaPathfinding/IPathCostProvider.h"
-#include "DiaPathfinding/CellCoord.h"
+#include "DiaGeometry2D/Grid/CellCoord.h"
 #include <DiaCore/Core/Assert.h>
 
 namespace Dia { namespace Pathfinding { namespace Testing {
@@ -12,7 +12,7 @@ namespace Dia { namespace Pathfinding { namespace Testing {
         DIA_ASSERT(result.cells.Size() > 0, "Expected non-empty cell list in PathResult");
     }
 
-    inline void AssertPathCells(const PathResult& result, const CellCoord* expectedCells, unsigned int count)
+    inline void AssertPathCells(const PathResult& result, const Dia::Geometry2D::CellCoord* expectedCells, unsigned int count)
     {
         AssertPathFound(result);
         DIA_ASSERT(result.cells.Size() == count, "PathResult cell count mismatch");
@@ -27,7 +27,7 @@ namespace Dia { namespace Pathfinding { namespace Testing {
     public:
         explicit MockCostProvider(float cost = 1.0f) : mCost(cost) {}
 
-        float GetCost(CellCoord /*from*/, CellCoord /*to*/) const override
+        float GetCost(Dia::Geometry2D::CellCoord /*from*/, Dia::Geometry2D::CellCoord /*to*/) const override
         {
             return mCost;
         }

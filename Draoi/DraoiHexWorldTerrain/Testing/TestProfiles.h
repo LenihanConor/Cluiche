@@ -16,7 +16,7 @@ class WorldTerrainCosts : public Dia::Pathfinding::IPathCostProvider
 {
 public:
     WorldTerrainCosts(const WorldStructure& world, std::vector<TerrainType> blocked) : mWorld(world), mBlocked(std::move(blocked)) {}
-    float GetCost(Dia::Pathfinding::CellCoord, Dia::Pathfinding::CellCoord to) const override
+    float GetCost(Dia::Geometry2D::CellCoord, Dia::Geometry2D::CellCoord to) const override
     {
         if (to.x < 0 || to.y < 0 || to.x >= mWorld.dimensions.width || to.y >= mWorld.dimensions.height) { return kImpassableCost; }
         const TerrainType t = mWorld.At(to.x, to.y).terrain;

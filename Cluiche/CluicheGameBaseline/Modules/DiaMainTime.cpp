@@ -1,4 +1,4 @@
-#include <DiaSimTime/DiaMainTime.h>
+#include "Modules/DiaMainTime.h"
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
 namespace Dia::SimTime {

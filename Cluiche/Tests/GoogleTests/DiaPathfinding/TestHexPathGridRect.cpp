@@ -1,9 +1,13 @@
 #include <gtest/gtest.h>
 #include <DiaPathfinding/HexPathGrid.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 #include <vector>
 
 using namespace Dia::Pathfinding;
+using Dia::Geometry2D::CellCoord;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::kNoCell;
+using Dia::Geometry2D::kHexDirections;
 using Dia::Core::Containers::DynamicArrayC;
 
 namespace {

@@ -15,7 +15,7 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaMessageBus/Bus.h>
-#include <DiaMessageBus/MessageBusModule.h>
+#include <Modules/MessageBusHostModule.h>
 #include <DiaMessageBus/BroadcastRouter.h>
 #include <DiaMessageBus/IFlushAdapter.h>
 
@@ -41,7 +41,7 @@ namespace Dia::MessageBus::Testing {
     // TestableEntitySpawnerModule pattern. OnConnectStreams() is not exercised
     // — MessageBusModule doesn't declare any stream writers.
     // -----------------------------------------------------------------------
-    class TestableMessageBusModule : public Dia::MessageBus::MessageBusModule {
+    class TestableMessageBusModule : public Cluiche::AppFlow::MessageBusHostModule {
     public:
         void Start() { DoStart(); }
         void Update(float dt)
@@ -768,9 +768,9 @@ namespace Dia::MessageBus::Testing {
     // instanceId (the DIA_MODULE contract).
     // =========================================================================
     namespace {
-        class IdBusModule : public Dia::MessageBus::MessageBusModule {
+        class IdBusModule : public Cluiche::AppFlow::MessageBusHostModule {
         public:
-            explicit IdBusModule(const Dia::Core::StringCRC& id) : MessageBusModule(id) {}
+            explicit IdBusModule(const Dia::Core::StringCRC& id) : MessageBusHostModule(id) {}
         };
     }
 
@@ -782,7 +782,7 @@ namespace Dia::MessageBus::Testing {
 
     TEST(DiaMessageBusCore, Module_DefaultConstructed_KeepsDefaultInstanceId) {
         TestableMessageBusModule module;
-        EXPECT_EQ(module.GetInstanceId(), Dia::MessageBus::MessageBusModule::kInstanceId);
+        EXPECT_EQ(module.GetInstanceId(), Cluiche::AppFlow::MessageBusHostModule::kInstanceId);
     }
 
 } // namespace Dia::MessageBus::Testing

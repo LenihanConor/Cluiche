@@ -5,7 +5,7 @@ namespace Draoi {
 namespace HexWorld {
 
 using Dia::Core::StringCRC;
-using Dia::Pathfinding::CellCoord;
+using Dia::Geometry2D::CellCoord;
 using Dia::Pathfinding::IPathCostProvider;
 
 namespace

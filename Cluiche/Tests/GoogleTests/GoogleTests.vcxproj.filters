@@ -2027,8 +2027,8 @@
     <ClCompile Include="..\..\CoW\Modules\F2Harness\F2TestRunnerDebugDomain.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="DiaPathfinding\TestHexTopology.cpp">
-      <Filter>DiaPathfinding</Filter>
+    <ClCompile Include="Geometry2D\TestHexTopology.cpp">
+      <Filter>Geometry2D</Filter>
     </ClCompile>
     <ClCompile Include="DiaPathfinding\TestHexPathGridRect.cpp">
       <Filter>DiaPathfinding</Filter>
@@ -3284,6 +3284,18 @@
     </ClCompile>
     <ClCompile Include="CoW/TestWorldGenReloadRules.cpp">
       <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\CellHistoryModule.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\EntitySpawnerHealth.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\EntitySpawnerModule.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\TriggerScriptModule.cpp">
+      <Filter>CluicheTest</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

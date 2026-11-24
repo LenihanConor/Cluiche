@@ -7,7 +7,7 @@
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
-#include <DiaSimTime/DiaSimTimeModule.h>
+#include "Modules/DiaSimTimeModule.h"
 #include <DiaApplicationFlow/SimModule.h>
 #include <DiaAutomation/AutomationService.h>
 #include <DiaStreams/ServiceStreamWriter.h>

@@ -4,7 +4,7 @@
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <DiaDeferredStep/DeferredStepModule.h>
+#include <Modules/DeferredStepModule.h>
 #include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaDeferredStep/IParallelExecutor.h>
 #include <DiaSaveGame/SaveConfig.h>

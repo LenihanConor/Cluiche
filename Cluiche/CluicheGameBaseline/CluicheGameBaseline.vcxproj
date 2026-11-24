@@ -86,6 +86,14 @@
     <ClCompile Include="Modules\StageCatalogueState.cpp" />
     <ClCompile Include="Modules\StageCatalogueModule.cpp" />
     <ClCompile Include="Modules\StageCatalogueQueries.cpp" />
+    <ClCompile Include="Modules\DeferredStepModule.cpp" />
+    <ClCompile Include="Modules\CellLayersModule.cpp" />
+    <ClCompile Include="Modules\DiaSimTimeModule.cpp" />
+    <ClCompile Include="Modules\DiaMainTime.cpp" />
+    <ClCompile Include="Modules\DiaRenderTime.cpp" />
+    <ClCompile Include="Modules\AIBudgetModule.cpp" />
+    <ClCompile Include="Modules\SensorModule.cpp" />
+    <ClCompile Include="Modules\ValueSchemaModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -167,6 +175,14 @@
     <ClInclude Include="Modules\StageCatalogueModule.h" />
     <ClInclude Include="Modules\StageCatalogueQueries.h" />
     <ClInclude Include="Types\StageLaunchRequest.h" />
+    <ClInclude Include="Modules\DeferredStepModule.h" />
+    <ClInclude Include="Modules\CellLayersModule.h" />
+    <ClInclude Include="Modules\DiaSimTimeModule.h" />
+    <ClInclude Include="Modules\DiaMainTime.h" />
+    <ClInclude Include="Modules\DiaRenderTime.h" />
+    <ClInclude Include="Modules\AIBudgetModule.h" />
+    <ClInclude Include="Modules\SensorModule.h" />
+    <ClInclude Include="Modules\ValueSchemaModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

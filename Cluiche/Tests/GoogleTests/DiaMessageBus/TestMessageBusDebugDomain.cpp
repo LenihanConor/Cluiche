@@ -24,7 +24,7 @@
 #include <gtest/gtest.h>
 
 #include <DiaMessageBus/MessageBusDebugDomain.h>
-#include <DiaMessageBus/MessageBusModule.h>
+#include <Modules/MessageBusHostModule.h>
 #include <DiaMessageBus/Bus.h>
 #include <DiaMessageBus/FileBusRecorder.h>
 #include <DiaMessageBus/Testing/InMemoryBusRecorder.h>
@@ -39,7 +39,7 @@ namespace Dia::MessageBus::Testing {
     // TestDiaMessageBusCore.cpp / TestDiaMessageBusLedgerHistory.cpp's
     // TestableMessageBusModule.
     // -------------------------------------------------------------------------
-    class TestableMessageBusModule : public Dia::MessageBus::MessageBusModule {
+    class TestableMessageBusModule : public Cluiche::AppFlow::MessageBusHostModule {
     public:
         void Start() { DoStart(); }
         void Update(float dt)
@@ -104,7 +104,7 @@ namespace Dia::MessageBus::Testing {
         module.Start();
         module.Update(0.0f);
 
-        MessageBusDebugDomain domain(module);
+        MessageBusDebugDomain domain(module.GetBus(), module.GetLedgerHistory());
         const char* tabs[] = { "schema", "live", "history" };
         for (const char* active : tabs) {
             SelectTab(domain, active);
@@ -147,7 +147,7 @@ namespace Dia::MessageBus::Testing {
 
         module.Update(0.0f); // dispatch — records observed-router flags
 
-        MessageBusDebugDomain domain(module);
+        MessageBusDebugDomain domain(module.GetBus(), module.GetLedgerHistory());
         SelectTab(domain, "schema");
         Json::Value state;
         domain.GetJSONState(state);
@@ -213,7 +213,7 @@ namespace Dia::MessageBus::Testing {
 
         module.Update(0.0f);
 
-        MessageBusDebugDomain domain(module);
+        MessageBusDebugDomain domain(module.GetBus(), module.GetLedgerHistory());
         Json::Value state;
         domain.GetJSONState(state);
 
@@ -260,7 +260,7 @@ namespace Dia::MessageBus::Testing {
         bus.Broadcast(HistMsg{});
         module.Update(0.0f); // tick 2: 1 posted, 0 dropped
 
-        MessageBusDebugDomain domain(module);
+        MessageBusDebugDomain domain(module.GetBus(), module.GetLedgerHistory());
         SelectTab(domain, "history");
         Json::Value state;
         domain.GetJSONState(state);
@@ -295,7 +295,7 @@ namespace Dia::MessageBus::Testing {
         }
         // 5 ticks pushed (tickIndex 0..4).
 
-        MessageBusDebugDomain domain(module);
+        MessageBusDebugDomain domain(module.GetBus(), module.GetLedgerHistory());
         SelectTab(domain, "history");
         Json::Value windowArgs(Json::objectValue);
         windowArgs["ticks"] = 2;
@@ -320,7 +320,7 @@ namespace Dia::MessageBus::Testing {
         TestableMessageBusModule module;
         module.Start();
 
-        MessageBusDebugDomain domain(module);
+        MessageBusDebugDomain domain(module.GetBus(), module.GetLedgerHistory());
 
         Json::Value state;
         domain.GetJSONState(state);
@@ -351,7 +351,7 @@ namespace Dia::MessageBus::Testing {
         TestableMessageBusModule module;
         module.Start();
 
-        MessageBusDebugDomain domain(module);
+        MessageBusDebugDomain domain(module.GetBus(), module.GetLedgerHistory());
 
         Json::Value stateBefore;
         domain.GetJSONState(stateBefore);
@@ -372,7 +372,7 @@ namespace Dia::MessageBus::Testing {
         TestableMessageBusModule module;
         module.Start();
 
-        MessageBusDebugDomain domain(module);
+        MessageBusDebugDomain domain(module.GetBus(), module.GetLedgerHistory());
 
         Json::Value tooLow(Json::objectValue);
         tooLow["ticks"] = 0;
@@ -405,7 +405,7 @@ namespace Dia::MessageBus::Testing {
         TestableMessageBusModule module;
         module.Start();
 
-        MessageBusDebugDomain domain(module);
+        MessageBusDebugDomain domain(module.GetBus(), module.GetLedgerHistory());
 
         EXPECT_TRUE(domain.GetDomainId() == Dia::Core::StringCRC("MessageBus"));
         EXPECT_TRUE(domain.GetGroup() == Dia::Core::StringCRC("Systems"));
@@ -432,7 +432,7 @@ namespace Dia::MessageBus::Testing {
         module.Start();
         module.Update(0.0f);
 
-        MessageBusDebugDomain domain(module);
+        MessageBusDebugDomain domain(module.GetBus(), module.GetLedgerHistory());
         Json::Value state;
         domain.GetJSONState(state);
 
@@ -458,7 +458,7 @@ namespace Dia::MessageBus::Testing {
         for (int i = 0; i < 4; ++i) bus.Broadcast(RecorderMsg{ i });
         module.Update(0.0f);
 
-        MessageBusDebugDomain domain(module);
+        MessageBusDebugDomain domain(module.GetBus(), module.GetLedgerHistory());
         Json::Value state;
         domain.GetJSONState(state);
 
@@ -488,7 +488,7 @@ namespace Dia::MessageBus::Testing {
         module.GetBus().SetRecorder(&recorder);
         module.Update(0.0f);
 
-        MessageBusDebugDomain domain(module);
+        MessageBusDebugDomain domain(module.GetBus(), module.GetLedgerHistory());
         Json::Value state;
         domain.GetJSONState(state);
 
@@ -508,7 +508,7 @@ namespace Dia::MessageBus::Testing {
         module.GetBus().SetRecorder(&recorder);
         module.Update(0.0f);
 
-        MessageBusDebugDomain domain(module);
+        MessageBusDebugDomain domain(module.GetBus(), module.GetLedgerHistory());
         Json::Value state;
         domain.GetJSONState(state);
 

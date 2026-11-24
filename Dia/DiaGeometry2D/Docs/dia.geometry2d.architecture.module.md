@@ -59,6 +59,8 @@ public_api:
     - DiaGeometry2D/Shapes/ContactResult.h
     - DiaGeometry2D/Intersection/IntersectionTests.h
     - DiaGeometry2D/Transform/Transform.h
+    - DiaGeometry2D/Grid/CellCoord.h
+    - DiaGeometry2D/Grid/HexTopology.h
   namespaces:
     - Dia::Geometry2D
   entry_points:
@@ -84,6 +86,10 @@ public_api:
     - Quadtree
     - BVH
     - HexGrid
+    - CellCoord
+    - HexTopology
+    - kNoCell
+    - kHexDirections
 
 dependencies:
   required:

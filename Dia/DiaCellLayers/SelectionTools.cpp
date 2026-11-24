@@ -2,7 +2,7 @@
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 #include <DiaObservation/Profile/DiaProfile.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <math.h>
@@ -128,7 +128,7 @@ namespace Dia::CellLayers::SelectionTools
 		{
 			for (int r = 0; r < h; ++r)
 			{
-				const Dia::Maths::Vector2D c = Dia::Pathfinding::HexTopology::CellCenter({ q, r }, cellSize);
+				const Dia::Maths::Vector2D c = Dia::Geometry2D::HexTopology::CellCenter({ q, r }, cellSize);
 				const double px = c.x;
 				const double py = c.y;
 				// Bounding-box prefilter; max edges are exclusive, matching the crossing rule below.

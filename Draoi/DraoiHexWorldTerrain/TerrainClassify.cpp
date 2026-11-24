@@ -3,7 +3,7 @@
 
 #include <DraoiHexWorldTerrain/TerrainClassify.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <cmath>
@@ -12,9 +12,9 @@
 namespace Draoi {
 namespace HexWorld {
 
-using Dia::Pathfinding::CellCoord;
-using Dia::Pathfinding::HexTopology;
-using Dia::Pathfinding::kNoCell;
+using Dia::Geometry2D::CellCoord;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::kNoCell;
 
 void ComputeStage10(const TerrainRules& rules, GridDimensions dims, const uint32_t* landmass,
                     const uint32_t* coastDistance, const uint32_t* volcanic, const float* ridgeMask,

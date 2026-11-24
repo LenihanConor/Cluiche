@@ -5,7 +5,7 @@
 #pragma once
 
 #include <DiaGraphics/CellField/CellGridDesc.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <cstdint>
 #include <vector>
@@ -16,9 +16,9 @@ struct HexDescStorage
 	std::vector<int32_t> neighbours;
 };
 
-inline Dia::Graphics::CellGridDesc HexTopologyToCellGridDesc(const Dia::Pathfinding::HexTopology& topo, float size, HexDescStorage& storage)
+inline Dia::Graphics::CellGridDesc HexTopologyToCellGridDesc(const Dia::Geometry2D::HexTopology& topo, float size, HexDescStorage& storage)
 {
-	using namespace Dia::Pathfinding;
+	using namespace Dia::Geometry2D;
 	const uint32_t count = topo.CellCount();
 	storage.centres.assign(2u * count, 0.0f);
 	storage.neighbours.assign(6u * count, -1);

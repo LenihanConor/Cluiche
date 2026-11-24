@@ -27,15 +27,15 @@
       <Filter>Manifest</Filter>
     </ClCompile>
     <ClCompile Include="Manifest\ManifestValidatorV2.cpp">
-    <ClCompile Include="Observation\ObservationModule.cpp">
+      <Filter>Manifest</Filter>
+    </ClCompile>
+    <ClCompile Include="Observation\ObservationModuleBase.cpp">
       <Filter>Observation</Filter>
     </ClCompile>
     <ClCompile Include="Manifest\ManifestBootstrap.cpp">
       <Filter>Manifest</Filter>
     </ClCompile>
     <ClCompile Include="PerfPause.cpp" />
-      <Filter>Manifest</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
@@ -65,17 +65,17 @@
       <Filter>Manifest</Filter>
     </ClInclude>
     <ClInclude Include="Manifest\TypedImport.h">
-    <ClInclude Include="Observation\ObservationModule.h">
+      <Filter>Manifest</Filter>
+    </ClInclude>
+    <ClInclude Include="Observation\ObservationModuleBase.h">
+      <Filter>Observation</Filter>
+    </ClInclude>
     <ClInclude Include="SimModule.h" />
     <ClInclude Include="RenderModule.h" />
     <ClInclude Include="MainModule.h" />
-      <Filter>Observation</Filter>
-    </ClInclude>
     <ClInclude Include="Manifest\ManifestBootstrap.h">
       <Filter>Manifest</Filter>
     </ClInclude>
     <ClInclude Include="PerfPause.h" />
-      <Filter>Manifest</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

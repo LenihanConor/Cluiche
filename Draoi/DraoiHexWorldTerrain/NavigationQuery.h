@@ -9,7 +9,7 @@
 #include "ValidationTypes.h"
 
 #include <DiaPathfinding/HexPathGrid.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <memory>
 #include <span>
@@ -35,7 +35,7 @@ private:
     const WorldStructure&                                              mWorld;
     bool                                                               mHasCells;
     Dia::Pathfinding::HexPathGrid                                      mGrid;
-    Dia::Pathfinding::HexTopology                                      mTopology;
+    Dia::Geometry2D::HexTopology                                      mTopology;
     std::vector<std::unique_ptr<Dia::Pathfinding::IPathCostProvider>> mCosts;
     std::vector<uint32_t>                                              mProfileCrc;
 };

@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <DiaCellLayers/CellLayersModule.h>
+#include <Modules/CellLayersModule.h>
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>

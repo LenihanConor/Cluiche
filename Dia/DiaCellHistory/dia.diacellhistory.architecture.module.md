@@ -13,12 +13,10 @@ dependencies:
     - dia.core
     - dia.valueschema
     - dia.celllayers
-    - dia.application
     - dia.debug.visualdebugger
     - dia.dia.diadebugserver
     - dia.graphics.cellfield
     - dia.observation
-    - dia.streams
   forbidden: []
 public_api:
   headers:
@@ -68,7 +66,7 @@ Log channel: `HIS`. Namespace: `Dia::CellHistory`. Runs on SimPU with the DiaCel
 | Type | Purpose |
 |---|---|
 | `CellHistoryRecorder` | `Sample`, `Emit`, `TrackLayer`/`Untrack`, read API (`Header`, `Aggregate`, `CategoryCounts`, `CellValues`, `Events`), status. Published via a `ServiceStream`. |
-| `CellHistoryModule` | SimPU module: creates the recorder, applies the `.diastage` `history` block, registers commands. |
+| `CellHistoryModule` (moved to CluicheTest `Modules/EngineModules/`) | SimPU module: creates the recorder, applies the `.diastage` `history` block, registers commands. |
 | `CellHistoryCommands` | `cells.history.track`, `untrack`, `status` (DIA_DEBUG). |
 | `TimelineCardState` | Typed model of the timeline card + not-live banner JSON (`TimelineModel` + `HistoryViewStatus`); `HistoryField` is the future `cells.view.state.history` value. Rebuilds only on sample/view/layer-state change. |
 | `ViewHistorySourceAdapter` | `IViewHistorySource` over (recorder, `HistoryViewState`): `HistoryField()` = `TimelineCardState::HistoryField`, `HistoryStamp()` = `Epoch()*2 + (Sample mode ? 1 : 0)` (new recorder samples do not change the field, so they are not in the stamp). Install with `ViewStatePublisher::SetHistorySource`. |

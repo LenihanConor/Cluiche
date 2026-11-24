@@ -5,7 +5,7 @@
 #include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/Streams/EventStreamWriter.h>
 #include <DiaEntitySpawner/EntitySpawnerImpl.h>
-#include <DiaEntitySpawner/Health/EntitySpawnerHealth.h>
+#include <Modules/EngineModules/EntitySpawnerHealth.h>
 #include <DiaEntitySpawner/SpawnEmitterComponent.h>
 #include <DiaEntitySpawner/SpawnerTypes.h>
 #include <DiaMailbox/Mailbox.h>

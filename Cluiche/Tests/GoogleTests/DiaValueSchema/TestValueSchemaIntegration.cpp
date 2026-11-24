@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "RampTestSupport.h"
-#include <DiaValueSchema/ValueSchemaModule.h>
+#include <Modules/ValueSchemaModule.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 #include <DiaValueSchema/ValueClamper.h>
 #include <DiaValueSchema/RampLegend.h>

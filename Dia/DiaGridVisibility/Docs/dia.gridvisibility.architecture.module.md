@@ -63,9 +63,9 @@ dependencies:
     - dia.entityspatial
     - dia.entity
     - dia.observation
+    - dia.geometry2d
   forbidden:
     - dia.streams
-    - dia.geometry2d
     - dia.applicationflow
     - dia.sensor
     - dia.blackboard

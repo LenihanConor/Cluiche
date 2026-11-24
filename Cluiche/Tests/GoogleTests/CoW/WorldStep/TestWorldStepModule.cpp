@@ -8,7 +8,7 @@
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaDebugServer/SimHostedTypes.h>
-#include <DiaDeferredStep/DeferredStepModule.h>
+#include <Modules/DeferredStepModule.h>
 #include <DiaDeferredStep/Testing/RecordingStep.h>
 #include <DiaStreams/EventStreamReader.h>
 #include <DiaStreams/EventStreamWriter.h>

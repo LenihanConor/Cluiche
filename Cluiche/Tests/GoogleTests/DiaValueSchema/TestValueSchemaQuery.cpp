@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <DiaValueSchema/ValueSchemaQuery.h>
-#include <DiaValueSchema/ValueSchemaModule.h>
+#include <Modules/ValueSchemaModule.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 #include <DiaValueSchema/ValueSchemaLoader.h>
 #include <DiaValueSchema/IValueSchemaContributor.h>

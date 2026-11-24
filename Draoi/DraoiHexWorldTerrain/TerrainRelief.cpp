@@ -6,7 +6,7 @@
 #include <DraoiHexWorldTerrain/TerrainGenerator.h>
 
 #include <DiaMaths/Noise/Noise.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <cmath>
@@ -16,9 +16,9 @@ namespace HexWorld {
 
 namespace {
 
-using Dia::Pathfinding::CellCoord;
-using Dia::Pathfinding::HexTopology;
-using Dia::Pathfinding::kNoCell;
+using Dia::Geometry2D::CellCoord;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::kNoCell;
 
 struct MapSpace
 {

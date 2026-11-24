@@ -25,7 +25,6 @@
     <ClInclude Include="HotkeyTable.h" />
     <ClInclude Include="CellLayerLegend.h" />
     <ClInclude Include="CellLayerViewerDomain.h" />
-    <ClInclude Include="CellLayersModule.h" />
     <ClInclude Include="IViewValueSource.h" />
     <ClInclude Include="Testing\ViewValueSourceTestSupport.h">
       <Filter>Testing</Filter>
@@ -91,7 +90,6 @@
     <ClCompile Include="HotkeyTable.cpp" />
     <ClCompile Include="CellLayerLegend.cpp" />
     <ClCompile Include="CellLayerViewerDomain.cpp" />
-    <ClCompile Include="CellLayersModule.cpp" />
     <ClCompile Include="CellSelection.cpp" />
     <ClCompile Include="LayerReader.cpp" />
     <ClCompile Include="SelectionTools.cpp" />

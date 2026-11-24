@@ -1,4 +1,4 @@
-#include <DiaCellHistory/CellHistoryModule.h>
+#include <Modules/EngineModules/CellHistoryModule.h>
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaCellLayers/MirrorQueries.h>

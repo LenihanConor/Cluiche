@@ -5,7 +5,7 @@
 
 #include <DiaPathfinding/GridSearch.h>
 #include <DiaPathfinding/HexNeighbours.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <cmath>
@@ -14,8 +14,8 @@
 namespace Draoi {
 namespace HexWorld {
 
-using Dia::Pathfinding::HexTopology;
-using Dia::Pathfinding::kNoCell;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::kNoCell;
 using Dia::Pathfinding::kUnreached;
 using Dia::Pathfinding::StepSeed;
 

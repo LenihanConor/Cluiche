@@ -1,4 +1,4 @@
-#include "TriggerScriptModule.h"
+#include <Modules/EngineModules/TriggerScriptModule.h>
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaCore/Core/Assert.h>

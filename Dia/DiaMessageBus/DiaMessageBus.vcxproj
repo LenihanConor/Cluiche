@@ -84,7 +84,6 @@
     <ClInclude Include="BusSubscriptionHandle.h" />
     <ClInclude Include="Bus.h" />
     <ClInclude Include="BroadcastRouter.h" />
-    <ClInclude Include="MessageBusModule.h" />
     <ClInclude Include="MessageBusDebugDomain.h" />
     <ClInclude Include="BusHealthReporter.h" />
     <ClInclude Include="IBusRecorder.h" />
@@ -98,7 +97,6 @@
     <ClCompile Include="BusSubscriptionHandle.cpp" />
     <ClCompile Include="Bus.cpp" />
     <ClCompile Include="BroadcastRouter.cpp" />
-    <ClCompile Include="MessageBusModule.cpp" />
     <ClCompile Include="MessageBusDebugDomain.cpp" />
     <ClCompile Include="BusHealthReporter.cpp" />
     <ClCompile Include="FileBusRecorder.cpp" />

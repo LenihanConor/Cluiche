@@ -1,7 +1,7 @@
 // S-1 Nodes: built-in corridor nodes. See NodesCorridor.h.
 #include <DraoiHexWorldTerrain/NodesCorridor.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <vector>
@@ -9,8 +9,8 @@
 namespace Draoi {
 namespace HexWorld {
 
-using Dia::Pathfinding::HexTopology;
-using Dia::Pathfinding::kNoCell;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::kNoCell;
 
 namespace
 {
@@ -50,7 +50,7 @@ namespace
         if (c.terrainFlags & TerrainFlag::Pass) { return static_cast<int>(CorridorSourceKind::Pass); }
         if (c.terrainFlags & TerrainFlag::RiverCrossesBarrier) { return static_cast<int>(CorridorSourceKind::River); }
 
-        const Dia::Pathfinding::CellCoord origin = topo.ToCoord(cell);
+        const Dia::Geometry2D::CellCoord origin = topo.ToCoord(cell);
         const int span = gapReach + 1;
         bool coastNear = false;
         for (int dy = -span; dy <= span; ++dy)
@@ -59,7 +59,7 @@ namespace
             {
                 const int x = origin.x + dx, y = origin.y + dy;
                 if (x < 0 || y < 0 || x >= world.dimensions.width || y >= world.dimensions.height) { continue; }
-                const uint32_t d = HexTopology::Distance(origin, Dia::Pathfinding::CellCoord{ x, y });
+                const uint32_t d = HexTopology::Distance(origin, Dia::Geometry2D::CellCoord{ x, y });
                 const uint8_t  f = world.At(x, y).terrainFlags;
                 if (d <= 2 && (f & (TerrainFlag::Ridge | TerrainFlag::Barrier))) { return -1; }
                 if (d <= static_cast<uint32_t>(gapReach) && (f & TerrainFlag::Coast)) { coastNear = true; }
@@ -111,7 +111,7 @@ CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rul
         for (const Candidate& c : cand)
         {
             if (accepted >= target[b]) { break; }
-            const Dia::Pathfinding::CellCoord cc = topo.ToCoord(c.cell);
+            const Dia::Geometry2D::CellCoord cc = topo.ToCoord(c.cell);
             bool tooClose = false;
             for (uint32_t other : nodes)
             {

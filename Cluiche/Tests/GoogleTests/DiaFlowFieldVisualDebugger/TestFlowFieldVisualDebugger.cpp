@@ -15,7 +15,7 @@
 #include <DiaFlowFieldVisualDebugger/ReachabilityOverlayDrawer.h>
 #include <DiaFlowField/FlowField.h>
 #include <DiaFlowField/FlowCell.h>
-#include <DiaPathfinding/CellCoord.h>
+#include <DiaGeometry2D/Grid/CellCoord.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
@@ -105,7 +105,7 @@ void MarkReachable(Dia::FlowField::FlowField& field, int count,
     for (int row = 0; row < field.GetHeight() && marked < count; ++row)
         for (int col = 0; col < field.GetWidth() && marked < count; ++col)
         {
-            auto& cell      = field.AccessCell(Dia::Pathfinding::CellCoord{col, row});
+            auto& cell      = field.AccessCell(Dia::Geometry2D::CellCoord{col, row});
             cell.reachable  = true;
             cell.direction  = dir;
             ++marked;
@@ -352,7 +352,7 @@ TEST(FlowFieldVisualDebugger_ReachabilityOverlay, OneCellPerAllCells)
 TEST(FlowFieldVisualDebugger_ReachabilityOverlay, ColoursDiffer)
 {
     Dia::FlowField::FlowField field(2, 1);
-    field.AccessCell(Dia::Pathfinding::CellCoord{0, 0}).reachable = true;
+    field.AccessCell(Dia::Geometry2D::CellCoord{0, 0}).reachable = true;
     // cell {1,0} stays unreachable
     StubDebugContext ctx;
     Dia::FlowField::ReachabilityOverlayDrawer drawer(field, ctx, 10.0f);
@@ -453,7 +453,7 @@ TEST(FlowFieldVisualDebugger_Stats, IsComplete_Mirrors_Field)
     // Mark all 4 cells reachable.
     for (int row = 0; row < 2; ++row)
         for (int col = 0; col < 2; ++col)
-            field.AccessCell(Dia::Pathfinding::CellCoord{col, row}).reachable = true;
+            field.AccessCell(Dia::Geometry2D::CellCoord{col, row}).reachable = true;
 
     {
         Json::Value s;

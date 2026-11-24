@@ -14,6 +14,7 @@ dependencies:
     - dia.maths
     - dia.graphics
     - dia.pathfinding
+    - dia.geometry2d
     - dia.condition
     - dia.attribute
     - dia.observation

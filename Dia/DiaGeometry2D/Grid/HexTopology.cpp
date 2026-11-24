@@ -1,10 +1,10 @@
-#include "DiaPathfinding/HexTopology.h"
+#include "DiaGeometry2D/Grid/HexTopology.h"
 #include <DiaCore/Core/Assert.h>
 #include <cmath>
 #include <cstdlib>
 #include <algorithm>
 
-namespace Dia::Pathfinding {
+namespace Dia::Geometry2D {
     namespace {
         // {dx, dy} per direction, indexed [columnParity][dir]. Parity 0 = even column, 1 = odd.
         // Order NE, N, NW, SW, S, SE.

@@ -7,7 +7,7 @@
 #include <DraoiHexWorld/BiomeRegistry.h>
 
 #include <DiaObservation/Log/DiaLog.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <chrono>
@@ -516,14 +516,14 @@ void TerrainGenerator::RunSeedFields(Dia::Maths::RandomStream& rng)
     // Map space: centres divided by the maximum centre Y, so the map is 1 tall and A wide.
     const int w = std::max(mDims.width, 1);
     const int h = std::max(mDims.height, 1);
-    const Dia::Pathfinding::CellCoord corner{ w - 1, h - 1 };
-    const Dia::Pathfinding::CellCoord maxYCell{ w > 1 ? 1 : 0, h - 1 };
-    float maxY = Dia::Pathfinding::HexTopology::CellCenter(maxYCell, 1.0f).y;
+    const Dia::Geometry2D::CellCoord corner{ w - 1, h - 1 };
+    const Dia::Geometry2D::CellCoord maxYCell{ w > 1 ? 1 : 0, h - 1 };
+    float maxY = Dia::Geometry2D::HexTopology::CellCenter(maxYCell, 1.0f).y;
     if (maxY < 1e-6f)
     {
         maxY = 1.0f;
     }
-    f.mapWidth = Dia::Pathfinding::HexTopology::CellCenter(corner, 1.0f).x / maxY;
+    f.mapWidth = Dia::Geometry2D::HexTopology::CellCenter(corner, 1.0f).x / maxY;
     if (f.mapWidth < 1e-6f)
     {
         f.mapWidth = 1.0f;

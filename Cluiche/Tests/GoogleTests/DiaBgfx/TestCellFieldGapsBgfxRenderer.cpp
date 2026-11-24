@@ -6,7 +6,7 @@
 #include <DiaBgfx/Resources/CellFieldGeometryCache.h>
 #include <DiaGraphics/Frame/CellFieldFrameData.h>
 #include <DiaGraphics/CellField/HexFlatTopOddQBuilder.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 #include "../DiaGraphics/HexTopologyToCellGridDesc.h"
 
 #include <limits>
@@ -102,7 +102,7 @@ namespace
 
         Handle Make(uint32_t w, uint32_t h, CellFieldValueKind kind = CellFieldValueKind::Float)
         {
-            Dia::Pathfinding::HexTopology topo(w, h);
+            Dia::Geometry2D::HexTopology topo(w, h);
             CellGridDesc d = HexTopologyToCellGridDesc(topo, 1.0f, storage);
             Handle handle;
             EXPECT_TRUE(registry.CreateLayer(d, kind, handle).ok);
@@ -112,7 +112,7 @@ namespace
         // The registry accepts a neighbour index outside the grid; the geometry builder rejects it.
         Handle MakeBad(uint32_t w, uint32_t h, CellFieldValueKind kind = CellFieldValueKind::Float)
         {
-            Dia::Pathfinding::HexTopology topo(w, h);
+            Dia::Geometry2D::HexTopology topo(w, h);
             CellGridDesc d = HexTopologyToCellGridDesc(topo, 1.0f, storage);
             storage.neighbours[0] = 99999;
             Handle handle;
@@ -200,7 +200,7 @@ namespace
         CFixture() { cache.AddBuilder(&builder); }
         CellGridDesc Desc(uint32_t w, uint32_t h)
         {
-            Dia::Pathfinding::HexTopology topo(w, h);
+            Dia::Geometry2D::HexTopology topo(w, h);
             return HexTopologyToCellGridDesc(topo, 1.0f, storage);
         }
     };
@@ -265,7 +265,7 @@ TEST(CellFieldGapsGeometryCache, ShutdownTwiceDoesNotDoubleDestroyAndDestructorA
     {
         CellFieldGeometryCache cache(factory);
         cache.AddBuilder(&builder);
-        Dia::Pathfinding::HexTopology topo(3, 3);
+        Dia::Geometry2D::HexTopology topo(3, 3);
         cache.Acquire(HexTopologyToCellGridDesc(topo, 1.0f, storage));
         cache.Shutdown();
         cache.Shutdown();
@@ -283,7 +283,7 @@ TEST(CellFieldGapsGeometryCache, DestructorFreesLiveEntries)
     {
         CellFieldGeometryCache cache(factory);
         cache.AddBuilder(&builder);
-        Dia::Pathfinding::HexTopology topo(3, 3);
+        Dia::Geometry2D::HexTopology topo(3, 3);
         cache.Acquire(HexTopologyToCellGridDesc(topo, 1.0f, storage));
         EXPECT_EQ(1u, factory.live.size());
     }
@@ -334,7 +334,7 @@ TEST(CellFieldGapsGeometryCache, BuilderRegisteredTwiceStillBuildsOnce)
     cache.AddBuilder(&builder);
     cache.AddBuilder(&builder);
     HexDescStorage storage;
-    Dia::Pathfinding::HexTopology topo(3, 3);
+    Dia::Geometry2D::HexTopology topo(3, 3);
     const auto desc = HexTopologyToCellGridDesc(topo, 1.0f, storage);
     ASSERT_NE(nullptr, cache.Acquire(desc));
     EXPECT_EQ(1, factory.createCalls);
@@ -347,7 +347,7 @@ TEST(CellFieldGapsGeometryCache, NullBuilderIgnored)
     CellFieldGeometryCache cache(factory);
     cache.AddBuilder(nullptr);   // must not crash later
     HexDescStorage storage;
-    Dia::Pathfinding::HexTopology topo(3, 3);
+    Dia::Geometry2D::HexTopology topo(3, 3);
     const auto desc = HexTopologyToCellGridDesc(topo, 1.0f, storage);
     EXPECT_EQ(nullptr, cache.Acquire(desc));
     EXPECT_EQ(0, factory.createCalls);
@@ -456,7 +456,7 @@ TEST(CellFieldGapsGeometryCache, TwoTopologiesSameSizeAreSeparateEntries)
     cache.AddBuilder(&hex);
     cache.AddBuilder(&other);
     HexDescStorage storage;
-    Dia::Pathfinding::HexTopology topo(3, 3);
+    Dia::Geometry2D::HexTopology topo(3, 3);
     CellGridDesc hexDesc = HexTopologyToCellGridDesc(topo, 1.0f, storage);
     CellGridDesc otherDesc = hexDesc;
     otherDesc.topology = Dia::Core::StringCRC("grid.other");

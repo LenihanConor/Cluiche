@@ -6,7 +6,7 @@
 #include <DiaGridVisibility/IVisibilityChangeObserver.h>
 
 #include <DiaPathfinding/CPathGraph.h>
-#include <DiaPathfinding/CellCoord.h>
+#include <DiaGeometry2D/Grid/CellCoord.h>
 #include <DiaPathfinding/HexPathGrid.h>
 
 #include <DiaEntitySpatial/EntitySpatialModule.h>
@@ -94,7 +94,7 @@ namespace Dia::GridVisibility {
 
         // Raw per-cell visibility state for a group. O(1) lookup. Coordinates are
         // visibility-grid coordinates, not pathfinding-grid coordinates.
-        VisibilityState GetCellState(Dia::Pathfinding::CellCoord cell,
+        VisibilityState GetCellState(Dia::Geometry2D::CellCoord cell,
                                      VisibilityGroupId groupId) const;
 
         // All entities whose current cell is Visible to groupId.
@@ -109,7 +109,7 @@ namespace Dia::GridVisibility {
         int  GetChunkSize() const { return mChunkSize; }
 
         // True if any pathfinding cell inside this visibility cell's chunk is passable.
-        bool IsVisCellPassable(Dia::Pathfinding::CellCoord cell) const;
+        bool IsVisCellPassable(Dia::Geometry2D::CellCoord cell) const;
 
 #ifdef DIA_DEBUG
         // Debug accessor: iterate all registered sight sources.
@@ -168,7 +168,7 @@ namespace Dia::GridVisibility {
         static constexpr int kMaxShadowCells  = 512;    // cells one source can illuminate
         static constexpr int kMaxListeners    = 16;
 
-        static constexpr Dia::Pathfinding::CellCoord kInvalidVisCell{ -1, -1 };
+        static constexpr Dia::Geometry2D::CellCoord kInvalidVisCell{ -1, -1 };
 
         //--------------------------------------------------------------------------------
         // Internal state types
@@ -178,11 +178,11 @@ namespace Dia::GridVisibility {
             Dia::Entity::Entity         entity{};
             VisibilityGroupId           groupId{};
             float                       sightRadius{ 0.0f };
-            Dia::Pathfinding::CellCoord lastVisCell{ -1, -1 };   // last vis-grid coord (dirty detection)
+            Dia::Geometry2D::CellCoord lastVisCell{ -1, -1 };   // last vis-grid coord (dirty detection)
             bool                        dirty{ true };
 
             // Vis-grid cells currently illuminated by this source.
-            Dia::Core::Containers::DynamicArrayC<Dia::Pathfinding::CellCoord, kMaxShadowCells> shadowCells;
+            Dia::Core::Containers::DynamicArrayC<Dia::Geometry2D::CellCoord, kMaxShadowCells> shadowCells;
         };
 
         struct GroupState
@@ -204,7 +204,7 @@ namespace Dia::GridVisibility {
         struct EntityCellEntry
         {
             Dia::Entity::Entity         entity{};
-            Dia::Pathfinding::CellCoord cell{ -1, -1 };
+            Dia::Geometry2D::CellCoord cell{ -1, -1 };
         };
 
         //--------------------------------------------------------------------------------
@@ -212,13 +212,13 @@ namespace Dia::GridVisibility {
         //--------------------------------------------------------------------------------
         int  VisCellCount() const { return mVisWidth * mVisHeight; }
 
-        bool IsVisCellInBounds(Dia::Pathfinding::CellCoord cell) const
+        bool IsVisCellInBounds(Dia::Geometry2D::CellCoord cell) const
         {
             return cell.x >= 0 && cell.y >= 0 && cell.x < mVisWidth && cell.y < mVisHeight;
         }
 
         // Flat index into the per-cell arrays, or -1 if out of bounds.
-        int VisCellIndex(Dia::Pathfinding::CellCoord cell) const
+        int VisCellIndex(Dia::Geometry2D::CellCoord cell) const
         {
             return IsVisCellInBounds(cell) ? (cell.y * mVisWidth + cell.x) : -1;
         }
@@ -261,29 +261,29 @@ namespace Dia::GridVisibility {
         // World position -> visibility-grid coordinate. Uses floor so negative world
         // coordinates map monotonically (a plain int cast truncates toward zero and would
         // fold [-1,1) onto cell 0).
-        static Dia::Pathfinding::CellCoord WorldToVisCell(const Dia::Maths::Vector2D& position,
+        static Dia::Geometry2D::CellCoord WorldToVisCell(const Dia::Maths::Vector2D& position,
                                                           float visCellSize);
 
         // Topology dispatcher: calls ComputeShadowHex for hex grids, ComputeShadowSquare for square grids.
         void ComputeShadow(SightSourceEntry& source,
-                           Dia::Pathfinding::CellCoord origin,
+                           Dia::Geometry2D::CellCoord origin,
                            float sightRadiusVisCells,
                            int groupIndex);
 
         // Hex ray sweep: 6 rays, one per hex direction (NE, N, NW, SW, S, SE).
         // Bresenham march along each ray until hitting a blocker or reaching max radius.
         void ComputeShadowHex(SightSourceEntry& source,
-                              Dia::Pathfinding::CellCoord origin,
+                              Dia::Geometry2D::CellCoord origin,
                               float sightRadiusVisCells,
                               int groupIndex);
 
         // Square octant shadowcasting: full 8-octant recursive sweep.
         void ComputeShadowSquare(SightSourceEntry& source,
-                                 Dia::Pathfinding::CellCoord origin,
+                                 Dia::Geometry2D::CellCoord origin,
                                  float sightRadiusVisCells,
                                  int groupIndex);
 
-        void ScanOctant(Dia::Pathfinding::CellCoord origin,
+        void ScanOctant(Dia::Geometry2D::CellCoord origin,
                         int octant,
                         int row,
                         float startSlope,
@@ -293,14 +293,14 @@ namespace Dia::GridVisibility {
                         int groupIndex);
 
         // Maps octant-local (row, col) to a visibility-grid coordinate.
-        static Dia::Pathfinding::CellCoord TransformOctant(Dia::Pathfinding::CellCoord origin,
+        static Dia::Geometry2D::CellCoord TransformOctant(Dia::Geometry2D::CellCoord origin,
                                                            int row,
                                                            int col,
                                                            int octant);
 
         // Records cell as lit by source: appends to shadowCells (once per sweep),
         // bumps group coverage and promotes the cell to Visible.
-        void MarkVisCell(Dia::Pathfinding::CellCoord cell,
+        void MarkVisCell(Dia::Geometry2D::CellCoord cell,
                          SightSourceEntry& source,
                          int groupIndex);
 
@@ -417,7 +417,7 @@ namespace Dia::GridVisibility {
                     if (mChunkSize == 1)
                     {
                         // 1:1 mapping - check the single cell
-                        Dia::Pathfinding::CellCoord pathCell;
+                        Dia::Geometry2D::CellCoord pathCell;
                         if (isAxial)
                         {
                             // Axial: convert from 0-based grid to centered coordinates
@@ -441,7 +441,7 @@ namespace Dia::GridVisibility {
                         {
                             for (int dx = 0; dx < mChunkSize && !anyPassable; ++dx)
                             {
-                                Dia::Pathfinding::CellCoord pathCell;
+                                Dia::Geometry2D::CellCoord pathCell;
                                 if (isAxial)
                                 {
                                     // Axial: convert from 0-based grid to centered coordinates
@@ -490,7 +490,7 @@ namespace Dia::GridVisibility {
                     {
                         for (int dx = 0; dx < mChunkSize && !anyPassable; ++dx)
                         {
-                            const Dia::Pathfinding::CellCoord pathCell{
+                            const Dia::Geometry2D::CellCoord pathCell{
                                 visX * mChunkSize + dx,
                                 visY * mChunkSize + dy
                             };
@@ -519,7 +519,7 @@ namespace Dia::GridVisibility {
 
     //------------------------------------------------------------------------------------
     template<CVisibilityGraph TGraph>
-    bool GridVisibilitySystem<TGraph>::IsVisCellPassable(Dia::Pathfinding::CellCoord cell) const
+    bool GridVisibilitySystem<TGraph>::IsVisCellPassable(Dia::Geometry2D::CellCoord cell) const
     {
         const int index = VisCellIndex(cell);
         return index >= 0 && mPassable[static_cast<unsigned int>(index)];
@@ -689,11 +689,11 @@ namespace Dia::GridVisibility {
 
     //------------------------------------------------------------------------------------
     template<CVisibilityGraph TGraph>
-    Dia::Pathfinding::CellCoord
+    Dia::Geometry2D::CellCoord
         GridVisibilitySystem<TGraph>::WorldToVisCell(const Dia::Maths::Vector2D& position,
                                                      float visCellSize)
     {
-        return Dia::Pathfinding::CellCoord{
+        return Dia::Geometry2D::CellCoord{
             static_cast<int>(std::floor(position.x / visCellSize)),
             static_cast<int>(std::floor(position.y / visCellSize))
         };
@@ -701,22 +701,22 @@ namespace Dia::GridVisibility {
 
     //------------------------------------------------------------------------------------
     template<CVisibilityGraph TGraph>
-    Dia::Pathfinding::CellCoord
-        GridVisibilitySystem<TGraph>::TransformOctant(Dia::Pathfinding::CellCoord origin,
+    Dia::Geometry2D::CellCoord
+        GridVisibilitySystem<TGraph>::TransformOctant(Dia::Geometry2D::CellCoord origin,
                                                       int row,
                                                       int col,
                                                       int octant)
     {
         switch (octant)
         {
-        case 0:  return Dia::Pathfinding::CellCoord{ origin.x + col, origin.y - row };
-        case 1:  return Dia::Pathfinding::CellCoord{ origin.x + row, origin.y - col };
-        case 2:  return Dia::Pathfinding::CellCoord{ origin.x + row, origin.y + col };
-        case 3:  return Dia::Pathfinding::CellCoord{ origin.x + col, origin.y + row };
-        case 4:  return Dia::Pathfinding::CellCoord{ origin.x - col, origin.y + row };
-        case 5:  return Dia::Pathfinding::CellCoord{ origin.x - row, origin.y + col };
-        case 6:  return Dia::Pathfinding::CellCoord{ origin.x - row, origin.y - col };
-        case 7:  return Dia::Pathfinding::CellCoord{ origin.x - col, origin.y - row };
+        case 0:  return Dia::Geometry2D::CellCoord{ origin.x + col, origin.y - row };
+        case 1:  return Dia::Geometry2D::CellCoord{ origin.x + row, origin.y - col };
+        case 2:  return Dia::Geometry2D::CellCoord{ origin.x + row, origin.y + col };
+        case 3:  return Dia::Geometry2D::CellCoord{ origin.x + col, origin.y + row };
+        case 4:  return Dia::Geometry2D::CellCoord{ origin.x - col, origin.y + row };
+        case 5:  return Dia::Geometry2D::CellCoord{ origin.x - row, origin.y + col };
+        case 6:  return Dia::Geometry2D::CellCoord{ origin.x - row, origin.y - col };
+        case 7:  return Dia::Geometry2D::CellCoord{ origin.x - col, origin.y - row };
         default: return origin;
         }
     }
@@ -741,14 +741,14 @@ namespace Dia::GridVisibility {
         if (mListeners.IsEmpty())
             return;
 
-        const Dia::Pathfinding::CellCoord cell{ cellIndex % mVisWidth, cellIndex / mVisWidth };
+        const Dia::Geometry2D::CellCoord cell{ cellIndex % mVisWidth, cellIndex / mVisWidth };
         for (unsigned int i = 0; i < mListeners.Size(); ++i)
             mListeners[i]->OnCellStateChanged(cell, groupId, oldState, newState);
     }
 
     //------------------------------------------------------------------------------------
     template<CVisibilityGraph TGraph>
-    void GridVisibilitySystem<TGraph>::MarkVisCell(Dia::Pathfinding::CellCoord cell,
+    void GridVisibilitySystem<TGraph>::MarkVisCell(Dia::Geometry2D::CellCoord cell,
                                                    SightSourceEntry& source,
                                                    int groupIndex)
     {
@@ -785,7 +785,7 @@ namespace Dia::GridVisibility {
     // of blocking cells narrows the slope range handed to the rows beyond it.
     //------------------------------------------------------------------------------------
     template<CVisibilityGraph TGraph>
-    void GridVisibilitySystem<TGraph>::ScanOctant(Dia::Pathfinding::CellCoord origin,
+    void GridVisibilitySystem<TGraph>::ScanOctant(Dia::Geometry2D::CellCoord origin,
                                                   int octant,
                                                   int row,
                                                   float startSlope,
@@ -811,7 +811,7 @@ namespace Dia::GridVisibility {
 
         for (int col = maxCol; col >= minCol; --col)
         {
-            const Dia::Pathfinding::CellCoord cell = TransformOctant(origin, row, col, octant);
+            const Dia::Geometry2D::CellCoord cell = TransformOctant(origin, row, col, octant);
 
             const int cellIndex = VisCellIndex(cell);
             if (cellIndex < 0)
@@ -866,7 +866,7 @@ namespace Dia::GridVisibility {
     //------------------------------------------------------------------------------------
     template<CVisibilityGraph TGraph>
     void GridVisibilitySystem<TGraph>::ComputeShadow(SightSourceEntry& source,
-                                                      Dia::Pathfinding::CellCoord origin,
+                                                      Dia::Geometry2D::CellCoord origin,
                                                       float sightRadiusVisCells,
                                                       int groupIndex)
     {
@@ -886,7 +886,7 @@ namespace Dia::GridVisibility {
     //------------------------------------------------------------------------------------
     template<CVisibilityGraph TGraph>
     void GridVisibilitySystem<TGraph>::ComputeShadowHex(SightSourceEntry& source,
-                                                         Dia::Pathfinding::CellCoord origin,
+                                                         Dia::Geometry2D::CellCoord origin,
                                                          float sightRadiusVisCells,
                                                          int groupIndex)
     {
@@ -906,14 +906,14 @@ namespace Dia::GridVisibility {
 
         for (int dir = 0; dir < 6; ++dir)
         {
-            Dia::Pathfinding::CellCoord current = origin;
+            Dia::Geometry2D::CellCoord current = origin;
 
             for (int step = 0; step < maxSteps; ++step)
             {
                 // Compute next cell in this direction
                 // Hex neighbor offsets for flat-top odd-q layout (odd columns shifted down)
                 // Direction: 0=NE, 1=N, 2=NW, 3=SW, 4=S, 5=SE
-                Dia::Pathfinding::CellCoord next;
+                Dia::Geometry2D::CellCoord next;
 
                 if (isAxial)
                 {
@@ -925,7 +925,7 @@ namespace Dia::GridVisibility {
                     const int dx[] = { 1, 0, -1, -1,  0,  1 };
                     const int dy[] = { oddCol ? 0 : -1, -1, oddCol ? 0 : -1,
                                        oddCol ? 1 : 0, 1, oddCol ? 1 : 0 };
-                    next = Dia::Pathfinding::CellCoord{ current.x + dx[dir], current.y + dy[dir] };
+                    next = Dia::Geometry2D::CellCoord{ current.x + dx[dir], current.y + dy[dir] };
                 }
                 else
                 {
@@ -934,7 +934,7 @@ namespace Dia::GridVisibility {
                     const int dx[] = { 1, 0, -1, -1,  0,  1 };
                     const int dy[] = { oddCol ? 0 : -1, -1, oddCol ? 0 : -1,
                                        oddCol ? 1 : 0, 1, oddCol ? 1 : 0 };
-                    next = Dia::Pathfinding::CellCoord{ current.x + dx[dir], current.y + dy[dir] };
+                    next = Dia::Geometry2D::CellCoord{ current.x + dx[dir], current.y + dy[dir] };
                 }
 
                 if (!IsVisCellInBounds(next))
@@ -943,7 +943,7 @@ namespace Dia::GridVisibility {
                 current = next;
 
                 // Check distance from origin using Euclidean approximation on the grid
-                // (For true hex distance, we'd use HexTopology::Distance with cube coordinates,
+                // (For true hex distance, we'd use Dia::Geometry2D::HexTopology::Distance with cube coordinates,
                 // but that requires converting vis grid coords back to path grid coords)
                 const float dx_f = static_cast<float>(current.x - origin.x);
                 const float dy_f = static_cast<float>(current.y - origin.y);
@@ -975,7 +975,7 @@ namespace Dia::GridVisibility {
     //------------------------------------------------------------------------------------
     template<CVisibilityGraph TGraph>
     void GridVisibilitySystem<TGraph>::ComputeShadowSquare(SightSourceEntry& source,
-                                                            Dia::Pathfinding::CellCoord origin,
+                                                            Dia::Geometry2D::CellCoord origin,
                                                             float sightRadiusVisCells,
                                                             int groupIndex)
     {
@@ -1084,7 +1084,7 @@ namespace Dia::GridVisibility {
             if (spatialComponent == nullptr)
                 continue;   // entity died or lost its SpatialComponent - keep its last shadow
 
-            const Dia::Pathfinding::CellCoord currentVisCell =
+            const Dia::Geometry2D::CellCoord currentVisCell =
                 WorldToVisCell(spatialComponent->position, visCellSize);
 
             if (!(currentVisCell == source.lastVisCell))
@@ -1187,7 +1187,7 @@ namespace Dia::GridVisibility {
 
     //------------------------------------------------------------------------------------
     template<CVisibilityGraph TGraph>
-    VisibilityState GridVisibilitySystem<TGraph>::GetCellState(Dia::Pathfinding::CellCoord cell,
+    VisibilityState GridVisibilitySystem<TGraph>::GetCellState(Dia::Geometry2D::CellCoord cell,
                                                                VisibilityGroupId groupId) const
     {
         const int groupIndex = FindGroupIndex(groupId);

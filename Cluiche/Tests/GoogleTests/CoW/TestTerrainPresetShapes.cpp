@@ -158,7 +158,7 @@ TEST(TerrainShapeChecks, DetectsBrokenRiversAndZones)
             World a;
             a.Go(seed, WorldShapeParams{});
             Cell& c = a.world.Cells()[river];
-            const Dia::Pathfinding::HexTopology topo(kSmall.width, kSmall.height);
+            const Dia::Geometry2D::HexTopology topo(kSmall.width, kSmall.height);
             Cell& next = a.world.Cells()[topo.NeighbourAt(static_cast<uint32_t>(river), c.downstream)];
             next.elevation = c.elevation + 0.1f;
             EXPECT_FALSE(CheckWorldShape(a.gen, a.world, a.rules).Empty());
@@ -167,7 +167,7 @@ TEST(TerrainShapeChecks, DetectsBrokenRiversAndZones)
             World a;
             a.Go(seed, WorldShapeParams{});
             Cell& c = a.world.Cells()[river];
-            const Dia::Pathfinding::HexTopology topo(kSmall.width, kSmall.height);
+            const Dia::Geometry2D::HexTopology topo(kSmall.width, kSmall.height);
             Cell& next = a.world.Cells()[topo.NeighbourAt(static_cast<uint32_t>(river), c.downstream)];
             if (next.waterSource == WaterSource::River)
             {

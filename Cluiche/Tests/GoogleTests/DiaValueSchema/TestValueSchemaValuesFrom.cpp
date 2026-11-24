@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <DiaValueSchema/ValueSchemaModule.h>
+#include <Modules/ValueSchemaModule.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 #include <DiaValueSchema/Testing/SchemaFixtureBuilder.h>
 #include <DiaValueSchema/Testing/SchemaTempDirectory.h>

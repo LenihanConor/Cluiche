@@ -15,7 +15,7 @@
 
 #include <DiaAttribute/ParameterFile.h>
 #include <DiaObservation/Log/DiaLog.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <cmath>
@@ -1899,12 +1899,12 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
     fixJson["reason"] = reason;
     r["fixupChanges"] = fixJson;
 
-    const Dia::Pathfinding::HexTopology topology(width, height);
+    const Dia::Geometry2D::HexTopology topology(width, height);
     Json::Value neighbours(Json::arrayValue);
     for (uint32_t dir = 0; dir < 6; ++dir)
     {
         const uint32_t n = topology.NeighbourAt(static_cast<uint32_t>(index), dir);
-        if (n == Dia::Pathfinding::kNoCell)
+        if (n == Dia::Geometry2D::kNoCell)
         {
             neighbours.append("edge");
             continue;

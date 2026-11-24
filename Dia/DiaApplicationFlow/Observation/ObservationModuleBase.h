@@ -15,7 +15,7 @@ namespace Dia { namespace ApplicationFlow {
 //
 // Applications instantiate this directly or subclass it to override
 // ApplyConfigOverrides() (e.g. to layer CLI flags on top of the loaded config).
-class ObservationModule : public Module {
+class ObservationModuleBase : public Module {
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr PUAffinity kAllowedPUs = PUAffinity::kAny;
@@ -23,9 +23,9 @@ public:
     // appName        — written into SessionConfig::appName (e.g. "CluicheTest")
     // configAsset    — repo-relative path from the exe dir to the .diaobservation
     //                  asset, e.g. "../../../../Assets/CluicheTest/cluichetest.diaobservation"
-    ObservationModule(const Dia::Core::StringCRC& instanceId,
-                      const char* appName,
-                      const char* configAssetRelPath);
+    ObservationModuleBase(const Dia::Core::StringCRC& instanceId,
+                          const char* appName,
+                          const char* configAssetRelPath);
 
 protected:
     StartResult DoStart() override;

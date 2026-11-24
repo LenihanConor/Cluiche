@@ -5,7 +5,7 @@
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/Entity.h>
 #include <DiaMaths/Vector/Vector2D.h>
-#include <DiaMessageBus/MessageBusModule.h>
+#include "Modules/MessageBusHostModule.h"
 #include <DiaMessageBus/BusSubscriptionHandle.h>
 #include <DiaMessageBus/IFlushAdapter.h>
 #include <cstdint>
@@ -53,11 +53,11 @@ protected:
     void OnStop() override;
 
 private:
-    // Thin subclass to expose the protected lifecycle methods of MessageBusModule.
+    // Thin subclass to expose the protected lifecycle methods of MessageBusHostModule.
     // MessageBusDebugDomain's History tab needs GetLedgerHistory(), which only
-    // exists on MessageBusModule (not on a bare Bus) — see SpawnerTestStageModule
+    // exists on the host module (not on a bare Bus) — see SpawnerTestStageModule
     // for the identical pattern applied to EntitySpawnerModule.
-    class TestableMessageBusModule : public Dia::MessageBus::MessageBusModule
+    class TestableMessageBusModule : public Cluiche::AppFlow::MessageBusHostModule
     {
     public:
         TestableMessageBusModule() = default;

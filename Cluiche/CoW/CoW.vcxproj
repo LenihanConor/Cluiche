@@ -266,6 +266,12 @@
     <ProjectReference Include="..\..\Dia\DiaDeferredStep\DiaDeferredStep.vcxproj">
       <Project>{7D4C2E91-8B2A-4C5F-B8D3-F9E6C5A4B9D2}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSensor\DiaSensor.vcxproj">
+      <Project>{F3A4B5C6-D7E8-9012-ABCD-EF0123456789}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEntitySpatial\DiaEntitySpatial.vcxproj">
+      <Project>{E5F6A7B8-C9D0-1234-ABCD-567890EF0123}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2D30FBC3-28AE-54DF-910F-2F8404FA551F}</ProjectGuid>

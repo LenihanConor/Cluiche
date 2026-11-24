@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <DiaPathfinding/FindPath.h>
 #include <DiaPathfinding/HexPathGrid.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 #include <cstdint>
 #include <cstdlib>
 #include <queue>
@@ -9,6 +9,8 @@
 #include <vector>
 
 using namespace Dia::Pathfinding;
+using Dia::Geometry2D::CellCoord;
+using Dia::Geometry2D::HexTopology;
 using Dia::Core::Containers::DynamicArrayC;
 
 namespace {

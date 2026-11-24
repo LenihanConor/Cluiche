@@ -7,7 +7,7 @@
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaCellLayers/Testing/ViewValueSourceTestSupport.h>
 #include <DiaAPI/DiaAPI.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <atomic>
 #include <random>
@@ -63,7 +63,7 @@ namespace
 
 	void PointAt(FakeDebugDraw& draw, int q, int r, float dx = 0.0f, float dy = 0.0f)
 	{
-		const Dia::Maths::Vector2D c = Dia::Pathfinding::HexTopology::CellCenter(Dia::Pathfinding::CellCoord{ q, r }, 1.0f);
+		const Dia::Maths::Vector2D c = Dia::Geometry2D::HexTopology::CellCenter(Dia::Geometry2D::CellCoord{ q, r }, 1.0f);
 		float sx, sy;
 		WorldToScreen(TestView(), c.X() + dx, c.Y() + dy, sx, sy);
 		draw.mouse = Dia::Maths::Vector2D(sx, sy);

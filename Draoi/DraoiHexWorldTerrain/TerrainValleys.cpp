@@ -4,7 +4,7 @@
 
 #include <DraoiHexWorldTerrain/TerrainValleys.h>
 
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <cmath>
@@ -13,8 +13,8 @@
 namespace Draoi {
 namespace HexWorld {
 
-using Dia::Pathfinding::HexTopology;
-using Dia::Pathfinding::kNoCell;
+using Dia::Geometry2D::HexTopology;
+using Dia::Geometry2D::kNoCell;
 
 float ValleyCarveSize(const TerrainRules& rules, float acc, float threshold)
 {

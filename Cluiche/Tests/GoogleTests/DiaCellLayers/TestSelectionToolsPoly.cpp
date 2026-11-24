@@ -2,7 +2,7 @@
 #include <DiaCellLayers/CellSelection.h>
 #include <DiaCellLayers/SelectionTools.h>
 #include <DiaCellLayers/Testing/SelectionTestSupport.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 #include <algorithm>
 #include <math.h>
@@ -52,7 +52,7 @@ namespace
 		{
 			for (int q = 0; q < d.w; ++q)
 			{
-				const auto c = Dia::Pathfinding::HexTopology::CellCenter({ q, r }, scale);
+				const auto c = Dia::Geometry2D::HexTopology::CellCenter({ q, r }, scale);
 				if (c.x > x0 * scale && c.x < x1 * scale && c.y > y0 * scale && c.y < y1 * scale)
 				{
 					out.push_back({ q, r });
@@ -117,7 +117,7 @@ TEST(SelectionToolsPolyTest, HexagonSelectsCentreAndSixNeighbours)
 	ForEachGrid([](const Dim& d, float s, CellSelection& sel)
 	{
 		// Hexagon (corners on the x axis, circumradius 2.2) around the centre of odd-q cell (5,4) = (7.5, 7.794).
-		const auto c = Dia::Pathfinding::HexTopology::CellCenter({ 5, 4 }, 1.0f);
+		const auto c = Dia::Geometry2D::HexTopology::CellCenter({ 5, 4 }, 1.0f);
 		const float cx = c.x, cy = c.y, R = 2.2f, hy = 1.9052559f;	// hy = R * sqrt(3) / 2
 		auto poly = Poly({ { cx + R, cy }, { cx + R / 2, cy + hy }, { cx - R / 2, cy + hy },
 			{ cx - R, cy }, { cx - R / 2, cy - hy }, { cx + R / 2, cy - hy } }, s);
@@ -178,7 +178,7 @@ TEST(SelectionToolsPolyTest, PentagramFollowsEvenOdd)
 	ForEachGrid([](const Dim& d, float s, CellSelection& sel)
 	{
 		// {5/2} star, circumradius 6, around the centre of cell (5,4). The inner pentagon has winding 2 -> excluded.
-		const auto c = Dia::Pathfinding::HexTopology::CellCenter({ 5, 4 }, 1.0f);
+		const auto c = Dia::Geometry2D::HexTopology::CellCenter({ 5, 4 }, 1.0f);
 		std::vector<PolyPoint> poly;
 		for (int k = 0; k < 5; ++k)
 		{

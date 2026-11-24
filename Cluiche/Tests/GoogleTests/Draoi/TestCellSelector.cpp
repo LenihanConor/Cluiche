@@ -2,7 +2,7 @@
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DraoiHexWorld/CellSelector.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 #include <DraoiHexWorld/WorldCellFields.h>
 
 #include <chrono>
@@ -506,7 +506,7 @@ TEST(CellSelector, ResolvePerfBallparkDebug)
 // ---------------------------------------------------------------------------------------------------------------------
 namespace
 {
-    using Dia::Pathfinding::HexTopology;
+    using Dia::Geometry2D::HexTopology;
 
     constexpr uint32_t kDistCells = 24;
     const float kDistExpected[kDistCells] = {

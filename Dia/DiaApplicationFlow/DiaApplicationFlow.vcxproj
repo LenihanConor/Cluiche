@@ -29,8 +29,7 @@
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="ProcessingUnit.cpp" />
     <ClCompile Include="TypeRegistry.cpp" />
-    <ClCompile Include="Metrics\MetricsCollectorModule.cpp" />
-    <ClCompile Include="Observation\ObservationModule.cpp" />
+    <ClCompile Include="Observation\ObservationModuleBase.cpp" />
     <ClCompile Include="Manifest\ManifestBootstrap.cpp" />
     <ClCompile Include="PerfPause.cpp" />
   </ItemGroup>
@@ -53,8 +52,7 @@
     <ClInclude Include="PUAffinity.h" />
     <ClInclude Include="TypeRegistry.h" />
     <ClInclude Include="DebugDataTypes.h" />
-    <ClInclude Include="Metrics\MetricsCollectorModule.h" />
-    <ClInclude Include="Observation\ObservationModule.h" />
+    <ClInclude Include="Observation\ObservationModuleBase.h" />
     <ClInclude Include="SimModule.h" />
     <ClInclude Include="RenderModule.h" />
     <ClInclude Include="MainModule.h" />

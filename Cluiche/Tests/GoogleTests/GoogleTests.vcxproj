@@ -916,7 +916,7 @@
     <ClCompile Include="CoW\F2\TestF2PanelModel.cpp" />
     <ClCompile Include="..\..\CoW\Modules\F2Harness\F2PanelModel.cpp" />
     <ClCompile Include="..\..\CoW\Modules\F2Harness\F2TestRunnerDebugDomain.cpp" />
-    <ClCompile Include="DiaPathfinding\TestHexTopology.cpp" />
+    <ClCompile Include="Geometry2D\TestHexTopology.cpp" />
     <ClCompile Include="DiaPathfinding\TestHexPathGridRect.cpp" />
     <ClCompile Include="DiaPathfinding\TestHexFindPath.cpp" />
     <ClCompile Include="DiaPathfinding\TestHexGridPerformance.cpp" />
@@ -1371,6 +1371,10 @@
     <ClCompile Include="CoW/WorldSimKit/TestWorldGenLogChannel.cpp" />
     <ClCompile Include="CoW\WorldSimKit\TestWorldSimNamesRegistrations.cpp" />
     <ClCompile Include="CoW/TestWorldGenReloadRules.cpp" />
+    <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\CellHistoryModule.cpp" />
+    <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\EntitySpawnerHealth.cpp" />
+    <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\EntitySpawnerModule.cpp" />
+    <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\TriggerScriptModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -12,7 +12,7 @@ namespace Dia
 		///
 		/// Geometry builder for flat-top odd-q hex grids (topology id "hex.flat.oddq").
 		///
-		/// Conventions (match Dia::Pathfinding::HexTopology):
+		/// Conventions (match Dia::Geometry2D::HexTopology):
 		///  - World space is y-DOWN. Corner k sits at on-screen counter-clockwise angle 60deg*k,
 		///    so its offset is (cos, -sin) of that angle.
 		///  - Neighbour direction d (desc.neighbours[6*cell + d]) is at on-screen angle 30deg+60deg*d,

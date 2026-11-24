@@ -8,10 +8,10 @@
 #include <limits>
 
 #include "DiaPathfinding/GridSearchScratch.h"
-#include "DiaPathfinding/HexTopology.h"   // kNoCell
+#include "DiaGeometry2D/Grid/HexTopology.h"   // Dia::Geometry2D::kNoCell
 
 namespace Dia::Pathfinding {
-    // Distinct from kNoCell (same value, different meaning): "search never reached this cell".
+    // Distinct from Dia::Geometry2D::kNoCell (same value, different meaning): "search never reached this cell".
     constexpr uint32_t kUnreached = 0xFFFFFFFFu;
 
     // Any graph over dense cell indices 0..CellCount()-1. ForEachNeighbour visits neighbours
@@ -90,10 +90,10 @@ namespace Dia::Pathfinding {
     template<class Cost>
     struct DijkstraOptions {
         Cost* outCost = nullptr;               // required; infinity() for unreached cells
-        uint32_t* outPrev = nullptr;           // optional; kNoCell for seeds and unreached cells
+        uint32_t* outPrev = nullptr;           // optional; Dia::Geometry2D::kNoCell for seeds and unreached cells
         uint32_t* outSeedId = nullptr;         // optional; kUnreached for unreached cells
         const uint8_t* stopAt = nullptr;       // optional; stop when the first settled cell has stopAt[c] != 0
-        uint32_t* outStoppedAt = nullptr;      // optional; the stopping cell, or kNoCell when nothing stopped
+        uint32_t* outStoppedAt = nullptr;      // optional; the stopping cell, or Dia::Geometry2D::kNoCell when nothing stopped
         // Additive option motivated by the RegionPartition capped growth (site 9). false (default): strict
         // relaxation. true (PushAll): no relaxation filter; every neighbour that is not yet settled and
         // whose step cost is >= 0 is pushed at cost + step, every seed is pushed, and outCost / outPrev /

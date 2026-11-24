@@ -7,16 +7,16 @@
 #include <DiaFlowField/Testing/FlowFieldTestHelpers.h>
 #include <DiaPathfinding/SquarePathGrid.h>
 #include <DiaPathfinding/HexPathGrid.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 #include <DiaPathfinding/IPathCostProvider.h>
 #include <DiaMaths/Vector/Vector2D.h>
 #include <chrono>
-#include <iostream>
+#include <DiaObservation/Log/DiaLog.h>
 
 using namespace Dia::FlowField;
-using Dia::Pathfinding::CellCoord;
+using Dia::Geometry2D::CellCoord;
 using Dia::Pathfinding::FlatCostProvider;
-using Dia::Pathfinding::HexTopology;
+using Dia::Geometry2D::HexTopology;
 using namespace Dia::FlowField::Testing;
 
 TEST(ComputeFlowField, GoalCell_IsReachable) {
@@ -216,8 +216,8 @@ TEST(SLOW_ComputeFlowField, Performance_104x64_HexGrid) {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     
     // Report only - no fail threshold
-    std::cout << "ComputeFlowField 104×64 hex grid: " << duration << " ms" << std::endl;
-    std::cout << "Peak memory estimate: ~" << (6656 * 16) / 1024 << " KB for FlowField storage" << std::endl;
+    DIA_LOG_INFO("Test", "ComputeFlowField 104x64 hex grid: %lld ms", static_cast<long long>(duration));
+    DIA_LOG_INFO("Test", "Peak memory estimate: ~%d KB for FlowField storage", (6656 * 16) / 1024);
     
     // Verify it completed successfully
     EXPECT_TRUE(f.Sample(goal).reachable);

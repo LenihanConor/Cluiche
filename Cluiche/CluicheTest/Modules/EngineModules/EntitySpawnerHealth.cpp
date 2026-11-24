@@ -1,5 +1,5 @@
-#include <DiaEntitySpawner/Health/EntitySpawnerHealth.h>
-#include <DiaEntitySpawner/EntitySpawnerModule.h>
+#include <Modules/EngineModules/EntitySpawnerHealth.h>
+#include <Modules/EngineModules/EntitySpawnerModule.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 namespace Dia::EntitySpawner {

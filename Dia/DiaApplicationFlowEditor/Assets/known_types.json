@@ -6,7 +6,6 @@
         { "type": "ApplicationPhase", "description": "Base Dia application phase" }
     ],
     "modules": [
-        { "type": "ApplicationModule",      "description": "Base Dia application module" },
-        { "type": "MetricsCollectorModule", "description": "Collects per-frame performance metrics" }
+        { "type": "ApplicationModule",      "description": "Base Dia application module" }
     ]
 }

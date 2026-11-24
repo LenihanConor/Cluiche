@@ -1,7 +1,7 @@
 #include <DiaCellLayers/SelectionOutline.h>
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaObservation/Profile/DiaProfile.h>
-#include <DiaPathfinding/HexTopology.h>
+#include <DiaGeometry2D/Grid/HexTopology.h>
 
 namespace Dia::CellLayers
 {
@@ -15,7 +15,7 @@ namespace Dia::CellLayers
 		struct BuildState
 		{
 			const CellSelection* sel;
-			Dia::Pathfinding::HexTopology topo;
+			Dia::Geometry2D::HexTopology topo;
 			OutlineEdge* edges;
 			uint32_t count;
 			float size;
@@ -24,12 +24,12 @@ namespace Dia::CellLayers
 		void VisitCell(uint32_t index, void* user)
 		{
 			BuildState& st = *static_cast<BuildState*>(user);
-			const Dia::Pathfinding::CellCoord coord = st.topo.ToCoord(index);
-			const Dia::Maths::Vector2D c = Dia::Pathfinding::HexTopology::CellCenter(coord, st.size);
-			for (uint32_t d = 0; d < Dia::Pathfinding::kHexDirections; ++d)
+			const Dia::Geometry2D::CellCoord coord = st.topo.ToCoord(index);
+			const Dia::Maths::Vector2D c = Dia::Geometry2D::HexTopology::CellCenter(coord, st.size);
+			for (uint32_t d = 0; d < Dia::Geometry2D::kHexDirections; ++d)
 			{
 				const uint32_t n = st.topo.NeighbourAt(index, d);
-				if (n != Dia::Pathfinding::kNoCell && st.sel->Contains(n))
+				if (n != Dia::Geometry2D::kNoCell && st.sel->Contains(n))
 				{
 					continue;
 				}
@@ -70,7 +70,7 @@ namespace Dia::CellLayers
 			return;
 		}
 
-		BuildState st{ &sel, Dia::Pathfinding::HexTopology(int(mWidth), int(mHeight)), mEdges, 0, mCellSize };
+		BuildState st{ &sel, Dia::Geometry2D::HexTopology(int(mWidth), int(mHeight)), mEdges, 0, mCellSize };
 		sel.ForEach(&VisitCell, &st);
 		if (st.count > kMaxEdges)
 		{
