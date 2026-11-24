@@ -132,6 +132,152 @@ void RunWindPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor&
     });
 }
 
+// Pass 4 Evaporation (GDD s6).
+void RunEvaporationPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
+{
+    DIA_PROFILE_SCOPE("Weather.Pass4.Evaporation", kWeatherCategory);
+    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    {
+        const CapturedInputs& in = *context.inputs;
+        const WeatherParameters& p = in.params;
+        WeatherFields& f = *context.fields;
+        for (uint32_t c = begin; c < end; ++c)
+        {
+            const float temp = f.temperature[c];
+            float m = f.moisture[c];
+            // 6.1 primary: self-limiting at saturation.
+            const float open = in.hydrology.openWater[c];
+            if (open > 0.0f)
+                m += temp * p.oceanEvapRate * in.climate.evapMultiplier[c] * open * (1.0f - m);
+            // 6.2 secondary: capped at the ground water the cell holds; surfaceWetness is latched 0 with no A5.
+            const float wet = in.hydrology.surfaceWetness[c];
+            if (wet > 0.0f)
+            {
+                float fromGround = wet * (temp * p.groundEvapRate);
+                if (fromGround > wet) fromGround = wet;
+                if (fromGround > 0.0f) m += fromGround;
+            }
+            f.moisture[c] = Clamp01(m);
+        }
+        // Feature 7 hook: Influence dMoisture is added here (then clamped [0,1]).
+        // Hook C (moisture hold) is added by task 9, after the influence delta, so a hold wins.
+    });
+}
+
+// Pass 5a: outflow scratch for moisture and pressureAnomaly.
+void RunMoistureOutPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
+{
+    DIA_PROFILE_SCOPE("Weather.Pass5a.MoistureOut", kWeatherCategory);
+    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    {
+        const float rate = context.inputs->params.moistureTransportRate;
+        const WeatherFields& f = *context.fields;
+        GridTables& t = *context.tables;
+        for (uint32_t c = begin; c < end; ++c)
+        {
+            if (t.neighbours[c * Dia::Geometry2D::kHexDirections + t.dirIndex[c]] == Dia::Geometry2D::kNoCell)
+            {
+                t.moistureOut[c] = 0.0f;   // EC-16: stays in the cell
+                t.anomalyOut[c] = 0.0f;
+            }
+            else
+            {
+                t.moistureOut[c] = f.moisture[c] * f.windSpeed[c] * rate;
+                t.anomalyOut[c] = f.pressureAnomaly[c] * f.windSpeed[c] * rate;
+            }
+        }
+    });
+}
+
+namespace
+{
+    // Inflow to `c` from `out`: neighbour directions ascending (a neighbour n sends to c when its dirIndex points back
+    // at c, i.e. (d+3)%6), then the edge term last.
+    inline float GatherInflow(uint32_t c, const GridTables& t, const float* out, bool edgeInflow)
+    {
+        constexpr uint32_t kDirs = Dia::Geometry2D::kHexDirections;
+        float inflow = 0.0f;
+        for (uint32_t d = 0; d < kDirs; ++d)
+        {
+            const uint32_t n = t.neighbours[c * kDirs + d];
+            if (n != Dia::Geometry2D::kNoCell && t.dirIndex[n] == (d + 3) % kDirs)
+                inflow += out[n];
+        }
+        if (edgeInflow && t.neighbours[c * kDirs + (t.dirIndex[c] + 3) % kDirs] == Dia::Geometry2D::kNoCell)
+            inflow += out[c];
+        return inflow;
+    }
+}
+
+// Pass 5b: gather. Reads only *Out and dirIndex of neighbours; writes its own cells.
+void RunMoistureGatherPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
+{
+    DIA_PROFILE_SCOPE("Weather.Pass5b.MoistureGather", kWeatherCategory);
+    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    {
+        const bool edge = context.inputs->params.edgeInflow;
+        WeatherFields& f = *context.fields;
+        const GridTables& t = *context.tables;
+        for (uint32_t c = begin; c < end; ++c)
+        {
+            f.moisture[c] = f.moisture[c] - t.moistureOut[c] + GatherInflow(c, t, &t.moistureOut[0u], edge);
+            f.pressureAnomaly[c] = f.pressureAnomaly[c] - t.anomalyOut[c] + GatherInflow(c, t, &t.anomalyOut[0u], edge);
+        }
+    });
+}
+
+// Pass 5c (GDD s4.1).
+void RunAnomalyDecayPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
+{
+    DIA_PROFILE_SCOPE("Weather.Pass5c.AnomalyDecay", kWeatherCategory);
+    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    {
+        const WeatherParameters& p = context.inputs->params;
+        WeatherFields& f = *context.fields;
+        for (uint32_t c = begin; c < end; ++c)
+        {
+            float a = f.pressureAnomaly[c] * p.pressureAnomalyDecay;
+            if (a > p.pressureAnomalyMax) a = p.pressureAnomalyMax;
+            if (a < -p.pressureAnomalyMax) a = -p.pressureAnomalyMax;
+            f.pressureAnomaly[c] = a;
+        }
+    });
+}
+
+// Pass 6a (GDD s8).
+void RunHeatOutPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
+{
+    DIA_PROFILE_SCOPE("Weather.Pass6a.HeatOut", kWeatherCategory);
+    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    {
+        const float rate = context.inputs->params.heatTransportRate;
+        const WeatherFields& f = *context.fields;
+        GridTables& t = *context.tables;
+        for (uint32_t c = begin; c < end; ++c)
+        {
+            t.heatOut[c] = (t.neighbours[c * Dia::Geometry2D::kHexDirections + t.dirIndex[c]] == Dia::Geometry2D::kNoCell)
+                ? 0.0f : f.temperature[c] * f.windSpeed[c] * rate;
+        }
+    });
+}
+
+// Pass 6b: temperature = max(temperature - out, 0) + inflow (CH-07). The [0,1] clamp is the finish pass's.
+void RunHeatGatherPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
+{
+    DIA_PROFILE_SCOPE("Weather.Pass6b.HeatGather", kWeatherCategory);
+    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    {
+        const bool edge = context.inputs->params.edgeInflow;
+        WeatherFields& f = *context.fields;
+        const GridTables& t = *context.tables;
+        for (uint32_t c = begin; c < end; ++c)
+        {
+            const float rem = f.temperature[c] - t.heatOut[c];
+            f.temperature[c] = (rem > 0.0f ? rem : 0.0f) + GatherInflow(c, t, &t.heatOut[0u], edge);
+        }
+    });
+}
+
 void RunPipelineUntil(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor, PassId lastPass)
 {
     // Pass 0 (Influence) is skipped until Feature 7.
@@ -141,6 +287,18 @@ void RunPipelineUntil(PassContext& context, Dia::ParallelExecutor::IParallelExec
     RunPressurePass(context, executor);
     if (lastPass < PassId::Wind) return;
     RunWindPass(context, executor);
+    if (lastPass < PassId::Evaporation) return;
+    RunEvaporationPass(context, executor);
+    if (lastPass < PassId::MoistureOut) return;
+    RunMoistureOutPass(context, executor);
+    if (lastPass < PassId::MoistureGather) return;
+    RunMoistureGatherPass(context, executor);
+    if (lastPass < PassId::AnomalyDecay) return;
+    RunAnomalyDecayPass(context, executor);
+    if (lastPass < PassId::HeatOut) return;
+    RunHeatOutPass(context, executor);
+    if (lastPass < PassId::HeatGather) return;
+    RunHeatGatherPass(context, executor);
 }
 
 void RunPipeline(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)

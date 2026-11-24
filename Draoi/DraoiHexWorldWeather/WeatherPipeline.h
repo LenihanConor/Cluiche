@@ -61,7 +61,11 @@ struct PassContext
 };
 
 // Pass identifiers in run order (pass 10 is retired). Later pass tasks append their entries before kLast.
-enum class PassId : uint8_t { Influence = 0, Solar, Pressure, Wind, kLast = Wind };
+enum class PassId : uint8_t
+{
+    Influence = 0, Solar, Pressure, Wind, Evaporation, MoistureOut, MoistureGather, AnomalyDecay, HeatOut, HeatGather,
+    kLast = HeatGather
+};
 
 // The ordered pass sequence (0, 1, 2, 3, 4, 5a..6b, 7, 8, 9, finish). Filled in by the pass tasks.
 void RunPipeline(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);
@@ -73,6 +77,12 @@ void RunPipelineUntil(PassContext& context, Dia::ParallelExecutor::IParallelExec
 void RunSolarPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);     // pass 1
 void RunPressurePass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);  // pass 2
 void RunWindPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);      // pass 3
+void RunEvaporationPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);     // pass 4
+void RunMoistureOutPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);     // pass 5a (+ anomalyOut)
+void RunMoistureGatherPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);  // pass 5b (+ anomaly)
+void RunAnomalyDecayPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);    // pass 5c
+void RunHeatOutPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);         // pass 6a
+void RunHeatGatherPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);      // pass 6b
 
 // Pressure-driven push on `cell`'s wind: (1/6) * sum over the 6 directions d of kDirectionVectors[d] * (p[cell] - p[nb]).
 // A higher-pressure neighbour pushes the wind away from it, a lower one pulls it in. kNoCell neighbours add nothing
