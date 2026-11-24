@@ -406,7 +406,7 @@ public:
         {
             WritePendingInvalid(blob);
         }
-        Json::Value& root = ctx.Root();
+        Json::Value& root = ctx.CurrentNode();   // the stage's own object (the coordinator nests it as stage_N)
         const Json::Value::Members names = blob.getMemberNames();
         for (const std::string& name : names) { root[name] = blob[name]; }
     }
@@ -414,7 +414,7 @@ public:
     // Applies a validated blob to the restored sim. A blob that cannot be restored leaves the stage not ready.
     void DeserializePending(Dia::SaveGame::LoadContext& ctx) override
     {
-        const Json::Value& blob = ctx.Root();
+        const Json::Value& blob = ctx.CurrentNode();
         mHaveStashPending = false;
         mStashPending = Json::Value();
         if (!blob.isObject() || !blob["valid"].isBool() || !blob["valid"].asBool())
@@ -488,7 +488,7 @@ protected:
         if (mSpec == nullptr) { return true; }
         const Json::Value* committed = mHaveCommitted ? &mCommittedRecord : (mHaveStash ? &mStashRecord : nullptr);
         Draoi::HexWorld::SaveError err;
-        if (WorldStep::ValidatePendingBlob(ctx.Root(), committed, *mSpec, err)) { return true; }
+        if (WorldStep::ValidatePendingBlob(ctx.CurrentNode(), committed, *mSpec, err)) { return true; }
         DIA_LOG_WARNING(mLogChannel, "%s: pending blob rejected at field %s: %s", mLogChannel, err.field.AsCStr(),
                         err.reason.AsCStr());
         return false;

@@ -69,7 +69,7 @@ bool ValidatePendingBlob(const Json::Value& blob, const Json::Value* committed, 
     for (const std::string& name : names) { view[name] = blob[name]; }
     if (!Draoi::HexWorld::ValidatePending(view, spec.fields, spec.fieldCount, spec.caps, err)) { return false; }
 
-    if (spec.hasBiome)
+    if (spec.hasBiome && spec.pendingBiome)
     {
         if (!committed->isMember("biome_palette") || !(*committed)["biome_palette"].isArray())
         {

@@ -56,6 +56,7 @@ WorldStep::RecordSpec WeatherSaveRecordSpec(const Draoi::HexWorld::SavedField (&
     spec.fieldCount = kWeatherSaveFieldCount;
     spec.caps.maxBasins = 0;
     spec.hasBiome = true;
+    spec.pendingBiome = false;   // biome is not step-buffered: the pending blob holds the ten arrays only
     return spec;
 }
 

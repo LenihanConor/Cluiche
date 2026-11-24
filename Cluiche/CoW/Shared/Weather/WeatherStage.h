@@ -97,6 +97,10 @@ public:
     // Restore step 4 (weather-save): DecodeRecord against saveSpec/registry, then sim.RestoreCommitted. false -> the base
     // discards the restore. ExtraCountMatches keeps the base default (true): weather has no extra counts.
     bool RestoreCommitted(Draoi::HexWorld::Weather::WeatherSimulation& sim, const Json::Value& record) override;
+    // Pending blob: the ten working-set arrays (after the step has run), and the validated blob back into the sim.
+    void WritePendingFields(Json::Value& blob, const Draoi::HexWorld::Weather::WeatherSimulation& sim) override;
+    bool RestorePending(Draoi::HexWorld::Weather::WeatherSimulation& sim, const Json::Value& blob,
+                        const Json::Value& committed) override;
 
     // The fields and caps a saved record is decoded against (not owned; set through WeatherStage::SetSaveSpec).
     const WorldStep::RecordSpec* saveSpec = nullptr;

@@ -315,6 +315,27 @@ bool WeatherHooks::RestoreCommitted(WeatherSimulation& sim, const Json::Value& r
     return true;
 }
 
+void WeatherHooks::WritePendingFields(Json::Value& blob, const WeatherSimulation& sim)
+{
+    WriteWeatherFieldArrays(blob, sim.GetWorkingFields());
+}
+
+bool WeatherHooks::RestorePending(WeatherSimulation& sim, const Json::Value& blob, const Json::Value&)
+{
+    if (!blob["cell_count"].isUInt())
+    {
+        DIA_LOG_ERROR(kLogChannel, "WTH: pending blob has no cell_count, discarding the in-flight step");
+        return false;
+    }
+    Draoi::HexWorld::Weather::WeatherFields fields;
+    if (!ReadWeatherFieldArrays(blob, blob["cell_count"].asUInt(), fields) || !sim.RestoreCompleted(fields))
+    {
+        DIA_LOG_ERROR(kLogChannel, "WTH: pending blob does not fit the simulation, discarding the in-flight step");
+        return false;
+    }
+    return true;
+}
+
 void WeatherHooks::PublishCommit(const WeatherSimulation&, uint32_t stepDay)
 {
     if (publishWeather)

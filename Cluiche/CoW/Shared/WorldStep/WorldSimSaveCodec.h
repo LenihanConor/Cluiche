@@ -70,6 +70,7 @@ struct RecordSpec
     uint32_t fieldCount = 0;
     Draoi::HexWorld::Caps caps;
     bool hasBiome = false;     // the record carries biome_palette + biome
+    bool pendingBiome = true;  // a pending blob also carries a per-cell biome array (only checked when hasBiome)
 };
 
 constexpr uint32_t kPendingVersion = 1;
