@@ -198,6 +198,8 @@ sonnet it says "ask before escalating" (feedback_confirm_opus).
   asked. No mutation checks. No `SLOW_` suites. World-sim checks use cell data and stats, not screenshots.
 - One commit per task, with the plan row updated in the same commit through `dia docs plan`.
 
+> **Carried from CA pipeline (2026-11-24):** AC 9b (empty snapshot skips pass 0 and output is bit-identical to a run without Feature 7; with influences `dPressure` lands in `pressureAnomaly` before pass 2, `dTemperature` after pass 1, `dMoisture` after pass 4) needs the pass 0 body built here. The seams exist in `Draoi/DraoiHexWorldWeather/WeatherPipeline.cpp` (`PassId::Influence` slot, marked seams after passes 1 and 4); `InfluenceSnapshot` is a placeholder in `WeatherTypes.h`.
+
 ## Tasks
 
 | # | Task | Test | Status | Model | Notes |

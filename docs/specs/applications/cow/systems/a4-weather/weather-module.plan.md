@@ -105,6 +105,8 @@ generation failed, parameter sidecar fault. The text "Unhealthy" does not appear
   Weather-stack close-out. No sanitizer unless asked. No `SLOW_` suites. No mutation checks. Spin-up wall time is
   a Debug ballpark only. Concurrency tests use counters and fake executors, never sleeps.
 
+> **Carried from CA pipeline (2026-11-24):** AC 33 (deferred-vs-synchronous: `Capture` at key N, `Apply` at N+k matches `Step` per week bit for bit over 52 weeks) was moved here from ca-pipeline.md because Draoi cannot depend on DiaDeferredStep. Write it through the real `WeatherStep` and the manual launcher.
+
 ## Tasks
 
 | # | Task | Test | Status | Model | Notes |
