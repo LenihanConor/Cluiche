@@ -7,6 +7,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <random>
 #include <sstream>
 #include <string>
@@ -428,4 +429,151 @@ TEST_F(WeatherSaveFieldsTest, ReadRejectsAMissingOrShortArray)
     Json::Value bad = good;
     bad["moisture"][1u] = "x";
     EXPECT_FALSE(CoW::Weather::ReadWeatherFieldArrays(bad, 2, f));
+}
+
+// ---- A4 weather-save Task 5: the weather RecordSpec feeds the Draoi kit's Validate ----
+namespace
+{
+class WeatherSaveValidateTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        ASSERT_TRUE(Publish(layers, ReadShippedSidecar()));
+        SaveError err;
+        ASSERT_TRUE(CoW::Weather::ResolveWeatherSaveFields(layers, fields, err)) << err.field.AsCStr();
+        spec = CoW::Weather::WeatherSaveRecordSpec(fields);
+    }
+
+    static bool ValidateSpec(const Json::Value& root, const CoW::WorldStep::RecordSpec& s, SaveError& err)
+    {
+        return Draoi::HexWorld::Validate(root, s.fields, s.fieldCount, s.caps, err);
+    }
+
+    // A valid 4-cell record (every value 0.25, inside every shipped range).
+    static Json::Value GoodRecord(uint32_t n = 4)
+    {
+        WeatherFields f;
+        f.Resize(n);
+        float* ptrs[kWeatherSaveFieldCount];
+        CoW::Weather::WeatherFieldPointers(f, ptrs);
+        for (uint32_t i = 0; i < kWeatherSaveFieldCount; ++i) { for (uint32_t c = 0; c < n; ++c) { ptrs[i][c] = 0.25f; } }
+        Json::Value root = Header(n);
+        CoW::Weather::WriteWeatherFieldArrays(root, f);
+        return root;
+    }
+
+    Dia::ValueSchema::ValueSchemaRegistry layers;
+    SavedField fields[kWeatherSaveFieldCount];
+    CoW::WorldStep::RecordSpec spec;
+};
+} // namespace
+
+TEST_F(WeatherSaveValidateTest, SpecCarriesTenFieldsKitCapsAndBiome)
+{
+    EXPECT_EQ(fields, spec.fields);
+    EXPECT_EQ(kWeatherSaveFieldCount, spec.fieldCount);
+    EXPECT_EQ(0u, spec.caps.maxBasins);
+    EXPECT_TRUE(spec.hasBiome);
+    SaveError err;
+    EXPECT_TRUE(ValidateSpec(GoodRecord(), spec, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+}
+
+TEST_F(WeatherSaveValidateTest, EveryFieldRejectsOutOfRangeWrongLengthMissingAndNonFiniteNamingTheField)
+{
+    for (uint32_t i = 0; i < kWeatherSaveFieldCount; ++i)
+    {
+        const char* name = fields[i].name;
+        SCOPED_TRACE(name);
+        SaveError err;
+
+        Json::Value high = GoodRecord();
+        high[name][1u] = fields[i].max + 1.0;
+        EXPECT_FALSE(ValidateSpec(high, spec, err));
+        EXPECT_STREQ(name, err.field.AsCStr());
+
+        Json::Value low = GoodRecord();
+        low[name][2u] = fields[i].min - 1.0;
+        EXPECT_FALSE(ValidateSpec(low, spec, err));
+        EXPECT_STREQ(name, err.field.AsCStr());
+
+        Json::Value shortArr = GoodRecord();
+        Json::Value trimmed(Json::arrayValue);
+        for (uint32_t c = 0; c < 3; ++c) { trimmed.append(shortArr[name][c]); }
+        shortArr[name] = trimmed;
+        EXPECT_FALSE(ValidateSpec(shortArr, spec, err));
+        EXPECT_STREQ(name, err.field.AsCStr());
+
+        Json::Value longArr = GoodRecord();
+        longArr[name].append(0.25);
+        EXPECT_FALSE(ValidateSpec(longArr, spec, err));
+        EXPECT_STREQ(name, err.field.AsCStr());
+
+        Json::Value missing = GoodRecord();
+        missing.removeMember(name);
+        EXPECT_FALSE(ValidateSpec(missing, spec, err));
+        EXPECT_STREQ(name, err.field.AsCStr());
+
+        const double bad[] = { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::infinity(),
+                               -std::numeric_limits<double>::infinity() };
+        for (double v : bad)
+        {
+            Json::Value nonFinite = GoodRecord();
+            nonFinite[name][0u] = v;
+            EXPECT_FALSE(ValidateSpec(nonFinite, spec, err));
+            EXPECT_STREQ(name, err.field.AsCStr());
+        }
+
+        Json::Value notNumber = GoodRecord();
+        notNumber[name][0u] = "x";
+        EXPECT_FALSE(ValidateSpec(notNumber, spec, err));
+        EXPECT_STREQ(name, err.field.AsCStr());
+    }
+}
+
+// Changing only the sidecar max changes what is accepted; no code change.
+TEST_F(WeatherSaveValidateTest, SidecarMaxDrivesWhatIsAccepted)
+{
+    const std::vector<std::string> names = FieldNames();
+    for (uint32_t i = 0; i < kWeatherSaveFieldCount; ++i)
+    {
+        const char* name = names[i].c_str();
+        SCOPED_TRACE(name);
+        Dia::ValueSchema::ValueSchemaRegistry narrowReg, wideReg;
+        ASSERT_TRUE(Publish(narrowReg, SchemaText("cow.weather.layers", names, 0.0, 1.0)));
+        ASSERT_TRUE(Publish(wideReg, SchemaText("cow.weather.layers", names, 0.0, 3.0)));
+        SavedField narrow[kWeatherSaveFieldCount], wide[kWeatherSaveFieldCount];
+        SaveError err;
+        ASSERT_TRUE(CoW::Weather::ResolveWeatherSaveFields(narrowReg, narrow, err));
+        ASSERT_TRUE(CoW::Weather::ResolveWeatherSaveFields(wideReg, wide, err));
+        const CoW::WorldStep::RecordSpec narrowSpec = CoW::Weather::WeatherSaveRecordSpec(narrow);
+        const CoW::WorldStep::RecordSpec wideSpec = CoW::Weather::WeatherSaveRecordSpec(wide);
+
+        Json::Value rec = GoodRecord();
+        rec[name][0u] = 2.0;
+        EXPECT_FALSE(ValidateSpec(rec, narrowSpec, err));
+        EXPECT_STREQ(name, err.field.AsCStr());
+        EXPECT_TRUE(ValidateSpec(rec, wideSpec, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+    }
+}
+
+TEST_F(WeatherSaveValidateTest, WindDirectionAcceptsTheDeclaredUpperBound)
+{
+    Json::Value rec = GoodRecord();
+    rec["wind_direction"][0u] = kTwoPi;
+    SaveError err;
+    EXPECT_TRUE(ValidateSpec(rec, spec, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+    rec["wind_direction"][0u] = std::nextafter(kTwoPi, 10.0);
+    EXPECT_FALSE(ValidateSpec(rec, spec, err));
+    EXPECT_STREQ("wind_direction", err.field.AsCStr());
+}
+
+TEST_F(WeatherSaveValidateTest, CellCountNotWidthTimesHeightIsRejected)
+{
+    Json::Value rec = GoodRecord();
+    rec["width"] = 3;
+    rec["height"] = 2;   // 6 != cell_count 4
+    SaveError err;
+    EXPECT_FALSE(ValidateSpec(rec, spec, err));
+    EXPECT_STREQ("cell_count", err.field.AsCStr());
 }

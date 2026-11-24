@@ -31,6 +31,11 @@ bool ResolveWeatherSaveFields(const TSchema& schema, Draoi::HexWorld::SavedField
                                          out, err);
 }
 
+// The weather record spec the kit validates against: the ten resolved fields, Draoi caps (weather saves no
+// basins, so maxBasins is 0; the cell cap is the kit's kMaxSaveCells) and hasBiome true. `fields` must outlive
+// the returned spec.
+WorldStep::RecordSpec WeatherSaveRecordSpec(const Draoi::HexWorld::SavedField (&fields)[kWeatherSaveFieldCount]);
+
 // Pointers to the ten arrays in saved order (an empty array yields nullptr).
 void WeatherFieldPointers(const Draoi::HexWorld::Weather::WeatherFields& fields, const float* (&out)[kWeatherSaveFieldCount]);
 void WeatherFieldPointers(Draoi::HexWorld::Weather::WeatherFields& fields, float* (&out)[kWeatherSaveFieldCount]);

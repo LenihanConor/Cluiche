@@ -41,6 +41,16 @@ namespace
 
 const WorldStep::FieldDecl* WeatherSaveFieldDecls() { return kDecls; }
 
+WorldStep::RecordSpec WeatherSaveRecordSpec(const Draoi::HexWorld::SavedField (&fields)[kWeatherSaveFieldCount])
+{
+    WorldStep::RecordSpec spec;
+    spec.fields = fields;
+    spec.fieldCount = kWeatherSaveFieldCount;
+    spec.caps.maxBasins = 0;
+    spec.hasBiome = true;
+    return spec;
+}
+
 void WeatherFieldPointers(const WeatherFields& fields, const float* (&out)[kWeatherSaveFieldCount]) { Fill(fields, out); }
 void WeatherFieldPointers(WeatherFields& fields, float* (&out)[kWeatherSaveFieldCount]) { Fill(fields, out); }
 
