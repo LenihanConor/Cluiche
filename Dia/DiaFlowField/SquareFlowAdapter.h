@@ -16,13 +16,13 @@ namespace Dia::FlowField {
 
         // --- CPathGraph forwarding ---
 
-        void GetNeighbours(Dia::Pathfinding::CellCoord cell,
-                           Dia::Core::Containers::DynamicArrayC<Dia::Pathfinding::CellCoord, 16>& out) const
+        void GetNeighbours(Dia::Geometry2D::CellCoord cell,
+                           Dia::Core::Containers::DynamicArrayC<Dia::Geometry2D::CellCoord, 16>& out) const
         {
             mGrid.GetNeighbours(cell, out);
         }
 
-        bool IsPassable(Dia::Pathfinding::CellCoord cell) const
+        bool IsPassable(Dia::Geometry2D::CellCoord cell) const
         {
             return mGrid.IsPassable(cell);
         }
@@ -32,7 +32,7 @@ namespace Dia::FlowField {
         // World position is cell-centred:
         //   x = col * cellSize + cellSize / 2
         //   y = row * cellSize + cellSize / 2
-        Dia::Maths::Vector2D CellToWorldPosition(Dia::Pathfinding::CellCoord cell, float cellSize) const
+        Dia::Maths::Vector2D CellToWorldPosition(Dia::Geometry2D::CellCoord cell, float cellSize) const
         {
             return Dia::Maths::Vector2D(
                 cell.x * cellSize + cellSize * 0.5f,
@@ -41,9 +41,9 @@ namespace Dia::FlowField {
         }
 
         // Inverse: col = floor(worldPos.X / cellSize), row = floor(worldPos.Y / cellSize)
-        Dia::Pathfinding::CellCoord WorldToCell(Dia::Maths::Vector2D worldPos, float cellSize) const
+        Dia::Geometry2D::CellCoord WorldToCell(Dia::Maths::Vector2D worldPos, float cellSize) const
         {
-            return Dia::Pathfinding::CellCoord{
+            return Dia::Geometry2D::CellCoord{
                 (int)(worldPos.X() / cellSize),
                 (int)(worldPos.Y() / cellSize)
             };

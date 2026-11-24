@@ -218,6 +218,11 @@ namespace Dia
 			template <class T, unsigned int capacity>
 			bool DynamicArrayC<T, capacity>::operator==( const DynamicArrayC<T, capacity>& rhs) const
 			{
+				if (Size() != rhs.Size())
+				{
+					return false;
+				}
+
 				for(unsigned int i = 0; i < Size(); i++)
 				{
 					if (rhs[i] != mData[i])

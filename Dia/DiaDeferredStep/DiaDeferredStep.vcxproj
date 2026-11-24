@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Asan|x64">
+      <Configuration>Debug-Asan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Ubsan|x64">
+      <Configuration>Debug-Ubsan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{7D4C2E91-8B2A-4C5F-B8D3-F9E6C5A4B9D2}</ProjectGuid>
+    <RootNamespace>DiaDeferredStep</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Asan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>ClangCL</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;DIA_DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BrowseInformation>true</BrowseInformation>
+    </ClCompile>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="DeferredStepTypes.h" />
+    <ClInclude Include="IDeferredStep.h" />
+    <ClInclude Include="IStepLauncher.h" />
+    <ClInclude Include="DeferredStepObservation.h" />
+    <ClInclude Include="Testing\LogCapture.h" />
+    <ClInclude Include="Testing\ManualStepLauncher.h" />
+    <ClInclude Include="Testing\RecordingStep.h" />
+    <ClInclude Include="Testing\ScriptedKeyDriver.h" />
+    <ClInclude Include="DeferredStepScheduler.h" />
+    <ClInclude Include="CapConfig.h" />
+    <ClInclude Include="RangeTiming.h" />
+    <ClInclude Include="RangeSplit.h" />
+    <ClInclude Include="Testing\ConcurrencyProbe.h" />
+    <ClInclude Include="CapGate.h" />
+    <ClInclude Include="CappedParallelExecutor.h" />
+    <ClInclude Include="JobStepLauncher.h" />
+    <ClInclude Include="Testing\ReorderingExecutor.h" />
+    <ClInclude Include="Testing\ReferenceGatherStep.h" />
+    <ClInclude Include="DeferredStepSaveParticipant.h" />
+    <ClInclude Include="Testing\PendingStateStep.h" />
+    <ClInclude Include="IStepKeySource.h" />
+    <ClInclude Include="DeferredStepMetrics.h" />
+    <ClInclude Include="DeferredStepHealth.h" />
+    <ClInclude Include="StepSummary.h" />
+    <ClInclude Include="IStepSummarySink.h" />
+    <ClInclude Include="IStepStage.h" />
+    <ClInclude Include="IStepChainListener.h" />
+    <ClInclude Include="StepChainConfig.h" />
+    <ClInclude Include="StepChainConfigLoader.h" />
+    <ClInclude Include="StepChain.h" />
+    <ClInclude Include="Testing\FakeStepStage.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DeferredStepObservation.cpp" />
+    <ClCompile Include="DeferredStepScheduler.cpp" />
+    <ClCompile Include="CapGate.cpp" />
+    <ClCompile Include="CappedParallelExecutor.cpp" />
+    <ClCompile Include="JobStepLauncher.cpp" />
+    <ClCompile Include="DeferredStepSaveParticipant.cpp" />
+    <ClCompile Include="DeferredStepMetrics.cpp" />
+    <ClCompile Include="DeferredStepHealth.cpp" />
+    <ClCompile Include="StepSummary.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.diadeferredstep.architecture.module.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
+      <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaParallelExecutor\DiaParallelExecutor.vcxproj">
+      <Project>{128D9ECE-FA18-59D5-A396-FE51946E313A}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
+      <Project>{C8F33BCF-D8B2-4B6A-9E3A-8F5C2D1A4B9E}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaThreading\DiaThreading.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaSaveGame\DiaSaveGame.vcxproj">
+      <Project>{10CADE58-BBF3-4114-9D8B-5C8F71C56417}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
+      <Project>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaStreams\DiaStreams.vcxproj">
+      <Project>{D4E5F6A7-B8C9-0123-DEF0-456789012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+</Project>

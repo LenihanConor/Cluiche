@@ -1,0 +1,16 @@
+{
+    "name": "weather_fixture",
+    "version": 3,
+    "config": {
+        "name": "weather_fixture",
+        "window": {
+            "title": "weather_fixture"
+        }
+    },
+    "imports": [
+        {
+            "path": "weather_before_worldstep.diaapp",
+            "type": "manifest"
+        }
+    ]
+}

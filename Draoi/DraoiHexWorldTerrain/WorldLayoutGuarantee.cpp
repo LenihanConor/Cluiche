@@ -1,0 +1,46 @@
+// S-1 Reachability Validator: WorldLayoutGuarantee. See WorldLayoutGuarantee.h.
+#include <DraoiHexWorldTerrain/WorldLayoutGuarantee.h>
+
+namespace Draoi {
+namespace HexWorld {
+
+using Dia::Core::StringCRC;
+
+StringCRC WorldLayoutGuarantee::GetId() const { return StringCRC(kName); }
+
+GuaranteeResult WorldLayoutGuarantee::Check(const ValidationContext& context) const
+{
+    const LayoutReport report = CheckLayout(context.world, mRules, mNodeKinds, mLimits);
+
+    GuaranteeResult result;
+    result.idCrc = GetId().Value();
+    result.satisfied = report.ok;
+
+    const bool terrainLimited = mLimits.regionLimitedBy != kNoStratum;
+    for (const LayoutViolation& v : report.violations)
+    {
+        const bool terrainCause = terrainLimited && (v.code == LayoutCode::RegionCountRange || v.code == LayoutCode::AbsorbedOverCap);
+        if (v.region != kNoRegion)
+        {
+            result.AddDiagnostic("%s: count %u, region %u%s", LayoutCodeName(v.code), v.count, static_cast<unsigned>(v.region),
+                                 terrainCause ? " (terrain cause: terrain-limited world)" : "");
+        }
+        else
+        {
+            result.AddDiagnostic("%s: count %u%s", LayoutCodeName(v.code), v.count,
+                                 terrainCause ? " (terrain cause: terrain-limited world)" : "");
+        }
+        for (unsigned i = 0; i < v.cellCount; ++i) { result.violatingCells.Add(v.cells[i]); }
+
+        Measurement m;
+        m.keyCrc = MeasurementKeys::ViolationCount().Value();
+        m.a = v.cellCount > 0 ? v.cells[0] : kNoCellIndex;
+        m.tag = static_cast<int32_t>(v.code);
+        m.value = static_cast<float>(v.count);
+        result.measurements.Add(m);
+    }
+    return result;
+}
+
+} // namespace HexWorld
+} // namespace Draoi

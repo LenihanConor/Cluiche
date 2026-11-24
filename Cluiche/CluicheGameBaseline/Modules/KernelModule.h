@@ -30,7 +30,7 @@ namespace Dia { namespace Observation { namespace Metric {
     class Histogram;
 } } }
 
-namespace Dia { namespace Graphics { class ICanvas; } }
+namespace Dia { namespace Graphics { class ICanvas; class CellFieldRegistry; } }
 namespace Dia { namespace Window { class IWindow; } }
 
 namespace Cluiche { namespace AppFlow {
@@ -69,6 +69,8 @@ private:
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::Graphics::ICanvas>           mCanvasService{this, "KernelCanvas"};
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::AssetRuntime::TextureHandler> mTextureHandlerService{this, "KernelTextureHandler"};
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::Mesh3D::Mesh3DAssetHandler>  mMeshHandlerService{this, "KernelMeshHandler"};
+    // Owned here, published to other PUs (thread-safe registry). Must outlive mBgfxCanvas, which borrows it.
+    Dia::ApplicationFlow::ServiceStreamWriter<Dia::Graphics::CellFieldRegistry> mCellFieldRegistryService{this, "KernelCellFieldRegistry"};
     static std::atomic<bool>         sRenderContextReleased;
     static std::atomic<bool>         sRenderContextActive;
     static std::atomic<unsigned int> sWindowWidth;
@@ -85,6 +87,7 @@ private:
     Dia::Window::IWindow*           mWindow       = nullptr;
     Dia::Graphics::ICanvas*         mCanvas       = nullptr;
     Dia::Bgfx3D::Canvas3D*          mBgfxCanvas   = nullptr;
+    Dia::Graphics::CellFieldRegistry* mCellFieldRegistry = nullptr; // owned; deleted after the canvas
     Dia::AssetRuntime::TextureHandler mTextureHandler;
     Dia::Mesh3D::Mesh3DAssetHandler  mMeshHandler;
     Dia::Input::EventData           mFrameEvents;

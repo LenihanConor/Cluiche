@@ -150,7 +150,7 @@ class TestDryRun:
 # ---------------------------------------------------------------------------
 
 class TestFullRun:
-    def _invoke(self, tmp_path: Path, parent="DiaCore", name="Widget", layer="platform"):
+    def _invoke(self, tmp_path: Path, parent="DiaCore", name="Widget", layer="foundation/platform"):
         repo = _build_fake_repo(tmp_path)
         with patch("dia_cli.commands.scaffold.module_cmd.find_repo_root", return_value=repo):
             runner = CliRunner()
@@ -191,9 +191,9 @@ class TestFullRun:
         assert "module_id: dia.core.widget" in text
 
     def test_module_md_has_layer(self, tmp_path):
-        _, repo = self._invoke(tmp_path, layer="framework")
+        _, repo = self._invoke(tmp_path, layer="foundation/application")
         text = (repo / "Dia/DiaCore/Docs/dia.core.widget.architecture.module.md").read_text(encoding="utf-8")
-        assert "layer: framework" in text
+        assert "layer: foundation/application" in text
 
     def test_vcxproj_updated(self, tmp_path):
         _, repo = self._invoke(tmp_path)
@@ -212,3 +212,49 @@ class TestFullRun:
         result, _ = self._invoke(tmp_path)
         assert "Next:" in result.output
         assert "module-registry.md" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Draoi parents
+# ---------------------------------------------------------------------------
+
+class TestDraoiParent:
+    def test_derive_names_for_draoi(self):
+        n = _derive_names("DraoiHexWorld", "Foo")
+        assert n["root"] == "Draoi"
+        assert n["full_path"] == "Draoi/DraoiHexWorld/Foo/"
+        assert n["module_id"] == "draoi.hexworld.foo"
+        assert n["parent_id"] == "draoi.hexworld"
+        assert n["module_md_file"] == "dia.draoi.hexworld.foo.architecture.module.md"
+
+    def test_dia_names_unchanged(self):
+        n = _derive_names("DiaCore", "Serializer")
+        assert n["root"] == "Dia" and n["module_id"] == "dia.core.serializer"
+
+    def test_dry_run_targets_draoi_root(self, tmp_path):
+        repo = _build_fake_repo(tmp_path)
+        with patch("dia_cli.commands.scaffold.module_cmd.find_repo_root", return_value=repo):
+            result = CliRunner().invoke(cli, ["scaffold", "module", "DraoiHexWorld", "Foo", "--dry-run"])
+        assert result.exit_code == 0, result.output
+        assert "Draoi/DraoiHexWorld/Foo/Foo.h" in result.output
+
+    def test_full_run_generates_draoi_namespace_layer_and_ids(self, tmp_path):
+        repo = _build_fake_repo(tmp_path)
+        (repo / "Draoi" / "DraoiHexWorld").mkdir(parents=True)
+        with patch("dia_cli.commands.scaffold.module_cmd.find_repo_root", return_value=repo):
+            result = CliRunner().invoke(cli, ["scaffold", "module", "DraoiHexWorld", "Foo"])
+        assert result.exit_code == 0, result.output
+        header = (repo / "Draoi/DraoiHexWorld/Foo/Foo.h").read_text(encoding="utf-8")
+        assert "namespace Draoi" in header and "namespace HexWorld" in header
+        doc = (repo / "Draoi/DraoiHexWorld/Docs/dia.draoi.hexworld.foo.architecture.module.md").read_text(encoding="utf-8")
+        assert "layer: draoi" in doc
+        assert "module_id: draoi.hexworld.foo" in doc
+        assert "path: Draoi/DraoiHexWorld/Foo/" in doc
+        assert "Draoi::HexWorld::Foo" in doc
+
+    def test_unknown_layer_rejected(self, tmp_path):
+        repo = _build_fake_repo(tmp_path)
+        with patch("dia_cli.commands.scaffold.module_cmd.find_repo_root", return_value=repo):
+            result = CliRunner().invoke(cli, ["scaffold", "module", "DiaCore", "Foo", "--layer", "backend", "--dry-run"])
+        assert result.exit_code != 0
+        assert "unknown layer" in result.output

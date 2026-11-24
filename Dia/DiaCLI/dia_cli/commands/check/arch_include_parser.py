@@ -5,6 +5,8 @@ import re
 from pathlib import Path
 from typing import Optional
 
+from dia_cli.utils.library_roots import strip_root
+
 from .arch_module_map import ModuleInfo
 
 # Matches: #include <Dia/SomePath/File.h> or #include "Dia/SomePath/File.h"
@@ -78,10 +80,8 @@ def _build_path_index(module_map: dict[str, ModuleInfo]) -> dict[str, str]:
     for module_id, info in module_map.items():
         if not info.path:
             continue
-        # Strip leading "Dia/" to match the include form
-        norm = info.path
-        if norm.startswith("Dia/"):
-            norm = norm[4:]
+        # Strip the library root (Dia/ or Draoi/) to match the include form
+        norm = strip_root(info.path)
         if norm:
             index[norm] = module_id
     return index

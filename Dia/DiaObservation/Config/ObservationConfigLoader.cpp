@@ -22,6 +22,7 @@
 //       "diastream":          false,
 //       "diaassetruntime":    false,
 //       "diaanimation":       false,
+//       "diadeferredstep":   false,
 //       "all":                false  // shorthand to enable every category
 //     }
 //   },
@@ -33,6 +34,7 @@
 //       "diastream":          false,
 //       "diaassetruntime":    false,
 //       "diaanimation":       false,
+//       "diadeferredstep":   false,
 //       "all":                false  // shorthand to enable every category
 //     }
 //   },
@@ -183,6 +185,7 @@ namespace Dia
 					checkCategory("diastream",          1u << 2);
 					checkCategory("diaassetruntime",    1u << 3);
 					checkCategory("diaanimation",       1u << 4);
+					checkCategory("diadeferredstep",   1u << 7);
 
 					if (categories.isMember("all") && categories["all"].isBool()
 						&& categories["all"].asBool())
@@ -224,6 +227,7 @@ namespace Dia
 					checkCategory("diastream",          1u << 2);
 					checkCategory("diaassetruntime",    1u << 3);
 					checkCategory("diaanimation",       1u << 4);
+					checkCategory("diadeferredstep",   1u << 7);
 
 					if (categories.isMember("all") && categories["all"].isBool()
 						&& categories["all"].asBool())
@@ -234,6 +238,61 @@ namespace Dia
 				else if (!enabled)
 				{
 					config.traceCategoryMask = 0;
+				}
+			}
+
+			// Parse perf config (trip detection tuning)
+			if (root.isMember("observation") && root["observation"].isObject())
+			{
+				const Json::Value& obsBlock = root["observation"];
+				if (obsBlock.isMember("perf") && obsBlock["perf"].isObject())
+				{
+					const Json::Value& perf = obsBlock["perf"];
+
+					if (perf.isMember("trip_frames") && perf["trip_frames"].isUInt())
+					{
+						uint32_t val = perf["trip_frames"].asUInt();
+						if (val > 0)
+							config.perfConfig.tripFrames = val;
+						// else: invalid (0), fall back to default
+					}
+
+					if (perf.isMember("trip_factor") && perf["trip_factor"].isDouble())
+					{
+						double val = perf["trip_factor"].asDouble();
+						if (val > 0.0)
+							config.perfConfig.tripFactor = static_cast<float>(val);
+						// else: invalid, fall back to default
+					}
+
+					if (perf.isMember("rearm_frames") && perf["rearm_frames"].isUInt())
+					{
+						uint32_t val = perf["rearm_frames"].asUInt();
+						if (val > 0)
+							config.perfConfig.rearmFrames = val;
+						// else: invalid (0), fall back to default
+					}
+
+					if (perf.isMember("min_interval_ms") && perf["min_interval_ms"].isUInt())
+					{
+						uint32_t val = perf["min_interval_ms"].asUInt();
+						if (val > 0)
+							config.perfConfig.minIntervalMs = val;
+						// else: invalid (0), fall back to default
+					}
+
+					if (perf.isMember("budget_scale") && perf["budget_scale"].isDouble())
+					{
+						double val = perf["budget_scale"].asDouble();
+						if (val > 0.0)
+							config.perfConfig.budgetScale = static_cast<float>(val);
+						// else: invalid (<= 0), fall back to default
+					}
+
+					if (perf.isMember("perf_exit_seconds") && perf["perf_exit_seconds"].isUInt())
+					{
+						config.perfConfig.perfExitSeconds = perf["perf_exit_seconds"].asUInt();
+					}
 				}
 			}
 

@@ -3,7 +3,7 @@ import type { FC, Dispatch } from 'react';
 import type { PipelineState } from '../state/types';
 import type { PipelineAction } from '../state/pipelineReducer';
 import { PipelineToolbar } from './PipelineToolbar';
-import { EmptyState } from './EmptyState';
+import { EmptyState } from '@dia/editor-ui';
 import { RunSummary } from './RunSummary';
 import { StageTimeline } from './StageTimeline';
 import { HistoryDrawer } from './HistoryDrawer';

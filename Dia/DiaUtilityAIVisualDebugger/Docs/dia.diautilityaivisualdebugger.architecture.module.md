@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.utilityaivisualdebugger
 name: DiaUtilityAIVisualDebugger
 owner_team: TBD
-layer: domain/gameplay/tools
+layer: 4.1-Gameplay
 status: active
 maturity: dev
 
@@ -43,6 +43,7 @@ dependencies:
   required:
     - dia.core
     - dia.utilityai
+    - dia.debug.visualdebugger
   forbidden:
     - dia.rules
     - dia.condition

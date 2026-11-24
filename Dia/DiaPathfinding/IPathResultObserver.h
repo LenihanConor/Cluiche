@@ -1,5 +1,5 @@
 #pragma once
-#include "DiaPathfinding/CellCoord.h"
+#include "DiaGeometry2D/Grid/CellCoord.h"
 #include "DiaPathfinding/PathResult.h"
 #include <DiaCore/CRC/StringCRC.h>
 

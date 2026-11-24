@@ -62,7 +62,6 @@ dependencies:
   required:
     - dia.core
     - dia.observation
-    - dia.mailbox
     - dia.entity
     - dia.blackboard
     - dia.application

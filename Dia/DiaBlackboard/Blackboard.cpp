@@ -4,12 +4,66 @@
 
 namespace Dia { namespace Blackboard {
 
-    Blackboard::Blackboard()
+    Blackboard::Blackboard(uint32_t maxSlots, Dia::Core::StringCRC name)
+        : mMaxSlots(maxSlots)
+        , mName(name)
     {
+        if (maxSlots > 0)
+        {
+            mSlots.Reserve(maxSlots);
+        }
+    }
+
+    Dia::Core::StringCRC Blackboard::GetName() const
+    {
+        return mName;
+    }
+
+    bool Blackboard::SetParent(const Blackboard* parent)
+    {
+        if (parent == mParent)
+        {
+            return true;
+        }
+        if (parent != nullptr)
+        {
+            uint32_t depth = 1; // this
+            for (const Blackboard* p = parent; p != nullptr; p = p->mParent)
+            {
+                if (p == this)
+                {
+                    return false;
+                }
+                ++depth;
+            }
+            if (depth > kMaxParentDepth)
+            {
+                return false;
+            }
+            ++parent->mChildCount;
+        }
+        if (mParent != nullptr)
+        {
+            --mParent->mChildCount;
+        }
+        mParent = parent;
+        return true;
+    }
+
+    const Blackboard* Blackboard::GetParent() const
+    {
+        return mParent;
     }
 
     Blackboard::~Blackboard()
     {
+        if (mParent != nullptr)
+        {
+            --mParent->mChildCount;
+            mParent = nullptr;
+        }
+        DIA_ASSERT(mChildCount == 0, "Blackboard destroyed while it still has live child boards; a parent must outlive its children");
+
         // Clean up all slots without notifying observers (they may be destroyed already)
         for (unsigned int i = 0; i < mSlots.Size(); ++i)
         {
@@ -50,6 +104,21 @@ namespace Dia { namespace Blackboard {
         return FindSlotIndex(key) != -1;
     }
 
+    const Blackboard* Blackboard::FindOwner(Dia::Core::StringCRC key) const
+    {
+        for (const Blackboard* board = this; board != nullptr; board = board->mParent)
+        {
+            if (board->FindSlotIndex(key) != -1)
+                return board;
+        }
+        return nullptr;
+    }
+
+    bool Blackboard::HasInChain(Dia::Core::StringCRC key) const
+    {
+        return FindOwner(key) != nullptr;
+    }
+
     void Blackboard::AddObserver(IBlackboardObserver& observer)
     {
         DIA_ASSERT(!mObservers.IsFull(), "Blackboard observer capacity exceeded");
@@ -86,6 +155,15 @@ namespace Dia { namespace Blackboard {
         for (unsigned int i = 0; i < mObservers.Size(); ++i)
         {
             mObservers[i]->OnSlotRegistered(key);
+        }
+    }
+
+    void Blackboard::NotifyChanged(Dia::Core::StringCRC key)
+    {
+        // Index loop re-checking Size(): tolerates observer removal during callback.
+        for (unsigned int i = 0; i < mObservers.Size(); ++i)
+        {
+            mObservers[i]->OnSlotChanged(key);
         }
     }
 

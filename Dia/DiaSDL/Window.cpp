@@ -52,8 +52,7 @@ namespace Dia
 		}
 
 		//-------------------------------------------------------------------------------------
-		// Initialize is a no-op — window is created in the constructor,
-		// matching the DiaSFML pattern.
+		// Initialize is a no-op — the window is created in the constructor.
 		void Window::Initialize(const Dia::Window::IWindow::Settings& /*settings*/)
 		{
 		}

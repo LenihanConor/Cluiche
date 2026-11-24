@@ -1,0 +1,68 @@
+{
+    "version": 3,
+    "stages": [
+        {
+            "name": "Boot",
+            "transitions": [
+                "TestRig",
+                "NoImport",
+                "ShowTest",
+                "ToolBench",
+                "Misc",
+                "Plain",
+                "ShowcaseDemo"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "TestRig",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "NoImport",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "ShowTest",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "ToolBench",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "Misc",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "Plain",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "ShowcaseDemo",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        }
+    ],
+    "initial_stage": "Boot"
+}

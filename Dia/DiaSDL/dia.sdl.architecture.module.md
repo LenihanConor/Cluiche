@@ -11,6 +11,7 @@ dependencies:
     - dia.core
     - dia.window
     - dia.input
+    - dia.observation
   forbidden:
     - dia.bgfx
     - dia.graphics
@@ -42,7 +43,7 @@ non_responsibilities:
 
 # DiaSDL
 
-SDL3-based window and input backend for Dia engine. Replaces DiaSFML on all game targets (Windows, Linux, Android, iOS).
+SDL3-based window and input backend for Dia engine. The window and input backend on all game targets (Windows, Linux, Android, iOS).
 
 `WindowFactory::Create` calls `SDL_Init(SDL_INIT_VIDEO)` and returns a `Window` that implements both `IWindow` and `IInputSource`. `WindowFactory::Destroy` calls `SDL_Quit`.
 

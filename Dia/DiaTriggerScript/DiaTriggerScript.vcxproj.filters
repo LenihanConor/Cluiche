@@ -16,7 +16,6 @@
   <ItemGroup>
     <ClInclude Include="ITriggerActionHandler.h" />
     <ClInclude Include="TriggerActionRegistry.h" />
-    <ClInclude Include="TriggerScriptModule.h" />
     <ClInclude Include="Testing\TriggerScriptTestHelpers.h">
       <Filter>Testing</Filter>
     </ClInclude>
@@ -25,6 +24,5 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TriggerActionRegistry.cpp" />
-    <ClCompile Include="TriggerScriptModule.cpp" />
   </ItemGroup>
 </Project>

@@ -9,6 +9,7 @@
 #include "DiaObservation/Metric/MetricRegistry.h"
 #include "DiaObservation/Health/HealthRegistry.h"
 #include "DiaObservation/Profile/Profiler.h"
+#include "DiaObservation/Profile/TripReporter.h"
 #include "DiaObservation/Capture/CaptureManager.h"
 
 #include "DiaCore/Json/external/json/json.h"
@@ -189,6 +190,9 @@ namespace Dia
 				}
 			}
 
+			// Trip records (always on, independent of the profiler): own writer thread, never the PU thread
+			mTripReporter.Start(mSessionDir);
+
 			mMetricSnapshotAccumMs = 0.0f;
 
 			// Register retention callback for Warning/Error entries
@@ -287,6 +291,7 @@ namespace Dia
 
 			Trace::Tracer::Instance().Stop();
 			Profile::Profiler::Instance().Stop();
+			mTripReporter.Stop();
 
 			// Write health.json from final health poll (conditionally)
 			if (mEnableHealthFileSink)
@@ -345,6 +350,11 @@ namespace Dia
 			}
 		}
 
+		Profile::TripReporter* SessionManager::GetTripReporter()
+		{
+			return &mTripReporter;
+		}
+
 		Capture::CaptureManager* SessionManager::GetCaptureManager()
 		{
 			return mCaptureManager;
@@ -353,6 +363,26 @@ namespace Dia
 		Capture::CaptureManager* SessionManager::GetActiveCaptureManager()
 		{
 			return sActiveInstance ? sActiveInstance->mCaptureManager : nullptr;
+		}
+
+		static void CopyBounded(char* out, uint32_t cap, const char* src)
+		{
+			if (!out || cap == 0)
+				return;
+			uint32_t i = 0;
+			for (; i + 1 < cap && src[i] != '\0'; ++i)
+				out[i] = src[i];
+			out[i] = '\0';
+		}
+
+		bool SessionManager::GetActiveSessionInfo(char* outId, uint32_t idCap, char* outDir, uint32_t dirCap)
+		{
+			const SessionManager* active = sActiveInstance;
+			if (!active || !active->mStarted)
+				return false;
+			CopyBounded(outId, idCap, active->mSessionId);
+			CopyBounded(outDir, dirCap, active->mSessionDir);
+			return true;
 		}
 
 		void SessionManager::SetActiveCaptureSource(Capture::IFrameCaptureSource* source)
@@ -426,9 +456,9 @@ namespace Dia
 
 		void SessionManager::PollAndEmitHealthTransitions()
 		{
-			Health::HealthRegistry::Transition transitions[32];
+			Health::HealthRegistry::Transition transitions[Health::HealthRegistry::kMaxReporters];
 			unsigned int transitionCount = 0;
-			Health::HealthRegistry::Instance().PollTransitions(transitions, 32, transitionCount);
+			Health::HealthRegistry::Instance().PollTransitions(transitions, Health::HealthRegistry::kMaxReporters, transitionCount);
 
 			for (unsigned int i = 0; i < transitionCount; ++i)
 			{
@@ -443,9 +473,9 @@ namespace Dia
 
 		void SessionManager::WriteHealthJson()
 		{
-			Health::HealthRegistry::ReporterSnapshot reporters[32];
+			Health::HealthRegistry::ReporterSnapshot reporters[Health::HealthRegistry::kMaxReporters * 2];
 			unsigned int reporterCount = 0;
-			Health::HealthRegistry::Instance().Snapshot(reporters, 32, reporterCount);
+			Health::HealthRegistry::Instance().Snapshot(reporters, Health::HealthRegistry::kMaxReporters * 2, reporterCount);
 
 			// Determine overall status
 			Health::HealthStatus overall = Health::HealthStatus::kOK;

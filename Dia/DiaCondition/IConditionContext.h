@@ -25,6 +25,15 @@ namespace Dia
 
 			virtual float GetFloat(Dia::Core::StringCRC slot, Dia::Core::StringCRC field) const = 0;
 			virtual bool  GetBool (Dia::Core::StringCRC slot, Dia::Core::StringCRC field) const = 0;
+
+				// Reports whether a slot/field pair is resolvable. Defaulted to true ("cannot tell") so
+				// existing implementers compile and behave unchanged; override to enable
+				// ConditionExpr::Validate(const IConditionContext&).
+				virtual bool Has(Dia::Core::StringCRC slot, Dia::Core::StringCRC field) const
+				{
+					(void)slot; (void)field;
+					return true;
+				}
 		};
 
 	} // namespace Condition

@@ -1,0 +1,158 @@
+{
+  "traceEvents": [
+    {
+      "ph": "M",
+      "pid": 1,
+      "tid": 0,
+      "ts": 0,
+      "name": "process_name",
+      "args": {
+        "name": "Cluiche"
+      }
+    },
+    {
+      "ph": "M",
+      "pid": 1,
+      "tid": 0,
+      "ts": 0,
+      "name": "thread_name",
+      "args": {
+        "name": "Main"
+      }
+    },
+    {
+      "ph": "M",
+      "pid": 1,
+      "tid": 1,
+      "ts": 0,
+      "name": "thread_name",
+      "args": {
+        "name": "Sim"
+      }
+    },
+    {
+      "ph": "M",
+      "pid": 1,
+      "tid": 2,
+      "ts": 0,
+      "name": "thread_name",
+      "args": {
+        "name": "Render"
+      }
+    },
+    {
+      "ph": "X",
+      "pid": 1,
+      "tid": 0,
+      "ts": 300000000,
+      "dur": 33333,
+      "name": "Main tick",
+      "args": {
+        "is_tick": true
+      }
+    },
+    {
+      "ph": "X",
+      "pid": 1,
+      "tid": 0,
+      "ts": 300000000,
+      "dur": 5000,
+      "name": "Window"
+    },
+    {
+      "ph": "X",
+      "pid": 1,
+      "tid": 0,
+      "ts": 300005000,
+      "dur": 8000,
+      "name": "Input"
+    },
+    {
+      "ph": "X",
+      "pid": 1,
+      "tid": 0,
+      "ts": 300013000,
+      "dur": 6000,
+      "name": "Console"
+    },
+    {
+      "ph": "X",
+      "pid": 1,
+      "tid": 0,
+      "ts": 300019000,
+      "dur": 4000,
+      "name": "Debug"
+    },
+    {
+      "ph": "X",
+      "pid": 1,
+      "tid": 1,
+      "ts": 300000000,
+      "dur": 33333,
+      "name": "Sim tick",
+      "args": {
+        "is_tick": true
+      }
+    },
+    {
+      "ph": "X",
+      "pid": 1,
+      "tid": 1,
+      "ts": 300000000,
+      "dur": 12000,
+      "name": "Physics"
+    },
+    {
+      "ph": "X",
+      "pid": 1,
+      "tid": 1,
+      "ts": 300012000,
+      "dur": 8000,
+      "name": "AI"
+    },
+    {
+      "ph": "X",
+      "pid": 1,
+      "tid": 1,
+      "ts": 300020000,
+      "dur": 5000,
+      "name": "World"
+    },
+    {
+      "ph": "X",
+      "pid": 1,
+      "tid": 2,
+      "ts": 300000000,
+      "dur": 16667,
+      "name": "Render tick",
+      "args": {
+        "is_tick": true
+      }
+    },
+    {
+      "ph": "X",
+      "pid": 1,
+      "tid": 2,
+      "ts": 300000000,
+      "dur": 6000,
+      "name": "Scene"
+    },
+    {
+      "ph": "X",
+      "pid": 1,
+      "tid": 2,
+      "ts": 300006000,
+      "dur": 7000,
+      "name": "Sprites"
+    },
+    {
+      "ph": "X",
+      "pid": 1,
+      "tid": 2,
+      "ts": 300013000,
+      "dur": 2000,
+      "name": "Present"
+    }
+  ],
+  "displayTimeUnit": "ms"
+}

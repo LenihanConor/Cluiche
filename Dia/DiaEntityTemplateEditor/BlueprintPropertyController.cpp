@@ -1,5 +1,5 @@
 #include "DiaEntityTemplateEditor/BlueprintPropertyController.h"
-#include "DiaEntityTemplateEditor/SchemaReader.h"
+#include "DiaEditor/Schema/SchemaReader.h"
 #include <DiaEntity/ComponentRegistry.h>
 #include <DiaEntity/ComponentTypeDesc.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
@@ -46,7 +46,7 @@ namespace Dia
 		Json::Value BlueprintPropertyController::BuildPropertyJson(
 			const Json::Value& blueprintRoot,
 			const char* topLevelKey,
-			const SchemaReader& schema) const
+			const Dia::Editor::SchemaReader& schema) const
 		{
 			DIA_TRACE_ZONE("entity_template_editor.build_property", Dia::Observation::Trace::Category::kNone);
 			Json::Value result;
@@ -84,7 +84,7 @@ namespace Dia
 				else
 				{
 					// No registry entry — try schema field list first, then fall back to raw JSON values
-					const SchemaComponentEntry* schemaEntry = nullptr;
+					const Dia::Editor::SchemaComponentEntry* schemaEntry = nullptr;
 					for (unsigned int s = 0; s < schema.GetComponentCount(); ++s)
 					{
 						if (schema.GetComponent(s).typeId == Dia::Core::StringCRC(typeName))
@@ -99,10 +99,23 @@ namespace Dia
 						// Use schema field list — shows all fields even when "fields" is empty {}
 						for (unsigned int f = 0; f < schemaEntry->fields.Size(); ++f)
 						{
-							const SchemaFieldEntry& sf = schemaEntry->fields[f];
+							const Dia::Editor::SchemaFieldEntry& sf = schemaEntry->fields[f];
 							Json::Value fieldJson;
 							fieldJson["name"] = sf.name;
 							fieldJson["kind"] = sf.kind;
+							if (sf.label[0] != '\0')       fieldJson["label"]       = sf.label;
+							if (sf.description[0] != '\0') fieldJson["description"] = sf.description;
+							if (sf.unit[0] != '\0')        fieldJson["unit"]        = sf.unit;
+							if (sf.hint[0] != '\0')        fieldJson["hint"]        = sf.hint;
+							if (sf.hasMin)                 fieldJson["min"]         = sf.min;
+							if (sf.hasMax)                 fieldJson["max"]         = sf.max;
+							if (sf.hasDefault)
+							{
+								Json::Value parsed;
+								Json::Reader defReader;
+								if (defReader.parse(sf.defaultJson, parsed))
+									fieldJson["default"] = parsed;
+							}
 							if (fieldValues.isMember(sf.name))
 								fieldJson["value"] = fieldValues[sf.name];
 							fields.append(fieldJson);
@@ -159,7 +172,7 @@ namespace Dia
 		Json::Value BlueprintPropertyController::BuildAvailableComponentsJson(
 			const Json::Value& blueprintRoot,
 			const char* topLevelKey,
-			const SchemaReader& schema) const
+			const Dia::Editor::SchemaReader& schema) const
 		{
 			DIA_TRACE_ZONE("entity_template_editor.build_available_components", Dia::Observation::Trace::Category::kNone);
 			Json::Value result(Json::arrayValue);
@@ -184,7 +197,7 @@ namespace Dia
 
 			for (unsigned int i = 0; i < schema.GetComponentCount(); ++i)
 			{
-				const SchemaComponentEntry& entry = schema.GetComponent(i);
+				const Dia::Editor::SchemaComponentEntry& entry = schema.GetComponent(i);
 
 				bool alreadyPresent = false;
 				for (unsigned int j = 0; j < present.Size(); ++j)

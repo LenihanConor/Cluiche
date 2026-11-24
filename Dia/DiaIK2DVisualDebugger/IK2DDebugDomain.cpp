@@ -7,8 +7,8 @@
 #include "IKChainArrowsDrawer.h"
 #include "IKReachCirclesDrawer.h"
 
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaIK2D/IKSolver.h>
 
 namespace Dia::IK2D

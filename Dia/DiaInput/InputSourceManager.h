@@ -13,7 +13,7 @@ namespace Dia
 		/// @brief Aggregates and polls multiple input sources
 		///
 		/// InputSourceManager coordinates multiple IInputSource implementations
-		/// (SFML keyboard/mouse, XInput gamepads, etc.) and collects their events
+		/// (SDL keyboard/mouse, XInput gamepads, etc.) and collects their events
 		/// into a unified EventData stream each frame.
 		///
 		/// **Lifecycle:** StartFrame() → Update() → EndFrame()
@@ -21,10 +21,10 @@ namespace Dia
 		/// **Usage Example:**
 		/// @code
 		/// InputSourceManager manager;
-		/// SFMLInputSource sfmlSource;
+		/// Dia::SDL::Window window;   // an InputSource
 		/// ConsoleGamepadManager gamepadManager;
 		///
-		/// manager.AddInputSource(&sfmlSource);
+		/// manager.AddInputSource(&window);
 		/// manager.AddInputSource(&gamepadManager);
 		///
 		/// // Each frame:

@@ -27,7 +27,9 @@ String();
 				explicit String ( ConstReverseIterator& iter ); 
 				template<class Evaluator> explicit String ( ConstIterator& iter, const Evaluator& filter);
 
-				explicit String(const char* pRawString, ...);
+				// Single-argument form is NON-formatting ('%' is literal); pass format args to use the printf-style overload below.
+				explicit String(const char* pRawString) : mData() { SetText(pRawString); }
+				template<class... Args> requires (sizeof...(Args) > 0) explicit String(const char* pRawString, Args... args) : mData() { DIA_ASSERT(pRawString != NULL, "Invalid Data"); FormatArgs(pRawString, args...); }
 				explicit String(const char* pRawString, va_list argList);
 
 				template<unsigned int _size> String<size>&			Append					( const String<_size>& str );
@@ -42,6 +44,8 @@ String();
  				String<size>&			AppendAsMuchAsCan		( const char* s );
 	 		
 				String<size>&									operator	=	(const char* pRawString);
+				// Non-formatting assign (the const char* constructor is printf-style; this is not). Truncates to size-1.
+				String<size>&									SetText					(const char* pRawString);
 				template<unsigned int _size> String<size>&		operator	=	(const String<_size>& other);
 
 				String<size>								operator	+	(const char* pRawString)const;
@@ -114,6 +118,8 @@ String();
 
 				String<size>&			Format			(const char* format, ...);
 				String<size>&			Format			(const char* format, va_list argList);
+				// Same as Format(fmt, ...) but never mistakes a single char* argument for a va_list.
+				String<size>&			FormatArgs		(const char* format, ...);
 				String<size>&			Trim			(const unsigned int index, const unsigned int charCount);
 				String<size>&			Trim			(const unsigned int index);
 

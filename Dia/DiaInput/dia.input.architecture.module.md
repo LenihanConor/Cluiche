@@ -18,7 +18,7 @@ intent: >
   Provide reusable input building blocks with consistent semantics for higher-level systems. Supports multiple input paradigms: event-driven (legacy), type-safe modern events, state queries, action mapping, context stacking, and persistent profiles.
 
 responsibilities:
-  - Abstract platform-specific input APIs (XInput, SFML) behind unified interfaces
+  - Abstract platform-specific input APIs (XInput, SDL) behind unified interfaces
   - Provide union-based legacy events for backward compatibility
   - Provide type-safe modern events integrated with DiaCore::Events system
   - Support input source prioritization (UI before gameplay)
@@ -38,10 +38,7 @@ non_responsibilities:
 
 dependent_modules:
   - dia.core.containers.arrays
-  - dia.core.containers.hashtable
   - dia.core.core
-  - dia.core.logging
-  - dia.core.events
   - dia.core.time
   - dia.core.crc
   - dia.messagebus
@@ -95,12 +92,13 @@ public_api:
 dependencies:
   required:
     - dia.core.containers.arrays
-    - dia.core.containers.hashtable
     - dia.core.core
-    - dia.core.logging
-    - dia.core.events
     - dia.core.time
     - dia.core.crc
     - dia.messagebus
+    - dia.core.architecture
+    - dia.core.containers.bitflag
+    - dia.core.containers.hashtables
+    - dia.observation
   forbidden: []
 ---

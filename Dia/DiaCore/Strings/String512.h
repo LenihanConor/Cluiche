@@ -17,7 +17,9 @@ namespace Dia
 				explicit String512 ( ConstReverseIterator& iter ); 
 				template<class Evaluator> explicit String512 ( ConstIterator& iter, const Evaluator& filter);
 
-				String512(const char* pRawString, ...);
+				// Single-argument form is NON-formatting (a '%' in paths/keys is literal); pass format args to use the printf-style overload below.
+				String512(const char* pRawString) : String<512>() { SetText(pRawString); }
+				template<class... Args> requires (sizeof...(Args) > 0) String512(const char* pRawString, Args... args) : String<512>() { DIA_ASSERT(pRawString != NULL, "Invalid Data"); FormatArgs(pRawString, args...); }
 				String512(const char* pRawString, va_list argList);
 			};
 		}

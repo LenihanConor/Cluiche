@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{42432990-3b7b-433d-80d7-8c14f5f50009}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DeferredStepTypes.h" />
+    <ClInclude Include="IDeferredStep.h" />
+    <ClInclude Include="IStepLauncher.h" />
+    <ClInclude Include="DeferredStepObservation.h" />
+    <ClInclude Include="Testing\LogCapture.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\ManualStepLauncher.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\RecordingStep.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\ScriptedKeyDriver.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="DeferredStepScheduler.h" />
+    <ClInclude Include="CapConfig.h" />
+    <ClInclude Include="RangeTiming.h" />
+    <ClInclude Include="RangeSplit.h" />
+    <ClInclude Include="Testing\ConcurrencyProbe.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="CapGate.h" />
+    <ClInclude Include="CappedParallelExecutor.h" />
+    <ClInclude Include="JobStepLauncher.h" />
+    <ClInclude Include="Testing\ReorderingExecutor.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\ReferenceGatherStep.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="DeferredStepSaveParticipant.h" />
+    <ClInclude Include="Testing\PendingStateStep.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="IStepKeySource.h" />
+    <ClInclude Include="DeferredStepMetrics.h" />
+    <ClInclude Include="DeferredStepHealth.h" />
+    <ClInclude Include="StepSummary.h" />
+    <ClInclude Include="IStepSummarySink.h" />
+    <ClInclude Include="IStepStage.h" />
+    <ClInclude Include="IStepChainListener.h" />
+    <ClInclude Include="StepChainConfig.h" />
+    <ClInclude Include="StepChainConfigLoader.h" />
+    <ClInclude Include="StepChain.h" />
+    <ClInclude Include="Testing\FakeStepStage.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClCompile Include="DeferredStepObservation.cpp" />
+    <ClCompile Include="DeferredStepScheduler.cpp" />
+    <ClCompile Include="CapGate.cpp" />
+    <ClCompile Include="CappedParallelExecutor.cpp" />
+    <ClCompile Include="JobStepLauncher.cpp" />
+    <ClCompile Include="DeferredStepSaveParticipant.cpp" />
+    <ClCompile Include="DeferredStepMetrics.cpp" />
+    <ClCompile Include="DeferredStepHealth.cpp" />
+    <ClCompile Include="StepSummary.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.diadeferredstep.architecture.module.md" />
+  </ItemGroup>
+</Project>

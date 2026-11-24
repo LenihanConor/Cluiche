@@ -92,6 +92,10 @@
       <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\DiaGeometry2D\DiaGeometry2D.vcxproj">
+      <Project>{A3C4D5E6-F7B8-9012-CDEF-012345678901}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\DiaMaths\DiaMaths.vcxproj">
       <Project>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

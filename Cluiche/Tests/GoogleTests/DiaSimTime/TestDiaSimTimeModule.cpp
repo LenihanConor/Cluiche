@@ -21,7 +21,7 @@
 //      "SimTime" stream observes it via FetchLatest() after a DoUpdate.
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
-#include <DiaSimTime/DiaSimTimeModule.h>
+#include "Modules/DiaSimTimeModule.h"
 #include <DiaSimTime/ISimTimeBudgetedSystem.h>
 #include <DiaSimTime/SimTimePolicy.h>
 #include <DiaSimTime/SimTimeState.h>

@@ -7,7 +7,7 @@
 #include <gtest/gtest.h>
 #include <cstdlib>
 
-#include "DiaPathfinding/CellCoord.h"
+#include "DiaGeometry2D/Grid/CellCoord.h"
 #include "DiaPathfinding/IPathCostProvider.h"
 #include "DiaPathfinding/PathResult.h"
 #include "DiaPathfinding/SquarePathGrid.h"
@@ -17,6 +17,7 @@
 #include <DiaMaths/Vector/Vector2D.h>
 
 using namespace Dia::Pathfinding;
+using Dia::Geometry2D::CellCoord;
 using Dia::Core::Containers::DynamicArrayC;
 
 namespace

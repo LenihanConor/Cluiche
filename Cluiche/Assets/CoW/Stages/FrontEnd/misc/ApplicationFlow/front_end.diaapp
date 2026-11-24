@@ -1,0 +1,42 @@
+{
+    "version": 3,
+    "processing_units": [
+        {
+            "instance_id": "MainPU",
+            "frequency_hz": 30,
+            "dedicated_thread": false,
+            "modules": []
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "FrontEndModule",
+                    "type_id": "FrontEndModule",
+                    "stages": [
+                        "FrontEnd"
+                    ],
+                    "dependencies": [
+                        "InputStreamModule"
+                    ],
+                    "channels": [
+                        {
+                            "id": "AssetLoadStatus",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "AssetRuntimeService",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "AutomationService",
+                            "role": "consumes"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

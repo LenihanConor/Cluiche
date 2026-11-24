@@ -47,7 +47,7 @@ void SaveManifest::Write(SaveContext& ctx) const
     ctx.BeginObject(kKeyManifest);
         ctx.Write(kKeyEngineVersion, static_cast<int32_t>(mEngineVersion));
         ctx.Write(kKeyFormat,        static_cast<int32_t>(static_cast<int>(mFormat)));
-        ctx.Write(kKeyTimestamp,     static_cast<int32_t>(mTimestamp));
+        ctx.Write(kKeyTimestamp,     static_cast<int64_t>(mTimestamp));
 
         ctx.BeginArray(kKeyParticipants);
         Json::Value& arr = ctx.CurrentNode();
@@ -67,14 +67,15 @@ bool SaveManifest::Read(LoadContext& ctx)
     if (!ctx.BeginObject(kKeyManifest))
         return false;
 
-    int32_t ev = 0, fmt = 0, ts = 0;
+    int32_t ev = 0, fmt = 0;
+    int64_t ts = 0;
     if (!ctx.Read(kKeyEngineVersion, ev))  { ctx.EndObject(); return false; }
     if (!ctx.Read(kKeyFormat,        fmt)) { ctx.EndObject(); return false; }
     if (!ctx.Read(kKeyTimestamp,     ts))  { ctx.EndObject(); return false; }
 
     mEngineVersion = static_cast<uint32_t>(ev);
     mFormat        = static_cast<SaveFormat>(fmt);
-    mTimestamp     = static_cast<uint32_t>(ts);
+    mTimestamp     = ts > 0 ? static_cast<uint64_t>(ts) : 0u;
     mParticipants.RemoveAll();
 
     uint32_t count = 0;

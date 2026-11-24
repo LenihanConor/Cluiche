@@ -39,6 +39,7 @@ public_api:
     - HWND__
 
 dependencies:
-  required: []
+  required:
+    - dia.core.core
   forbidden: []
 ---

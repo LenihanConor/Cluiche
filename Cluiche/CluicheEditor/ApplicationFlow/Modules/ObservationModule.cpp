@@ -5,7 +5,7 @@
 namespace Cluiche { namespace Editor {
 
 ObservationModule::ObservationModule(const Dia::Core::StringCRC& instanceId)
-    : Dia::ApplicationFlow::ObservationModule(
+    : Dia::ApplicationFlow::ObservationModuleBase(
         instanceId,
         "CluicheEditor",
         "../../../../Assets/CluicheEditor/cluicheeditor.diaobservation")

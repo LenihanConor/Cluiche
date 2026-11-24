@@ -8,6 +8,9 @@ import { StageAssetTree } from './components/StageAssetTree';
 import { RefCountInspector } from './components/RefCountInspector';
 import { StateTransitionLog } from './components/StateTransitionLog';
 
+// Fixed id for the priming get_connection_state request so its reply can be recognised.
+const kStateReqId = 'init_connection_state';
+
 const TABS: Tab[] = [
     { id: 'table',     label: 'Asset State Table' },
     { id: 'tree',      label: 'Stage Tree' },
@@ -75,6 +78,10 @@ export default function App() {
 
         const onMessage = (e: MessageEvent) => {
             const env = e.data;
+            if (env && env.__diaResponse === true && env.reqId === kStateReqId) {
+                // get_connection_state is a request handler; its reply carries { connected }.
+                dispatch('asset_runtime_inspector.connection_state', env.result);
+            }
             if (env && env.__dia === true && typeof env.topic === 'string') {
                 dispatch(env.topic, env.data);
             }
@@ -91,7 +98,7 @@ export default function App() {
         if (window.parent && window.parent !== window) {
             window.parent.postMessage({
                 __diaFromFrame: true,
-                payload: { type: 'asset_runtime_inspector.get_connection_state', reqId: null, data: {} },
+                payload: { type: 'asset_runtime_inspector.get_connection_state', reqId: kStateReqId, data: {} },
             }, '*');
         }
     }, []);

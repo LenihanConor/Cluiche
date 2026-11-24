@@ -1,0 +1,78 @@
+{
+  "description": "A record path applies to every record; error in the 3rd gives species[2].",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.ecology_parameters",
+      "entries": [
+        {
+          "key": "species[].id",
+          "kind": "field",
+          "label": "species[].id",
+          "description": "d",
+          "type": "string",
+          "ui": {
+            "hidden": true
+          }
+        },
+        {
+          "key": "species[].growth_rate",
+          "kind": "parameter",
+          "label": "species[].growth_rate",
+          "description": "d",
+          "type": "float",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "key": "species[].tags",
+          "kind": "parameter",
+          "label": "species[].tags",
+          "description": "d",
+          "type": "ref[]",
+          "ref": "x"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Ecology/ecology_parameters.json",
+      "pack": false,
+      "content": {
+        "format": "cow.ecology_parameters",
+        "version": 1,
+        "species": [
+          {
+            "id": "a",
+            "growth_rate": 0.1
+          },
+          {
+            "id": "b",
+            "growth_rate": 0.2,
+            "tags": [
+              "t"
+            ]
+          },
+          {
+            "id": "c",
+            "growth_rate": 3
+          }
+        ]
+      }
+    }
+  ],
+  "expected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.out-of-range",
+      "file": "Global/Ecology/ecology_parameters.json",
+      "key": "species[].growth_rate",
+      "path": "species[2].growth_rate",
+      "record": "c",
+      "messageContains": "3",
+      "suggestion": null
+    }
+  ]
+}

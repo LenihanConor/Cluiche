@@ -7,6 +7,7 @@
 #pragma once
 
 #include <DiaCore/Colour/RGBA.h>
+#include <DiaCore/DebugDraw/CellFieldDrawRequest.h>
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaMaths/Vector/Vector3D.h>
 #include <stdint.h>
@@ -94,6 +95,9 @@ namespace Dia
             // Arrow3D — direction must be a unit vector
             virtual void RequestDrawArrow3D(const Maths::Vector3D& origin, const Maths::Vector3D& direction,
                 float length, float headSize, RGBA colour) = 0;
+
+            // CellField — grid-field layer draw request. Default no-op so existing implementers are unaffected.
+            virtual void RequestDrawCellField(const CellFieldDrawRequest&) {}
 
             // Budget monitoring — number of geometry draw calls dropped this frame due to buffer overflow.
             virtual uint32_t DroppedCount() const = 0;

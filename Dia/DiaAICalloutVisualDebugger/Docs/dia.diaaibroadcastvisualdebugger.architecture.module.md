@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.aicallout.visualdebugger
 name: DiaAICalloutVisualDebugger
 owner_team: TBD
-layer: domain/gameplay/tools
+layer: 4.1-Gameplay
 status: active
 maturity: dev
 
@@ -31,7 +31,6 @@ non_responsibilities:
 
 dependent_modules:
   - dia.aicallout
-  - dia.visualdebugger
 
 public_api:
   headers:
@@ -43,7 +42,7 @@ dependencies:
   required:
     - dia.core
     - dia.aicallout
-    - dia.visualdebugger
+    - dia.debug.visualdebugger
   forbidden:
     - dia.blackboard
     - dia.rules

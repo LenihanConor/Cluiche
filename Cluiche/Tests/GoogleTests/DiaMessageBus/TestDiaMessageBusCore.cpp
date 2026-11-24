@@ -15,7 +15,7 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaMessageBus/Bus.h>
-#include <DiaMessageBus/MessageBusModule.h>
+#include <Modules/MessageBusHostModule.h>
 #include <DiaMessageBus/BroadcastRouter.h>
 #include <DiaMessageBus/IFlushAdapter.h>
 
@@ -41,7 +41,7 @@ namespace Dia::MessageBus::Testing {
     // TestableEntitySpawnerModule pattern. OnConnectStreams() is not exercised
     // — MessageBusModule doesn't declare any stream writers.
     // -----------------------------------------------------------------------
-    class TestableMessageBusModule : public Dia::MessageBus::MessageBusModule {
+    class TestableMessageBusModule : public Cluiche::AppFlow::MessageBusHostModule {
     public:
         void Start() { DoStart(); }
         void Update(float dt)
@@ -761,6 +761,28 @@ namespace Dia::MessageBus::Testing {
 
         EXPECT_EQ(primaryCount, N)
             << "Snapshot bound must not under-deliver messages queued before Update() was called";
+    }
+
+    // =========================================================================
+    // Manifest-instantiable: a module can be constructed with a manifest
+    // instanceId (the DIA_MODULE contract).
+    // =========================================================================
+    namespace {
+        class IdBusModule : public Cluiche::AppFlow::MessageBusHostModule {
+        public:
+            explicit IdBusModule(const Dia::Core::StringCRC& id) : MessageBusHostModule(id) {}
+        };
+    }
+
+    TEST(DiaMessageBusCore, Module_ConstructedWithInstanceId_UsesThatId) {
+        const Dia::Core::StringCRC id("cow-bus");
+        IdBusModule module(id);
+        EXPECT_EQ(module.GetInstanceId(), id);
+    }
+
+    TEST(DiaMessageBusCore, Module_DefaultConstructed_KeepsDefaultInstanceId) {
+        TestableMessageBusModule module;
+        EXPECT_EQ(module.GetInstanceId(), Cluiche::AppFlow::MessageBusHostModule::kInstanceId);
     }
 
 } // namespace Dia::MessageBus::Testing

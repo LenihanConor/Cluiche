@@ -6,7 +6,7 @@
 #include "DiaEntityTemplateEditor/BlueprintFileHandler.h"
 #include "DiaEntityTemplateEditor/BlueprintListController.h"
 #include "DiaEntityTemplateEditor/BlueprintPropertyController.h"
-#include "DiaEntityTemplateEditor/SchemaReader.h"
+#include "DiaEditor/Schema/SchemaReader.h"
 
 namespace Dia
 {
@@ -43,7 +43,7 @@ namespace Dia
 			BlueprintFileHandler        mFileHandler;
 			BlueprintListController     mListController;
 			BlueprintPropertyController mPropertyController;
-			SchemaReader                mSchemaReader;
+			Dia::Editor::SchemaReader                mSchemaReader;
 
 			static const unsigned int kDiagamePathLength = 512;
 			static const unsigned int kDiagameDirLength  = 512;

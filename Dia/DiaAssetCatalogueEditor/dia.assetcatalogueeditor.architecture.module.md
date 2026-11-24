@@ -40,7 +40,6 @@ dependent_modules:
   - dia.editor
   - dia.assetcatalogue
   - dia.core
-  - dia.logger
 
 public_api:
   headers:
@@ -55,9 +54,13 @@ dependencies:
     - dia.editor
     - dia.assetcatalogue
     - dia.core
-    - dia.logger
+    - dia.observation
   forbidden:
     - dia.application
     - dia.assetpipeline
     - dia.assetruntime
 ---
+
+# DiaAssetCatalogueEditor
+
+**Asset-type editor routes:** `AssetTypeEditorRegistry` maps assetTypeId to editor plugin type, seeded with built-in routes and consulted by `asset_catalogue.open_asset` (no route: OS default app). Other plugins add and remove routes via bridge handlers `asset_catalogue.register_type_editor` and `asset_catalogue.unregister_type_editor`, both taking `{assetType, editorPluginType}` (responses: `registered` / `removed`). Register never overrides an existing route; unregister only removes a route mapped to the same editor, so built-ins and other plugins routes are safe. Game-scoped plugins use the `DiaEditor/Plugin/AssetRoutes.h` helpers from OnLoad/OnUnload.

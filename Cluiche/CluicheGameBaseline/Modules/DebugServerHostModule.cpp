@@ -12,14 +12,19 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/Gauge.h>
+#include <DiaObservation/Metric/Counter.h>
+#include <DiaObservation/Metric/MetricInfo.h>
 
 #include "Modules/InspectorSources/ModuleStateSource.h"
 #include "Modules/InspectorSources/StreamStateSource.h"
 #include "Modules/InspectorSources/TimingAggregateSource.h"
 #include "Modules/InspectorSources/LifecycleEventSource.h"
 #include "Modules/InspectorSources/BlackboardInspectorSource.h"
+#include "Types/SimRegistrationMessage.h"
 
 #include <chrono>
+#include <cstring>
+#include <vector>
 #include <memory>
 #include <string>
 
@@ -36,6 +41,7 @@ const Dia::Core::StringCRC DebugServerHostModule::kTypeId("DebugServerHostModule
 
 DebugServerHostModule::DebugServerHostModule(const Dia::Core::StringCRC& instanceId)
     : Dia::ApplicationFlow::MainModule(instanceId)
+    , mParsedHelp(new Dia::DebugServer::SimHelpStored())
 {
 }
 
@@ -50,6 +56,8 @@ void DebugServerHostModule::OnConnectStreams(Dia::ApplicationFlow::Application& 
     DIA_LOG_INFO("Application", "DebugServerHostModule::OnConnectStreams entry");
     mServerService.Connect(app);
     mDebugPushReader.Connect(app);
+    mSimRequests.Connect(app);
+    mSimReplies.Connect(app);
     DIA_LOG_INFO("Application", "DebugServerHostModule::OnConnectStreams reader_connected=%d",
         mDebugPushReader.IsConnected() ? 1 : 0);
 }
@@ -103,9 +111,72 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
     }
 
     mServer.SetStateProvider(this);
+    mServer.SetSimRequestSink(this);
     mServer.Start();
     mServerPtr = &mServer;
     mServerService.Register(mServerPtr);
+
+    // Perf Inspector perf.window / perf.frame: all builds (the coarse stream exists in Release).
+    if (!mPerfWindowCommands)
+    {
+        auto* appImpl = dynamic_cast<Dia::ApplicationFlow::Application*>(GetApplication());
+        if (appImpl && appImpl->GetPerfCoarseStore())
+            mPerfWindowCommands = std::make_unique<PerfWindowCommands>(
+                appImpl->GetPerfCoarseStore(), dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(appImpl),
+                appImpl->GetPerfJobsStore(), appImpl->GetPerfNamesStore());
+    }
+    if (mPerfWindowCommands)
+        mPerfWindowCommands->Register();
+
+    // Perf Inspector row 6b perf.chain: all builds; spans only flow while tracing is on.
+    if (!mPerfChainCommands)
+    {
+        auto* appImpl = dynamic_cast<Dia::ApplicationFlow::Application*>(GetApplication());
+        if (appImpl && appImpl->GetPerfSpansStore())
+            mPerfChainCommands = std::make_unique<PerfChainCommands>(
+                appImpl->GetPerfSpansStore(),
+                [appImpl](uint32_t threadId, char* buf, size_t size)
+                {
+                    Dia::Core::StringCRC unit;
+                    if (!appImpl->ResolveUnitForThread(threadId, unit)) return false;
+                    snprintf(buf, size, "%s", unit.AsChar());
+                    return true;
+                });
+    }
+    if (mPerfChainCommands)
+        mPerfChainCommands->Register();
+    if (mPerfWindowCommands && !mPerfTimingPublisher)
+    {
+        mPerfTimingSink      = std::make_unique<DebugServerPerfTimingSink>(mServer);
+        mPerfTimingPublisher = std::make_unique<PerfTimingPublisher>(
+            mPerfWindowCommands->GetAssembler(),
+            dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(GetApplication()),
+            *mPerfTimingSink,
+            &mPerfWindowCommands->GetJobsAssembler());
+        mPerfTimingPublisher->SetChannelNames(&mPerfWindowCommands->GetChannelNames());
+    }
+    {
+        auto* appImpl2 = dynamic_cast<Dia::ApplicationFlow::Application*>(GetApplication());
+        if (!mPerfTripPublisher && appImpl2 && appImpl2->GetPerfTripsStore())
+            mPerfTripPublisher = std::make_unique<PerfTripPublisher>(appImpl2->GetPerfTripsStore());
+        if (mPerfTripPublisher)
+        {
+            mPerfTripSink = std::make_unique<DebugServerPerfTripSink>(mServer);
+            mPerfTripPublisher->SetSink(mPerfTripSink.get());
+        }
+        if (mPerfTimingPublisher)
+            mPerfTimingPublisher->SetTripsAttached(mPerfTripPublisher && mPerfTripPublisher->HasReader());
+    }
+
+#ifdef _DEBUG
+    // Perf live control: Debug only (AC5). Gate is _DEBUG, not DIA_DEBUG (DiaVisualDebugger defines that in Release).
+    auto* appImpl = dynamic_cast<Dia::ApplicationFlow::Application*>(GetApplication());
+    if (auto* pause = appImpl ? appImpl->GetPerfPauseController() : nullptr)
+    {
+        mPerfPauseCommands = std::make_unique<PerfPauseCommands>(*pause, mServer);
+        mPerfPauseCommands->Register();
+    }
+#endif
 
     // Create and activate inspector data sources.
     {
@@ -146,6 +217,7 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
         mMetricTickMs = reg.RegisterHistogram(
             Dia::Core::StringCRC("dia.debugserver.tick_ms"), kTickBuckets, 6);
     }
+    RegisterAnnounceMetrics();
 
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -174,7 +246,18 @@ void DebugServerHostModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
         if (mMetricUptimeSecs) mMetricUptimeSecs->Set(mUptimeSecs);
     }
 
+    if (mPerfWindowCommands)
+        mPerfWindowCommands->Drain();   // keeps the long coarse rings current for late attach
+    if (mPerfChainCommands)
+        mPerfChainCommands->Drain();   // keeps the recent span history current (empty unless tracing is on)
+    if (mPerfTripPublisher)
+        mPerfTripPublisher->Drain();   // one drain per tick; publishes perf.trip only when subscribed
+    if (mPerfTimingPublisher)
+        mPerfTimingPublisher->Tick(mUptimeSecs);   // gated on subscribers, 10 Hz
+
     QueryMemory();
+    DrainSimReplies();
+    TickAnnounce(SteadyNowMs());
     mServer.Tick(deltaTime);
 
     // Tick all inspector data sources.
@@ -210,10 +293,192 @@ void DebugServerHostModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
         mMetricSubscriptions->Set(static_cast<double>(stats.subscriptionCount));
     if (mMetricTickMs)
         mMetricTickMs->Observe(static_cast<double>(stats.debugServerOverheadMs));
+    PublishAnnounceMetrics();
     if (mMetricMessagesSent && stats.messagesSentTotal > mPrevMessagesSent)
     {
         mMetricMessagesSent->Inc(static_cast<uint64_t>(stats.messagesSentTotal - mPrevMessagesSent));
         mPrevMessagesSent = stats.messagesSentTotal;
+    }
+}
+
+bool DebugServerHostModule::PostRequest(const Dia::DebugServer::SimRequestEvent& request)
+{
+    if (!mSimRequests.IsConnected())
+        return false;
+    return Dia::ApplicationFlow::IsSuccess(mSimRequests.Send(request));
+}
+
+void DebugServerHostModule::DrainSimReplies()
+{
+    if (!mSimReplies.IsConnected())
+        return;
+
+    // Events are ~16 KB each: small batches, bounded work per frame.
+    static constexpr unsigned int kBatch      = 2;
+    static constexpr unsigned int kMaxBatches = 16;
+
+    Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<Dia::DebugServer::SimReplyEvent>, kBatch> batch;
+    for (unsigned int b = 0; b < kMaxBatches && mSimReplies.HasPending(); ++b)
+    {
+        batch.RemoveAll();
+        mSimReplies.Consume(batch);
+        for (unsigned int i = 0; i < batch.Size(); ++i)
+        {
+            HandleSimReply(batch[i].payload, SteadyNowMs(), batch[i].senderCrc);
+        }
+    }
+}
+
+uint64_t DebugServerHostModule::SteadyNowMs()
+{
+    return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count());
+}
+
+void DebugServerHostModule::RequestResync()
+{
+    Dia::DebugServer::SimRequestEvent* req = new Dia::DebugServer::SimRequestEvent();
+    std::unique_ptr<Dia::DebugServer::SimRequestEvent> owner(req);   // ~16 KB: keep off the stack
+    req->requestId = kSimRegistrationRequestId;   // control request
+    req->nameCrc   = 0;
+    req->kind      = static_cast<uint32_t>(Dia::DebugServer::SimKind::Resync);
+    req->json[0]   = '\0';
+    if (!PostRequest(*req))
+    {
+        mAnnounce.NotifyRequestFailed();
+        DIA_LOG_WARNING("DebugServer", "DebugServerHostModule: resync request could not be posted, will retry");
+    }
+}
+
+void DebugServerHostModule::InstallStagedSet()
+{
+    const uint32_t count = mAnnounce.StagedCount();
+    // The entries point at the tracker's staged help; ReplaceSimHosted copies it into the catalogue.
+    std::vector<Dia::DebugServer::SimHostedName> names(count);
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        std::memset(&names[i], 0, sizeof(names[i]));
+        std::strncpy(names[i].name, mAnnounce.StagedName(i), sizeof(names[i].name) - 1);
+        names[i].kind = mAnnounce.StagedKind(i);
+        names[i].help = &mAnnounce.StagedHelp(i);
+    }
+    if (mServer.ReplaceSimHosted(names.data(), count))
+        DIA_LOG_INFO("DebugServer", "DebugServerHostModule: sim announcement resync complete, %u names", count);
+    else
+        DIA_LOG_ERROR("DebugServer", "DebugServerHostModule: sim announcement resync could not install %u names", count);
+}
+
+void DebugServerHostModule::TickAnnounce(uint64_t nowMs)
+{
+    if (mAnnounce.Tick(nowMs) == SimAnnounceAction::DiscardStaging)
+        DIA_LOG_WARNING("DebugServer", "DebugServerHostModule: sim announcement resync timed out, staging discarded");
+}
+
+void DebugServerHostModule::RegisterAnnounceMetrics()
+{
+    using Dia::Observation::Metric::MetricInfo;
+    auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+    mMetricAnnounceGaps = reg.RegisterCounter(Dia::Core::StringCRC("dia.debugserver.sim.announce_gaps"),
+        MetricInfo{ "Sim announce gaps", "Sim-hosted name announcements whose sequence number skipped, repeated or went backwards", "count" });
+    mMetricDigestMismatches = reg.RegisterCounter(Dia::Core::StringCRC("dia.debugserver.sim.digest_mismatches"),
+        MetricInfo{ "Sim digest mismatches", "Sim name-set digests that disagreed with the Main-side table", "count" });
+    mMetricResyncsRequested = reg.RegisterCounter(Dia::Core::StringCRC("dia.debugserver.sim.resyncs_requested"),
+        MetricInfo{ "Sim resyncs requested", "Resync requests Main posted to the SimPU host", "count" });
+    mMetricResyncsCompleted = reg.RegisterCounter(Dia::Core::StringCRC("dia.debugserver.sim.resyncs_completed"),
+        MetricInfo{ "Sim resyncs completed", "Resyncs whose replayed name set was installed atomically", "count" });
+    mMetricResyncTimeouts = reg.RegisterCounter(Dia::Core::StringCRC("dia.debugserver.sim.resync_timeouts"),
+        MetricInfo{ "Sim resync timeouts", "Resync stagings discarded because the replay did not complete in time", "count" });
+}
+
+void DebugServerHostModule::PublishAnnounceMetrics()
+{
+    auto publish = [](Dia::Observation::Metric::Counter* c, uint32_t now, uint32_t& prev)
+    {
+        if (c != nullptr && now > prev)
+            c->Inc(static_cast<uint64_t>(now - prev));
+        prev = now;
+    };
+    publish(mMetricAnnounceGaps,     mAnnounce.AnnounceGaps(),     mPrevGaps);
+    publish(mMetricDigestMismatches, mAnnounce.DigestMismatches(), mPrevMismatches);
+    publish(mMetricResyncsRequested, mAnnounce.ResyncsRequested(), mPrevRequested);
+    publish(mMetricResyncsCompleted, mAnnounce.ResyncsCompleted(), mPrevCompleted);
+    publish(mMetricResyncTimeouts,   mAnnounce.ResyncTimeouts(),   mPrevTimeouts);
+}
+
+void DebugServerHostModule::HandleSimReply(const Dia::DebugServer::SimReplyEvent& reply, uint64_t nowMs, unsigned int senderCrc)
+{
+    const SimRegistration reg = ParseSimRegistrationReply(reply, mParsedHelp.get());
+    if (reg.op != SimRegistrationOp::NotRegistration && senderCrc != 0)
+    {
+        if (mAnnounceOwnerCrc == 0)
+            mAnnounceOwnerCrc = senderCrc;
+        else if (senderCrc != mAnnounceOwnerCrc)
+        {
+            ++mForeignAnnounceIgnored;
+            if (mLoggedForeignCrc != senderCrc)
+            {
+                mLoggedForeignCrc = senderCrc;
+                DIA_LOG_ERROR("DebugServer",
+                    "DebugServerHostModule: a second SimQueryHostModule (sender 0x%08x) is announcing; only one sim host per application is supported, its announcements are ignored",
+                    senderCrc);
+            }
+            return;
+        }
+    }
+    switch (reg.op)
+    {
+        case SimRegistrationOp::NotRegistration:
+            mServer.CompleteSimReply(reply);
+            break;
+        case SimRegistrationOp::Register:
+        case SimRegistrationOp::Unregister:
+        {
+            const uint32_t gapsBefore = mAnnounce.AnnounceGaps();
+            const SimAnnounceAction action = mAnnounce.OnRegistration(reg, nowMs);
+            if (mAnnounce.AnnounceGaps() != gapsBefore)
+                DIA_LOG_WARNING("DebugServer", "DebugServerHostModule: sim announcement gap at seq %u (total gaps %u)",
+                    reg.seq, mAnnounce.AnnounceGaps());
+            if (action == SimAnnounceAction::Apply || action == SimAnnounceAction::ApplyAndRequestResync)
+            {
+                if (reg.op == SimRegistrationOp::Register)
+                    mServer.RegisterSimHosted(Dia::Core::StringCRC(reg.name), reg.kind, *mParsedHelp);
+                else
+                    mServer.UnregisterSimHosted(Dia::Core::StringCRC(reg.name));
+            }
+            if (action == SimAnnounceAction::ApplyAndRequestResync)
+                RequestResync();
+            break;
+        }
+        case SimRegistrationOp::Digest:
+        {
+            uint32_t count = 0, hash = 0;
+            mServer.GetSimHostedDigest(count, hash);
+            const uint32_t before = mAnnounce.DigestMismatches();
+            const SimAnnounceAction action = mAnnounce.OnDigest(reg, count, hash, nowMs);
+            if (mAnnounce.DigestMismatches() != before)
+                DIA_LOG_WARNING("DebugServer",
+                    "DebugServerHostModule: sim digest mismatch (local count=%u hash=0x%08x, sim count=%u hash=0x%08x)",
+                    count, hash, reg.count, reg.hash);
+            if (action == SimAnnounceAction::RequestResync)
+                RequestResync();
+            break;
+        }
+        case SimRegistrationOp::ResyncBegin:
+            if (mAnnounce.OnResyncBegin(reg, nowMs) == SimAnnounceAction::InstallSet)
+                InstallStagedSet();
+            break;
+        case SimRegistrationOp::Replay:
+        {
+            const SimAnnounceAction action = mAnnounce.OnReplay(reg, mParsedHelp.get(), nowMs);
+            if (action == SimAnnounceAction::InstallSet)
+                InstallStagedSet();
+            else if (action == SimAnnounceAction::DiscardStaging)
+                DIA_LOG_WARNING("DebugServer", "DebugServerHostModule: sim announcement resync timed out, staging discarded");
+            break;
+        }
+        case SimRegistrationOp::Malformed:
+            DIA_LOG_WARNING("DebugServer", "DebugServerHostModule: malformed sim registration message ignored");
+            break;
     }
 }
 
@@ -238,8 +503,22 @@ Dia::ApplicationFlow::StopResult DebugServerHostModule::DoStop()
         src.reset();
     }
 
+    mPerfTimingPublisher.reset();
+    mPerfTimingSink.reset();
+    if (mPerfTripPublisher)
+        mPerfTripPublisher->SetSink(nullptr);   // publisher and its reader are kept for the next start
+    mPerfTripSink.reset();
+    if (mPerfWindowCommands)
+        mPerfWindowCommands->Unregister();   // object (and its reader) is kept for the next start
+    if (mPerfChainCommands)
+        mPerfChainCommands->Unregister();
+
+#ifdef _DEBUG
+    mPerfPauseCommands.reset();   // unregisters the perf.* commands and the disconnect observer
+#endif
     mServerService.Deregister();
     mServerPtr = nullptr;
+    mServer.SetSimRequestSink(nullptr);
     mServer.Stop();
 
     // Null metric pointers — MetricRegistry owns the objects.
@@ -251,6 +530,9 @@ Dia::ApplicationFlow::StopResult DebugServerHostModule::DoStop()
     mMetricSubscriptions = nullptr;
     mMetricMessagesSent  = nullptr;
     mMetricTickMs        = nullptr;
+    mMetricAnnounceGaps = mMetricDigestMismatches = mMetricResyncsRequested = nullptr;
+    mMetricResyncsCompleted = mMetricResyncTimeouts = nullptr;
+    mAnnounceOwnerCrc = mLoggedForeignCrc = 0;
 
     return Dia::ApplicationFlow::StopResult::kDone;
 }

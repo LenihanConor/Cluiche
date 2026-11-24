@@ -1,6 +1,8 @@
 #pragma once
 
 #include "DiaCore/CRC/StringCRC.h"
+#include <stdint.h>
+#include "DiaCore/Containers/Arrays/DynamicArray.h"
 #include "DiaCore/Containers/Arrays/DynamicArrayC.h"
 #include "DiaBlackboard/IBlackboardObserver.h"
 
@@ -9,14 +11,24 @@ namespace Dia { namespace Blackboard {
     class Blackboard
     {
     public:
-        Blackboard();
+        explicit Blackboard(uint32_t maxSlots = 32, Dia::Core::StringCRC name = Dia::Core::StringCRC());
         ~Blackboard();
+
+        Dia::Core::StringCRC GetName() const;
+
+        // Parent chain. Returns false (board unchanged) on cycle or if chain length
+        // from this upward would exceed kMaxParentDepth. nullptr detaches.
+        // Get/TryGet/Has remain local-only. A parent must outlive its children.
+        bool SetParent(const Blackboard* parent);
+        const Blackboard* GetParent() const;
 
         template<typename T>
         T& Register(Dia::Core::StringCRC key);
 
         void Unregister(Dia::Core::StringCRC key);
 
+        // NOTE: writes through the mutable Get/TryGet reference do NOT notify observers.
+        // Use Set to write and notify.
         template<typename T>
         T& Get(Dia::Core::StringCRC key);
 
@@ -29,7 +41,19 @@ namespace Dia { namespace Blackboard {
         template<typename T>
         const T* TryGet(Dia::Core::StringCRC key) const;
 
+        // Local slot only (asserts if not registered locally or on type mismatch).
+        // Assigns value, then calls OnSlotChanged once on this board's observers.
+        template<typename T>
+        void Set(Dia::Core::StringCRC key, const T& value);
+
         bool Has(Dia::Core::StringCRC key) const;
+
+        // Chain reads: local first, then up the parent chain (nearest wins). Const only.
+        // Lookup asserts on type mismatch of the found slot.
+        template<typename T>
+        const T* Lookup(Dia::Core::StringCRC key) const;
+        bool HasInChain(Dia::Core::StringCRC key) const;
+        const Blackboard* FindOwner(Dia::Core::StringCRC key) const;
 
         void AddObserver(IBlackboardObserver& observer);
         void RemoveObserver(IBlackboardObserver& observer);
@@ -49,11 +73,16 @@ namespace Dia { namespace Blackboard {
         int FindSlotIndex(Dia::Core::StringCRC key) const;
         void NotifyRegistered(Dia::Core::StringCRC key);
         void NotifyUnregistered(Dia::Core::StringCRC key);
+        void NotifyChanged(Dia::Core::StringCRC key);
 
-        static const unsigned int kMaxSlots     = 32;
         static const unsigned int kMaxObservers = 8;
+        static const uint32_t kMaxParentDepth = 8;
 
-        Dia::Core::Containers::DynamicArrayC<SlotEntry*, kMaxSlots>      mSlots;
+        uint32_t                                              mMaxSlots;
+        Dia::Core::StringCRC                                  mName;
+        const Blackboard*                                     mParent = nullptr;
+        mutable uint32_t                                      mChildCount = 0;
+        Dia::Core::Containers::DynamicArray<SlotEntry*>       mSlots;
         Dia::Core::Containers::DynamicArrayC<IBlackboardObserver*, kMaxObservers> mObservers;
     };
 

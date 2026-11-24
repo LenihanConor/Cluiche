@@ -1,0 +1,16 @@
+// Test-only names for the shipped stratum indices (FirstShores, WildReaches, AncientInteriors).
+// Production code addresses strata by index/table position; tests keep readable intent with these constants.
+// Visible from Draoi::HexWorld so one `using namespace` finds them.
+#pragma once
+
+#include <DraoiHexWorld/CellVocabulary.h>
+
+namespace Draoi {
+namespace HexWorld {
+
+constexpr StratumIndex kStratumFirst   = 1;   // shipped stratum 1: FirstShores
+constexpr StratumIndex kStratumWild    = 2;   // shipped stratum 2: WildReaches
+constexpr StratumIndex kStratumAncient = 3;   // shipped stratum 3: AncientInteriors
+
+} // namespace HexWorld
+} // namespace Draoi

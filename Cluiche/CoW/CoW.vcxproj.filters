@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Modules">
+      <UniqueIdentifier>{4d2b8f61-7c3e-4a95-b1d0-9e6a2c5f8b17}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\WorldGen">
+      <UniqueIdentifier>{dfb30476-4da9-4ee6-8027-93b8bb3feba3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\WorldStep">
+      <UniqueIdentifier>{8359f7bc-5586-43bb-8b42-903881484974}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\GameSpeed">
+      <UniqueIdentifier>{7c4c3b51-79ac-4cf8-9198-d9ee661d7463}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\F2Harness">
+      <UniqueIdentifier>{8110a623-23ee-46e8-bb80-2ab740ba5f39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\BusTools">
+      <UniqueIdentifier>{508029de-5ffb-4b79-b5ae-34273ab11273}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\Plumbing">
+      <UniqueIdentifier>{4de25a96-2206-4514-863e-78db22d3e60e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\FrontEnd">
+      <UniqueIdentifier>{c4d18c74-a17a-4ee2-b5f3-6bff935a2b60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shared">
+      <UniqueIdentifier>{b157cd77-a81d-4d7c-bef8-ccbd67f06c87}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shared\WorldGeneration">
+      <UniqueIdentifier>{a9b3affa-4bc7-4de6-a86a-68efa9c62b15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shared\WorldStep">
+      <UniqueIdentifier>{942fdb40-a5e4-495c-8c20-d89d5eea4732}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shared\WorldStep\Testing">
+      <UniqueIdentifier>{eabcc382-a860-411e-81f8-34dac53aa998}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World">
+      <UniqueIdentifier>{1ebff9e5-950f-4441-8006-5558c64b682e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="WorldStep">
+      <UniqueIdentifier>{69a2dafa-8639-41d0-9d87-3d4db31ce122}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="WorldStep\Testing">
+      <UniqueIdentifier>{eace5683-e3fb-4b09-8d0e-e5a954802683}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Debug">
+      <UniqueIdentifier>{b8d73d7c-5eca-4cdb-855f-2778ab974883}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Modules\FrontEnd\FrontEndModule.cpp">
+      <Filter>Modules\FrontEnd</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Plumbing\RandomStreamModule.cpp">
+      <Filter>Modules\Plumbing</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\BusTools\BusProbeModule.cpp">
+      <Filter>Modules\BusTools</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\BusTools\BusRecorderModule.cpp">
+      <Filter>Modules\BusTools</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\GameSpeed\GameSpeedControllerModule.cpp">
+      <Filter>Modules\GameSpeed</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\GameSpeed\GameSpeedDebugDomain.cpp">
+      <Filter>Modules\GameSpeed</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Plumbing\SaveLoadModule.cpp">
+      <Filter>Modules\Plumbing</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Harness\F2TestRunnerModule.cpp">
+      <Filter>Modules\F2Harness</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Harness\F2Fingerprint.cpp">
+      <Filter>Modules\F2Harness</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Harness\F2StreamIndependence.cpp">
+      <Filter>Modules\F2Harness</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Harness\F2Scenario.cpp">
+      <Filter>Modules\F2Harness</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Harness\F2DragonStub.cpp">
+      <Filter>Modules\F2Harness</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Harness\F2PanelModel.cpp">
+      <Filter>Modules\F2Harness</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Harness\F2TestRunnerDebugDomain.cpp">
+      <Filter>Modules\F2Harness</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Plumbing\SnapshotStoreAdapter.cpp">
+      <Filter>Modules\Plumbing</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\WorldGen\WorldGenerationModule.cpp">
+      <Filter>Modules\WorldGen</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\WorldGen\S1WorldGenerationTestbedStageModule.cpp">
+      <Filter>Modules\WorldGen</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\WorldGen\WorldGenDebugDomain.cpp">
+      <Filter>Modules\WorldGen</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldCameraController.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\WorldGen\WorldGenViewHost.cpp">
+      <Filter>Modules\WorldGen</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\WorldStep\WorldStepModule.cpp">
+      <Filter>Modules\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldStep\WorldStepStageBase.cpp">
+      <Filter>WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldStep\WorldSimSaveCodec.cpp">
+      <Filter>WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\Debug\SimCommandSet.cpp">
+      <Filter>Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\Debug\ParamCommandHelper.cpp">
+      <Filter>Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\Debug\RecordsCommandHelper.cpp">
+      <Filter>Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\Weather\WeatherStage.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Weather\WeatherModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\Weather\WeatherTerrainBuilder.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\Weather\WeatherParameterStore.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\Weather\WeatherSaveFields.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Weather\WeatherSaveParticipant.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Modules\FrontEnd\FrontEndModule.h">
+      <Filter>Modules\FrontEnd</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Plumbing\RandomStreamModule.h">
+      <Filter>Modules\Plumbing</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\BusTools\BusProbeModule.h">
+      <Filter>Modules\BusTools</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\BusTools\BusRecorderModule.h">
+      <Filter>Modules\BusTools</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\GameSpeed\GameSpeedControllerModule.h">
+      <Filter>Modules\GameSpeed</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\GameSpeed\GameSpeedMessages.h">
+      <Filter>Modules\GameSpeed</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\GameSpeed\GameSpeedDebugDomain.h">
+      <Filter>Modules\GameSpeed</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Plumbing\SaveLoadModule.h">
+      <Filter>Modules\Plumbing</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2TestRunnerModule.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2Fingerprint.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2StreamIndependence.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2Scenario.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2DragonStub.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2PanelModel.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2TestRunnerDebugDomain.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\WorldGenerationMessages.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Plumbing\SnapshotStoreAdapter.h">
+      <Filter>Modules\Plumbing</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\WorldGenerationModule.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\S1WorldGenerationTestbedStageModule.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\WorldGenDebugDomain.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldCameraController.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\IWorldGenView.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\WorldGenPointerFrame.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\WorldGenViewHost.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\WorldGenMirrorRegistrar.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2StageResult.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldStep\WorldStepModule.h">
+      <Filter>Modules\WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\CoWTesting\GuaranteeSpecTestHelpers.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\CoWStepSeedNames.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\CoWNodeKinds.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\CoWTesting\CoWTerrainRulesTestHelpers.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\CoWCalendar.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\Testing\WorldJsonTestWorlds.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\WorldStepStageBase.h">
+      <Filter>WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\MutationQueue.h">
+      <Filter>WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\SpinUpSlot.h">
+      <Filter>WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\WorldSimSaveCodec.h">
+      <Filter>WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\Testing\FakeWorldStage.h">
+      <Filter>WorldStep\Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Debug\SimCommandSet.h">
+      <Filter>Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Debug\ParamCommandHelper.h">
+      <Filter>Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\World\WorldSimNames.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\HoldGenerationToken.h">
+      <Filter>WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Debug\Testing\FakeSimCommandHost.h">
+      <Filter>Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Debug\RecordsCommandHelper.h">
+      <Filter>Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\HydrologyInputsProvider.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherCause.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherEntry.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherLatch.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherStage.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Weather\WeatherMessages.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Weather\WeatherModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherTerrainBuilder.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\BiomeSeasonalBaseline.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherParameterStore.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherStateRecord.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherPreset.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherSideStore.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherSaveFields.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Weather\WeatherSaveParticipant.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

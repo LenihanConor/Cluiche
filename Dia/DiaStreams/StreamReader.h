@@ -24,6 +24,7 @@ public:
     StreamReader(Module* owner, const Dia::Core::StringCRC& streamId);
 
     const T* FetchLatest() const;
+    const T* FetchLatestLinked(StreamLink& outLink) const;
     // FetchClosestTo: returns latest; ring-buffer interpolation is future work
     const T* FetchClosestTo(const Dia::Core::TimeAbsolute& time) const;
     bool IsConnected() const;
@@ -55,6 +56,15 @@ template<typename T>
 inline const T* StreamReader<T>::FetchLatest() const
 {
     return mStore ? mStore->FetchLatest() : nullptr;
+}
+
+template<typename T>
+inline const T* StreamReader<T>::FetchLatestLinked(StreamLink& outLink) const
+{
+    if (mStore)
+        return mStore->FetchLatestLinked(outLink);
+    outLink.valid = false;
+    return nullptr;
 }
 
 template<typename T>

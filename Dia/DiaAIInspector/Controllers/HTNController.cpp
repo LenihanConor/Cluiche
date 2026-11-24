@@ -11,7 +11,7 @@ void HTNController::Init(Dia::Editor::WebUIBridge* bridge)
 
 void HTNController::OnPayload(const Json::Value& payload)
 {
-    mBridge->NotifyUIDataChanged("ai_inspector.htn", payload);
+    if (mBridge) mBridge->NotifyUIDataChanged("ai_inspector.htn", payload);
 }
 
 } // namespace Dia::AIInspector

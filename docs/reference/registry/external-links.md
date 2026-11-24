@@ -8,25 +8,30 @@ Documentation links for external dependencies and tools.
 
 ## Third-Party Libraries
 
-### SFML (Simple and Fast Multimedia Library)
+### SDL3
 
-**Version:** 2.5.1
+**Version:** 3.x-main (built from source by `dia env setup`; see `deps.json`)
 
-**Purpose:** Graphics, audio, input, networking
+**Purpose:** Window creation and input
+
+**Location:** `External/SDL3/`
+
+**Used By:** `Dia/DiaSDL/`
+
+---
+
+### bgfx (with bx and bimg)
+
+**Version:** pinned commits in `deps.json`
+
+**Purpose:** Cross-API rendering (2D and 3D)
 
 **Links:**
-- Official Website: https://www.sfml-dev.org/
-- Documentation: https://www.sfml-dev.org/documentation/2.5.1/
-- Tutorials: https://www.sfml-dev.org/tutorials/2.5/
-- GitHub: https://github.com/SFML/SFML
+- GitHub: https://github.com/bkaradzic/bgfx
 
-**Key Documentation:**
-- Graphics: https://www.sfml-dev.org/documentation/2.5.1/group__graphics.php
-- Window: https://www.sfml-dev.org/documentation/2.5.1/group__window.php
-- System: https://www.sfml-dev.org/documentation/2.5.1/group__system.php
-- Audio: https://www.sfml-dev.org/documentation/2.5.1/group__audio.php
+**Location:** `External/bgfx/`, `External/bx/`, `External/bimg/`
 
-**Used By:** `Dia/DiaSFML/`
+**Used By:** `Dia/DiaBgfx/`, `Dia/DiaBgfx3D/`
 
 ---
 
@@ -46,19 +51,6 @@ Documentation links for external dependencies and tools.
 - `Json::Writer` - JSON serializer
 
 **Used By:** `Dia/DiaCore/Json/` (wrapped)
-
----
-
-### Webix
-
-**Purpose:** JavaScript UI components
-
-**Links:**
-- Official Website: https://webix.com/
-- Documentation: https://docs.webix.com/
-- Demos: https://webix.com/demos/
-
-**Used By:** `External/Webix/`
 
 ---
 
@@ -364,7 +356,8 @@ dot -Tpng output.dot -o graph.png
 ## Summary
 
 **Third-Party Libraries:**
-- SFML (graphics/audio/input) - https://www.sfml-dev.org/
+- SDL3 (window/input)
+- bgfx (rendering) - https://github.com/bkaradzic/bgfx
 - JsonCpp (JSON parsing) - https://github.com/open-source-parsers/jsoncpp
 
 **Development Tools:**

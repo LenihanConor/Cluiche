@@ -1,0 +1,973 @@
+// Spec: docs/specs/applications/cow/systems/s1-worldgeneration/json-export-import.md (AC2-AC5, AC8, Import Implementation)
+//       regions-and-sites.md (AC11 JSON parts), worldgenerationpipeline.md (Test 3)
+// WorldJson import: validation, all-or-nothing, byte-identical round trips, hand edits, unknown kinds.
+#include <gtest/gtest.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
+#include <Shared/CoWNodeKinds.h>
+#include <DraoiHexWorldTerrain/WorldJson.h>
+#include <DraoiHexWorldTerrain/Testing/TestPlacers.h>
+#include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
+
+#include <DiaCore/Json/external/json/json.h>
+#include <DiaObservation/Log/ISink.h>
+#include <DiaObservation/Log/Logger.h>
+
+#include <cmath>
+#include <cstring>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <functional>
+#include <memory>
+#include <string>
+
+using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
+using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
+using Dia::Core::StringCRC;
+
+namespace
+{
+
+std::string Export(const WorldStructure& w, const WorldJsonContext& ctx = {})
+{
+    WorldJsonContext c = ctx;
+    if (c.biomes == nullptr) { c.biomes = &ShippedBiomeRegistry(); }
+    if (c.registry == nullptr) { c.registry = &CoWTestSiteRegistry(); }
+    std::string text;
+    JsonIssue error;
+    EXPECT_TRUE(ExportWorldText(w, c, text, error)) << error.field << ": " << error.message;
+    return text;
+}
+
+Json::Value Parse(const std::string& text)
+{
+    Json::Value root;
+    Json::CharReaderBuilder b;
+    std::string errors;
+    std::unique_ptr<Json::CharReader> reader(b.newCharReader());
+    EXPECT_TRUE(reader->parse(text.data(), text.data() + text.size(), &root, &errors)) << errors;
+    return root;
+}
+
+std::string Write(const Json::Value& root)
+{
+    Json::StreamWriterBuilder b;
+    b["indentation"] = "  ";
+    return Json::writeString(b, root);
+}
+
+// Exports `w`, lets the test edit the parsed document, and returns the edited text.
+std::string Edited(const WorldStructure& w, const std::function<void(Json::Value&)>& edit)
+{
+    Json::Value root = Parse(Export(w));
+    edit(root);
+    return Write(root);
+}
+
+WorldImportResult Import(const std::string& text, WorldStructure& out, const WorldJsonContext& ctx = {})
+{
+    WorldJsonContext c = ctx;
+    if (c.biomes == nullptr) { c.biomes = &ShippedBiomeRegistry(); }
+    if (c.registry == nullptr) { c.registry = &CoWTestSiteRegistry(); }
+    return ImportWorldText(text, c, out);
+}
+
+bool HasWarning(const WorldImportResult& r, const std::string& needle)
+{
+    for (const std::string& w : r.warnings) { if (w.find(needle) != std::string::npos) { return true; } }
+    return false;
+}
+
+// A failed import must name the field and leave the destination untouched.
+void ExpectRejected(const std::string& text, const std::string& field, const std::string& messagePart = "")
+{
+    WorldStructure out = MakeTinyWorld();
+    const WorldStructure before = MakeTinyWorld();
+    const WorldImportResult r = Import(text, out);
+    EXPECT_FALSE(r.ok);
+    EXPECT_EQ(r.error.field, field) << r.error.message;
+    EXPECT_FALSE(r.error.message.empty());
+    if (!messagePart.empty()) { EXPECT_NE(r.error.message.find(messagePart), std::string::npos) << r.error.message; }
+    EXPECT_TRUE(SameWorld(out, before)) << "a failed import must not touch the destination world";
+}
+
+} // namespace
+
+// ---------------------------------------------------------------------------------------------------------------------
+// AC2 / Test 3: round trip
+// ---------------------------------------------------------------------------------------------------------------------
+
+TEST(WorldJsonImport, AC2_TinyWorldRoundTripsExactly)
+{
+    const WorldStructure original = MakeTinyWorld();
+    WorldStructure imported;
+    const WorldImportResult r = Import(Export(original), imported);
+    ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
+    ASSERT_EQ(r.warnings.size(), 1u);   // only: Test.Kind is not registered here (it exports under its crc key)
+    EXPECT_NE(r.warnings[0].find("kind is not registered"), std::string::npos) << r.warnings[0];
+    EXPECT_TRUE(SameCells(original, imported));
+    EXPECT_TRUE(original.regions == imported.regions);
+    EXPECT_TRUE(original.sites == imported.sites);
+    EXPECT_TRUE(SameProvenance(original.provenance, imported.provenance));
+    EXPECT_EQ(original.mainLandmass, imported.mainLandmass);
+    EXPECT_EQ(Export(original), Export(imported));   // and re-exports the identical text
+}
+
+TEST(WorldJsonImport, AC2_GeneratedWorldsRoundTripExactly_TwentyWorldsAcrossShapes)
+{
+    struct Shape { const char* name; const char* json; };
+    const Shape shapes[] = {
+        { "default",     "{}" },
+        { "archipelago", "{\"islands\":6,\"landFraction\":0.3,\"continentIslands\":0.2}" },
+        { "highlands",   "{\"mountainousness\":0.9,\"ruggedness\":0.8,\"barrier\":0.9}" },
+        { "continental", "{\"continents\":2,\"landFraction\":0.5,\"rivers\":0.8,\"lakes\":8}" },
+    };
+    int worlds = 0;
+    for (const Shape& shape : shapes)
+    {
+        Json::Value args;
+        Json::Reader().parse(shape.json, args);
+        for (uint64_t seed = 1; seed <= 5; ++seed)
+        {
+            const WorldStructure original = GenerateWorld(seed, args);
+            ASSERT_GT(original.regions.regions.Size(), 0u) << shape.name << " " << seed;
+            const std::string text = Export(original);
+            WorldStructure imported;
+            const WorldImportResult r = Import(text, imported);
+            ASSERT_TRUE(r.ok) << shape.name << " " << seed << ": " << r.error.field << ": " << r.error.message;
+            EXPECT_TRUE(r.warnings.empty()) << shape.name << " " << seed << ": " << r.warnings.front();
+            EXPECT_TRUE(SameCells(original, imported)) << shape.name << " " << seed;
+            EXPECT_TRUE(original.regions == imported.regions) << shape.name << " " << seed;
+            EXPECT_TRUE(original.sites == imported.sites) << shape.name << " " << seed;
+            EXPECT_TRUE(SameProvenance(original.provenance, imported.provenance)) << shape.name << " " << seed;
+            EXPECT_EQ(text, Export(imported)) << shape.name << " " << seed;
+            ++worlds;
+        }
+    }
+    EXPECT_EQ(worlds, 20);
+}
+
+TEST(WorldJsonImport, WorldWithoutRegionsOrSitesRoundTrips)
+{
+    TestSession s;
+    Dia::Maths::RandomStream rng{ 1 };
+    ASSERT_TRUE(s.Tick(rng));   // first generation: terrain only, regions stay empty
+    const WorldStructure& original = s.World();
+    ASSERT_EQ(original.regions.regions.Size(), 0u);
+    WorldStructure imported;
+    const WorldImportResult r = Import(Export(original), imported);
+    ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
+    EXPECT_TRUE(SameWorld(original, imported));
+}
+
+TEST(WorldJsonImport, ImportedFloatsKeepEveryBit)
+{
+    WorldStructure original = MakeTinyWorld();
+    const float values[] = { 0.0f, 1.0f, 0.1f, 1.0f / 3.0f, 0.99999994f, 1.17549435e-38f, 1.0e-45f, 0.7f,
+                             std::nextafter(0.5f, 1.0f), std::nextafter(0.5f, 0.0f), 0.123456789f, 0.2f };
+    for (int i = 0; i < 12; ++i) { original.Cells()[i].elevation = values[i]; original.Cells()[i].latitude = values[11 - i]; }
+    WorldStructure imported;
+    ASSERT_TRUE(Import(Export(original), imported).ok);
+    EXPECT_TRUE(SameCells(original, imported));
+}
+
+// Consumer Amendments AC 7: the succession biomes export by id and import back; unknown names still fail.
+TEST(WorldJsonImport, SuccessionBiomesRoundTrip)
+{
+    WorldStructure original = MakeTinyWorld();
+    original.Cells()[2].biome  = B("Biome.Scrub");
+    original.Cells()[3].biome  = B("Biome.BurnedAshland");
+    original.Cells()[7].biome  = B("Biome.DesertifiedPlain");
+    RecomputeRegionRecords(original, ShippedBiomeRegistry());
+    const std::string text = Export(original);
+    EXPECT_NE(text.find("Biome.Scrub"), std::string::npos);
+    EXPECT_NE(text.find("Biome.BurnedAshland"), std::string::npos);
+    EXPECT_NE(text.find("Biome.DesertifiedPlain"), std::string::npos);
+    WorldStructure imported;
+    const WorldImportResult r = Import(text, imported);
+    ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
+    EXPECT_EQ(imported.Cells()[2].biome, B("Biome.Scrub"));
+    EXPECT_EQ(imported.Cells()[3].biome, B("Biome.BurnedAshland"));
+    EXPECT_EQ(imported.Cells()[7].biome, B("Biome.DesertifiedPlain"));
+    EXPECT_TRUE(SameCells(original, imported));
+}
+
+// Biome registry Task 25 (AC 8): ids resolve through the registry; unknown ids fall back with one warning per id.
+namespace
+{
+    // Records every log entry so a test can count the warnings it provoked.
+    class BiomeLogSink : public Dia::Observation::Log::ISink
+    {
+    public:
+        void OnLogEntry(const Dia::Observation::Log::LogEntry& e) override { mMessages.push_back(e.message); }
+        const char* GetName() const override { return "WorldJsonBiomeLogSink"; }
+        unsigned Count(const char* marker) const
+        {
+            unsigned n = 0;
+            for (const std::string& m : mMessages) { n += m.find(marker) != std::string::npos ? 1u : 0u; }
+            return n;
+        }
+        std::vector<std::string> mMessages;
+    };
+
+    class WorldJsonBiomeIds : public ::testing::Test
+    {
+    protected:
+        void SetUp() override
+        {
+            auto& l = Dia::Observation::Log::Logger::Instance();
+            l.RegisterThreadBuffer();
+            l.RegisterSink(&mSink);
+        }
+        void TearDown() override
+        {
+            auto& l = Dia::Observation::Log::Logger::Instance();
+            l.FlushSync();
+            l.UnregisterSink(&mSink);
+            l.UnregisterThreadBuffer();
+        }
+        unsigned Unknown() { Dia::Observation::Log::Logger::Instance().FlushSync(); return mSink.Count("BiomeRegistry unknown id"); }
+        unsigned HashWarnings() { Dia::Observation::Log::Logger::Instance().FlushSync(); return mSink.Count("biome_registry_hash"); }
+        BiomeLogSink mSink;
+    };
+
+    char HexDigit(unsigned v) { return "0123456789abcdef"[v & 15u]; }
+    std::string HexOf(uint64_t v)
+    {
+        std::string s(16, '0');
+        for (int i = 15; i >= 0; --i) { s[static_cast<size_t>(i)] = HexDigit(static_cast<unsigned>(v & 15u)); v >>= 4; }
+        return s;
+    }
+}
+
+TEST_F(WorldJsonBiomeIds, UnknownIdImportsAsTheFallbackWithOneWarningPerDistinctId)
+{
+    const Draoi::HexWorld::BiomeRegistry fresh = LoadShippedVariant({});   // fresh warned-id set
+    WorldJsonContext ctx;
+    ctx.biomes = &fresh;
+    const std::string text = Edited(MakeTinyWorld(), [](Json::Value& r)
+    {
+        r["world"]["cells"][3]["biome"] = "Biome.Nonsense";
+        r["world"]["cells"][4]["biome"] = "Biome.Other";
+        r["world"]["cells"][5]["biome"] = "Biome.Nonsense";
+    });
+    WorldStructure imported;
+    const WorldImportResult r = Import(text, imported, ctx);
+    ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
+    const Draoi::HexWorld::BiomeIndex fallback = fresh.Role(Draoi::HexWorld::BiomeRole::Fallback);
+    EXPECT_EQ(imported.Cells()[3].biome, fallback);
+    EXPECT_EQ(imported.Cells()[4].biome, fallback);
+    EXPECT_EQ(imported.Cells()[5].biome, fallback);
+    EXPECT_EQ(Unknown(), 2u);
+    EXPECT_EQ(HashWarnings(), 0u);
+}
+
+TEST_F(WorldJsonBiomeIds, ExportWritesTheRegistryHashAsHex)
+{
+    const Json::Value root = Parse(Export(MakeTinyWorld()));
+    ASSERT_TRUE(root["provenance"].isMember("biome_registry_hash"));
+    EXPECT_EQ(root["provenance"]["biome_registry_hash"].asString(), HexOf(ShippedBiomeRegistry().Hash()));
+    EXPECT_EQ(root["version"].asUInt(), kWorldJsonVersion);   // 2: depth_zone became stratum
+}
+
+TEST_F(WorldJsonBiomeIds, DifferentHashLogsExactlyOneWarningAndStillImports)
+{
+    const std::string text = Edited(MakeTinyWorld(), [](Json::Value& r) { r["provenance"]["biome_registry_hash"] = "0000000000000001"; });
+    WorldStructure imported;
+    const WorldImportResult r = Import(text, imported);
+    ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
+    EXPECT_EQ(HashWarnings(), 1u);
+    EXPECT_TRUE(SameCells(MakeTinyWorld(), imported));
+}
+
+TEST_F(WorldJsonBiomeIds, MatchingHashImportsWithoutAHashWarning)
+{
+    WorldStructure imported;
+    ASSERT_TRUE(Import(Export(MakeTinyWorld()), imported).ok);
+    EXPECT_EQ(HashWarnings(), 0u);
+}
+
+TEST_F(WorldJsonBiomeIds, FileWithoutTheHashImportsSilently)
+{
+    const std::string text = Edited(MakeTinyWorld(), [](Json::Value& r) { r["provenance"].removeMember("biome_registry_hash"); });
+    WorldStructure imported;
+    const WorldImportResult r = Import(text, imported);
+    ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
+    EXPECT_EQ(HashWarnings(), 0u);
+    for (const std::string& w : r.warnings) { EXPECT_EQ(w.find("biome_registry_hash"), std::string::npos) << w; }
+}
+
+TEST_F(WorldJsonBiomeIds, WorldExportedUnderAnotherRegistryWarnsOnceAndKeepsKnownIds)
+{
+    // Exported under the 14-row registry, imported under the shipped one: hash differs; the 14th id falls back.
+    const Draoi::HexWorld::BiomeRegistry& extra = ExtraBiomeRegistry();
+    WorldStructure original = MakeTinyWorld();
+    original.Cells()[2].biome = B(extra, "Biome.Savanna");
+    RecomputeRegionRecords(original, extra);
+    WorldJsonContext exportCtx;
+    exportCtx.biomes = &extra;
+    const std::string text = Export(original, exportCtx);
+    EXPECT_NE(text.find("Biome.Savanna"), std::string::npos);
+
+    const Draoi::HexWorld::BiomeRegistry fresh = LoadShippedVariant({});
+    WorldJsonContext importCtx;
+    importCtx.biomes = &fresh;
+    WorldStructure imported;
+    const WorldImportResult r = Import(text, imported, importCtx);
+    ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
+    EXPECT_EQ(HashWarnings(), 1u);
+    EXPECT_EQ(Unknown(), 1u);
+    EXPECT_EQ(imported.Cells()[2].biome, fresh.Role(Draoi::HexWorld::BiomeRole::Fallback));
+    EXPECT_EQ(imported.Cells()[3].biome, original.Cells()[3].biome);
+}
+
+TEST_F(WorldJsonBiomeIds, ThirteenthAndFourteenthRowWorldRoundTripsUnderTheExtraRegistry)
+{
+    const Draoi::HexWorld::BiomeRegistry& extra = ExtraBiomeRegistry();
+    ASSERT_EQ(extra.Count(), 14u);
+    WorldStructure original = MakeTinyWorld();
+    original.Cells()[2].biome = B(extra, "Biome.Savanna");
+    original.Cells()[7].biome = B(extra, "Biome.Scrub");
+    RecomputeRegionRecords(original, extra);
+    WorldJsonContext ctx;
+    ctx.biomes = &extra;
+    const std::string text = Export(original, ctx);
+    WorldStructure imported;
+    const WorldImportResult r = Import(text, imported, ctx);
+    ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
+    EXPECT_EQ(imported.Cells()[2].biome, B(extra, "Biome.Savanna"));
+    EXPECT_TRUE(SameCells(original, imported));
+    EXPECT_TRUE(original.regions == imported.regions);
+    EXPECT_EQ(Export(imported, ctx), text);
+    EXPECT_EQ(HashWarnings(), 0u);
+    EXPECT_EQ(Unknown(), 0u);
+}
+
+TEST_F(WorldJsonBiomeIds, ReorderedPaletteWithKnownIdsImportsEveryCellUnderItsId)
+{
+    // Same 13 ids, rows reversed: every index differs, no id is unknown, so ids (not indices) must carry identity.
+    std::ifstream     in(ShippedBiomesPath(), std::ios::binary);
+    std::stringstream ss;
+    ss << in.rdbuf();
+    Json::Value doc = Parse(ss.str());
+    Json::Value reversed(Json::arrayValue);
+    for (int i = static_cast<int>(doc["biomes"].size()) - 1; i >= 0; --i) { reversed.append(doc["biomes"][static_cast<Json::ArrayIndex>(i)]); }
+    doc["biomes"] = reversed;
+    const std::string reorderedText = Write(doc);
+    Draoi::HexWorld::BiomeRegistry reordered;
+    Draoi::HexWorld::RegistryError regErr;
+    ASSERT_TRUE(reordered.LoadFromText(reorderedText.c_str(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), regErr)) << regErr.reason.AsCStr();
+    const Draoi::HexWorld::BiomeRegistry& shipped = ShippedBiomeRegistry();
+    ASSERT_EQ(reordered.Count(), shipped.Count());
+    ASSERT_NE(B(reordered, "Biome.Ocean"), B(shipped, "Biome.Ocean"));
+
+    const WorldStructure original = MakeTinyWorld();
+    const std::string    text = Export(original);
+
+    WorldJsonContext ctx;
+    ctx.biomes = &reordered;
+    WorldStructure imported;
+    const WorldImportResult r = Import(text, imported, ctx);
+    ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
+    EXPECT_EQ(Unknown(), 0u);
+    for (int c = 0; c < 12; ++c)   // MakeTinyWorld is 4x3
+    {
+        EXPECT_STREQ(reordered.IdText(imported.Cells()[c].biome), shipped.IdText(original.Cells()[c].biome)) << "cell " << c;
+    }
+}
+
+TEST(WorldJsonImport, ExportWithoutABiomeRegistryIsRefused)
+{
+    std::string text = "stale";
+    JsonIssue error;
+    EXPECT_FALSE(ExportWorldText(MakeTinyWorld(), WorldJsonContext{}, text, error));
+    EXPECT_TRUE(text.empty());
+    EXPECT_FALSE(error.message.empty());
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// AC3 / AC5 / AC8: validation, all-or-nothing
+// ---------------------------------------------------------------------------------------------------------------------
+
+TEST(WorldJsonImport, AC3a_MissingCellBiomeFieldIsRejectedWithItsPath)
+{
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][3].removeMember("biome"); }),
+                   "world.cells[3].biome", "missing");
+}
+
+TEST(WorldJsonImport, AC3b_CellCountNotMatchingTheDimensionsIsRejected)
+{
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r)
+    {
+        Json::Value kept(Json::arrayValue);
+        for (int i = 0; i < 11; ++i) { kept.append(r["world"]["cells"][i]); }
+        r["world"]["cells"] = kept;
+    }), "world.cells", "Cell count mismatch");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"].append(r["world"]["cells"][0]); }),
+                   "world.cells", "expected 12");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["dimensions"]["width"] = 5; }),
+                   "world.cells", "Cell count mismatch");
+}
+
+TEST(WorldJsonImport, AC3d_AC5_UnsupportedVersionIsRejectedWithTheSpecMessage)
+{
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["version"] = 3; }), "version", "Unsupported cow.world version: 3");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["version"] = 1; }), "version", "Unsupported cow.world version: 1");   // hard cutover: v1 (depth_zone) files are refused
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["version"] = 0; }), "version", "Unsupported cow.world version: 0");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["version"] = -1; }), "version", "Unsupported cow.world version: -1");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["version"] = "1"; }), "version");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["version"] = 1.5; }), "version");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r.removeMember("version"); }), "version");
+}
+
+TEST(WorldJsonImport, WrongFormatIsRejected)
+{
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["format"] = "cow.worldshape"; }), "format", "Unsupported format");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r.removeMember("format"); }), "format");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["format"] = 3; }), "format");
+}
+
+TEST(WorldJsonImport, AC8_BadTopologyElevationAndWaterSourceNameTheirField)
+{
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["topology"] = "square"; }), "world.topology", "square");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][4]["elevation"] = 1.5; }), "world.cells[4].elevation", "[0, 1]");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][4]["elevation"] = -0.1; }), "world.cells[4].elevation");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][5]["latitude"] = 2; }), "world.cells[5].latitude");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][6]["water_source"] = "Swamp"; }), "world.cells[6].water_source", "Swamp");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][6]["elevation"] = "high"; }), "world.cells[6].elevation");
+}
+
+TEST(WorldJsonImport, AC8_SiteOutsideTheGridIsRejected)
+{
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["sites"]["CoW.Node.Hunting"][0]["cell"] = 12; }),
+                   "world.sites.CoW.Node.Hunting[0].cell");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["sites"]["CoW.Node.Hunting"][0]["cell"] = -1; }),
+                   "world.sites.CoW.Node.Hunting[0].cell");
+}
+
+TEST(WorldJsonImport, AC8_AllFourWaterSourcesAndTheRangeEndsRoundTrip)
+{
+    WorldStructure original = MakeTinyWorld();
+    const WaterSource all[] = { WaterSource::None, WaterSource::Ocean, WaterSource::Lake, WaterSource::River };
+    for (int i = 0; i < 12; ++i) { original.Cells()[i].waterSource = all[i % 4]; }
+    original.Cells()[0].elevation = 0.0f;
+    original.Cells()[1].elevation = 1.0f;
+    WorldStructure imported;
+    ASSERT_TRUE(Import(Export(original), imported).ok);
+    EXPECT_TRUE(SameCells(original, imported));
+}
+
+TEST(WorldJsonImport, EnumNamesMustBeKnown)
+{
+    // A biome id is not an enum name: an unknown id falls back (see WorldJsonBiomeIds), a non-string is still rejected.
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][0]["biome"] = 2; }), "world.cells[0].biome");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][1]["terrain"] = "Marsh"; }), "world.cells[1].terrain");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][2]["stratum"] = "Deep"; }), "world.cells[2].stratum");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0]["stratum"] = "Nowhere"; }), "world.regions[0].stratum");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][1]["primary_biome"] = 3; }), "world.regions[1].primary_biome");
+}
+
+TEST(WorldJsonImport, IntegerFieldsAreRangeAndTypeChecked)
+{
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][0]["region"] = -1; }), "world.cells[0].region");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][0]["region"] = 1.5; }), "world.cells[0].region");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][0]["region"] = "1"; }), "world.cells[0].region");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][0]["region"] = true; }), "world.cells[0].region");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][0]["region"] = 3; }), "world.cells[0].region", "does not exist");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][0]["landmass"] = 256; }), "world.cells[0].landmass");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][0]["terrain_flags"] = 64; }), "world.cells[0].terrain_flags");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][0]["downstream"] = 6; }), "world.cells[0].downstream");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][0]["downstream"] = 8; }), "world.cells[0].downstream");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["main_landmass"] = 256; }), "world.main_landmass");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][0] = 5; }), "world.cells[0]", "object");
+}
+
+TEST(WorldJsonImport, EveryRequiredCellFieldIsRequired)
+{
+    for (const char* field : { "biome", "terrain", "region", "elevation", "latitude", "water_source", "stratum", "landmass", "terrain_flags", "downstream" })
+    {
+        ExpectRejected(Edited(MakeTinyWorld(), [&](Json::Value& r) { r["world"]["cells"][7].removeMember(field); }),
+                       std::string("world.cells[7].") + field, "missing");
+    }
+}
+
+TEST(WorldJsonImport, DimensionLimitsAreEnforced)
+{
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["dimensions"]["width"] = 0; }), "world.dimensions.width");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["dimensions"]["height"] = -3; }), "world.dimensions.height");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["dimensions"]["width"] = 257; }), "world.dimensions.width");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["dimensions"]["width"] = "4"; }), "world.dimensions.width");
+}
+
+TEST(WorldJsonImport, GridAtTheCellCapIsAcceptedByTheLimitCheck)
+{
+    // 256 x 256 = 65,536 passes the dimension limits (the cell count then fails the count check, not the limits).
+    WorldStructure out;
+    Json::Value root = Parse(Export(MakeTinyWorld()));
+    root["world"]["dimensions"]["width"] = 256;
+    root["world"]["dimensions"]["height"] = 256;
+    const WorldImportResult r = Import(Write(root), out);
+    EXPECT_FALSE(r.ok);
+    EXPECT_EQ(r.error.field, "world.cells");
+}
+
+TEST(WorldJsonImport, RegionStructureIsValidated)
+{
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0]["id"] = 2; }), "world.regions[0].id", "in order");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][1]["id"] = 1; }), "world.regions[1].id");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0]["neighbours"].append(9); }), "world.regions[0].neighbours[1]", "does not exist");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0]["neighbours"][0] = 0; }), "world.regions[0].neighbours[0]");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0]["is_island"] = "no"; }), "world.regions[0].is_island");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0]["centre_cell"] = 12; }), "world.regions[0].centre_cell");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0]["purity"] = 1.2; }), "world.regions[0].purity");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0].removeMember("stratum"); }), "world.regions[0].stratum");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["region_table"]["limited_by"] = "Nowhere"; }), "world.region_table.limited_by");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["region_table"]["absorbed_cells"] = 70000; }), "world.region_table.absorbed_cells");
+}
+
+TEST(WorldJsonImport, MoreThanSixtyFourRegionsIsRejected)
+{
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r)
+    {
+        for (int i = 0; i < 70; ++i) { r["world"]["regions"].append(r["world"]["regions"][0]); }
+    }), "world.regions", "more than 64");
+}
+
+TEST(WorldJsonImport, SiteFieldsAreValidated)
+{
+    const char* base = "world.sites.CoW.Node.Hunting[0]";
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["sites"]["CoW.Node.Hunting"][0]["region"] = 3; }), std::string(base) + ".region", "does not exist");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["sites"]["CoW.Node.Hunting"][0]["variant"] = 65536; }), std::string(base) + ".variant");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["sites"]["CoW.Node.Hunting"][0]["flags"] = -1; }), std::string(base) + ".flags");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["sites"]["CoW.Node.Hunting"][0].removeMember("cell"); }), std::string(base) + ".cell", "missing");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["sites"]["CoW.Node.Hunting"] = 5; }), "world.sites.CoW.Node.Hunting", "array");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["sites"]["CoW.Node.Hunting"].append(r["world"]["sites"]["CoW.Node.Hunting"][0]); }),
+                   "world.sites.CoW.Node.Hunting[1].cell", "already exists");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["sites"] = Json::Value(Json::arrayValue); }), "world.sites");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["sites"][""] = Json::Value(Json::arrayValue); }), "world.sites");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["sites"][std::string(64, 'k')] = Json::Value(Json::arrayValue); }),
+                   "world.sites." + std::string(28, 'k') + "...");
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Parse level failures
+// ---------------------------------------------------------------------------------------------------------------------
+
+TEST(WorldJsonImport, UnparseableDocumentsAreRejectedNotCrashed)
+{
+    const std::string good = Export(MakeTinyWorld());
+    const char* garbage[] = { "", "   ", "not json", "{", "[]", "null", "42", "\"cow.world\"", "{\"format\":", "{}\x01" };
+    for (const char* g : garbage)
+    {
+        WorldStructure out = MakeTinyWorld();
+        const WorldImportResult r = Import(g, out);
+        EXPECT_FALSE(r.ok) << g;
+        EXPECT_FALSE(r.error.message.empty()) << g;
+        EXPECT_TRUE(SameWorld(out, MakeTinyWorld())) << g;
+    }
+    // Truncated at many points.
+    for (size_t cut : { size_t(1), good.size() / 4, good.size() / 2, good.size() - 3, good.size() - 2 })
+    {
+        WorldStructure out = MakeTinyWorld();
+        EXPECT_FALSE(Import(good.substr(0, cut), out).ok) << cut;
+        EXPECT_TRUE(SameWorld(out, MakeTinyWorld())) << cut;
+    }
+}
+
+TEST(WorldJsonImport, DuplicateKeysCommentsNaNAndTrailingTextAreRejected)
+{
+    std::string good = Export(MakeTinyWorld());
+    WorldStructure out;
+    // Duplicate "version" key.
+    std::string dup = good;
+    dup.replace(dup.find("\"version\": 2,"), 13, "\"version\": 2, \"version\": 2,");
+    EXPECT_FALSE(Import(dup, out).ok);
+    // NaN where a number belongs (not valid JSON).
+    std::string nan = good;
+    nan.replace(nan.find("\"elevation\": 0,"), 15, "\"elevation\": NaN,");
+    EXPECT_FALSE(Import(nan, out).ok);
+    // Comment.
+    EXPECT_FALSE(Import("/* hi */\n" + good, out).ok);
+    // Trailing text after the document.
+    EXPECT_FALSE(Import(good + "{}", out).ok);
+    EXPECT_FALSE(Import(good + "garbage", out).ok);
+}
+
+TEST(WorldJsonImport, OversizedTextIsRefusedBeforeParsing)
+{
+    WorldStructure out = MakeTinyWorld();
+    const WorldImportResult r = Import(std::string(kMaxWorldJsonBytes + 1, ' '), out);
+    EXPECT_FALSE(r.ok);
+    EXPECT_NE(r.error.message.find("larger"), std::string::npos);
+    EXPECT_TRUE(SameWorld(out, MakeTinyWorld()));
+}
+
+TEST(WorldJsonImport, DeeplyNestedDocumentIsRejectedNotACrash)
+{
+    std::string deep(5000, '[');
+    deep += std::string(5000, ']');
+    WorldStructure out;
+    EXPECT_FALSE(Import(deep, out).ok);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// AC4: hand edits
+// ---------------------------------------------------------------------------------------------------------------------
+
+TEST(WorldJsonImport, AC4_MovedSiteImportsAtTheNewCellAndNothingElseChanges)
+{
+    const WorldStructure original = MakeTinyWorld();
+    const std::string text = Edited(original, [](Json::Value& r)
+    {
+        r["world"]["sites"]["CoW.Node.Hunting"][0]["cell"] = 4;   // was 2
+        r["world"]["sites"]["CoW.Node.Hunting"][0]["region"] = 1;
+    });
+    WorldStructure imported;
+    const WorldImportResult res = Import(text, imported);
+    ASSERT_TRUE(res.ok) << res.error.field << ": " << res.error.message;
+    const Site* moved = imported.sites.Find(BuiltinNodeKinds::Hunting(), 4);
+    ASSERT_NE(moved, nullptr);
+    EXPECT_EQ(imported.sites.Find(BuiltinNodeKinds::Hunting(), 2), nullptr);
+    EXPECT_EQ(imported.sites.Count(), original.sites.Count());
+    EXPECT_TRUE(SameCells(original, imported));
+    EXPECT_TRUE(original.regions == imported.regions);
+    EXPECT_TRUE(SameProvenance(original.provenance, imported.provenance));
+    for (const Site& site : original.sites.All())
+    {
+        if (site.kindCrc == SiteKindId(BuiltinNodeKinds::Hunting())) { continue; }
+        bool found = false;
+        for (const Site& other : imported.sites.All()) { found = found || other == site; }
+        EXPECT_TRUE(found) << "site of kind crc " << site.kindCrc << " at cell " << site.cell << " changed";
+    }
+}
+
+TEST(WorldJsonImport, HandEditedCellsAreKeptNotRecomputedOrReclassified)
+{
+    const WorldStructure original = MakeTinyWorld();
+    const std::string text = Edited(original, [](Json::Value& r)
+    {
+        r["world"]["cells"][3]["biome"] = "Biome.Desert";          // would not be a Temperate Forest by any rule
+        r["world"]["cells"][3]["elevation"] = 0.05;
+    });
+    WorldStructure imported;
+    ASSERT_TRUE(Import(text, imported).ok);
+    EXPECT_EQ(imported.Cells()[3].biome, B("Biome.Desert"));
+    EXPECT_EQ(imported.Cells()[3].elevation, 0.05f);
+}
+
+TEST(WorldJsonImport, RegionSummariesAreRecomputedFromTheCellsAndMismatchesWarn)
+{
+    const WorldStructure original = MakeTinyWorld();
+    const std::string text = Edited(original, [](Json::Value& r)
+    {
+        auto& reg = r["world"]["regions"][0];
+        reg["cell_count"] = 99;
+        reg["primary_biome"] = "Biome.Alpine";
+        reg["purity"] = 0.99;
+        reg["centre_cell"] = 11;
+        reg["neighbours"] = Json::Value(Json::arrayValue);
+    });
+    WorldStructure imported;
+    const WorldImportResult res = Import(text, imported);
+    ASSERT_TRUE(res.ok) << res.error.field << ": " << res.error.message;
+    EXPECT_TRUE(original.regions == imported.regions) << "the recomputed summaries must equal the generator's";
+    for (const char* field : { "cell_count", "primary_biome", "purity", "centre_cell", "neighbours" })
+    {
+        EXPECT_TRUE(HasWarning(res, std::string("world.regions[0].") + field)) << field;
+    }
+    EXPECT_FALSE(HasWarning(res, "world.regions[1]"));
+}
+
+TEST(WorldJsonImport, EditingACellsRegionUpdatesTheSummariesOfBothRegions)
+{
+    const WorldStructure original = MakeTinyWorld();
+    const std::string text = Edited(original, [](Json::Value& r) { r["world"]["cells"][5]["region"] = 2; });
+    WorldStructure imported;
+    const WorldImportResult res = Import(text, imported);
+    ASSERT_TRUE(res.ok);
+    EXPECT_EQ(imported.regions.regions[0].cellCount, 3);
+    EXPECT_EQ(imported.regions.regions[1].cellCount, 6);
+    EXPECT_TRUE(HasWarning(res, "world.regions[0].cell_count: file 4, recomputed 3"));
+    EXPECT_TRUE(HasWarning(res, "world.regions[1].cell_count: file 5, recomputed 6"));
+}
+
+TEST(WorldJsonImport, RegionWithNoCellsWarnsAndImports)
+{
+    const std::string text = Edited(MakeTinyWorld(), [](Json::Value& r)
+    {
+        for (int i = 0; i < 12; ++i) { if (r["world"]["cells"][i]["region"].asUInt() == 2) { r["world"]["cells"][i]["region"] = 1; } }
+    });
+    WorldStructure imported;
+    const WorldImportResult res = Import(text, imported);
+    ASSERT_TRUE(res.ok);
+    EXPECT_TRUE(HasWarning(res, "region has no cells"));
+    EXPECT_EQ(imported.regions.regions[1].cellCount, 0);
+}
+
+TEST(WorldJsonImport, SiteWhoseRegionDisagreesWithItsCellWarns)
+{
+    const std::string text = Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["sites"]["CoW.Node.Hunting"][0]["region"] = 2; });
+    WorldStructure imported;
+    const WorldImportResult res = Import(text, imported);
+    ASSERT_TRUE(res.ok);
+    EXPECT_TRUE(HasWarning(res, "world.sites.CoW.Node.Hunting[0].region"));
+    EXPECT_EQ(imported.sites.Find(BuiltinNodeKinds::Hunting(), 2)->region, 2);   // authored value kept
+}
+
+TEST(WorldJsonImport, UnknownFieldsAreIgnoredWithAWarning)
+{
+    const std::string text = Edited(MakeTinyWorld(), [](Json::Value& r)
+    {
+        r["note"] = "hand edited";
+        r["world"]["author"] = "me";
+        r["world"]["cells"][0]["mood"] = "grumpy";
+        r["world"]["sites"]["CoW.Node.Hunting"][0]["tag"] = "x";
+    });
+    WorldStructure imported;
+    const WorldImportResult res = Import(text, imported);
+    ASSERT_TRUE(res.ok);
+    EXPECT_TRUE(SameWorld(imported, MakeTinyWorld()));
+    EXPECT_TRUE(HasWarning(res, "note"));
+    EXPECT_TRUE(HasWarning(res, "world.author"));
+    EXPECT_TRUE(HasWarning(res, "world.cells[0].mood"));
+    EXPECT_TRUE(HasWarning(res, "world.sites.CoW.Node.Hunting[0].tag"));
+}
+
+TEST(WorldJsonImport, WaterlessWorldImportsWithAWarning)
+{
+    WorldStructure dry = MakeTinyWorld();
+    for (int i = 0; i < 12; ++i) { dry.Cells()[i].waterSource = WaterSource::None; }
+    WorldStructure imported;
+    const WorldImportResult res = Import(Export(dry), imported);
+    ASSERT_TRUE(res.ok);
+    EXPECT_TRUE(HasWarning(res, "no water cell"));
+    EXPECT_TRUE(SameCells(dry, imported));
+}
+
+TEST(WorldJsonImport, WarningsAreCapped)
+{
+    const std::string text = Edited(MakeTinyWorld(), [](Json::Value& r)
+    {
+        for (int i = 0; i < 200; ++i) { r["junk" + std::to_string(i)] = i; }
+    });
+    WorldStructure imported;
+    const WorldImportResult res = Import(text, imported);
+    ASSERT_TRUE(res.ok);
+    EXPECT_EQ(res.warnings.size(), kMaxImportWarnings + 1);
+    EXPECT_NE(res.warnings.back().find("more warnings"), std::string::npos);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Provenance
+// ---------------------------------------------------------------------------------------------------------------------
+
+TEST(WorldJsonImport, ProvenanceRoundTripsIncludingTheFullSeedAndAllParams)
+{
+    WorldStructure original = MakeTinyWorld();
+    original.provenance.seed = 0xFFFFFFFFFFFFFFFFull;
+    original.provenance.shape.lakes = 11;
+    original.provenance.shape.temperatureOffset = -0.25f;
+    original.provenance.shape.latitudeNorthDeg = -33.3f;
+    WorldStructure imported;
+    ASSERT_TRUE(Import(Export(original), imported).ok);
+    EXPECT_TRUE(SameProvenance(original.provenance, imported.provenance));
+    EXPECT_EQ(imported.provenance.seed, 0xFFFFFFFFFFFFFFFFull);
+}
+
+TEST(WorldJsonImport, MissingProvenanceWarnsAndImports)
+{
+    const std::string text = Edited(MakeTinyWorld(), [](Json::Value& r) { r.removeMember("provenance"); });
+    WorldStructure imported;
+    const WorldImportResult res = Import(text, imported);
+    ASSERT_TRUE(res.ok);
+    EXPECT_TRUE(HasWarning(res, "provenance: missing"));
+    EXPECT_EQ(imported.provenance.seed, 0u);
+}
+
+TEST(WorldJsonImport, BadProvenanceFieldsAreRejected)
+{
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["provenance"]["seed"] = -5; }), "provenance.seed");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["provenance"]["seed"] = "abc"; }), "provenance.seed");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["provenance"].removeMember("seed"); }), "provenance.seed");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["provenance"]["preset_id"] = std::string(33, 'x'); }), "provenance.preset_id");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["provenance"]["preset_id"] = 7; }), "provenance.preset_id");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["provenance"]["params"]["barrierForm"] = "Wall"; }), "provenance.params");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["provenance"]["params"] = 3; }), "provenance.params");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["provenance"] = 3; }), "provenance");
+}
+
+TEST(WorldJsonImport, OutOfRangeProvenanceParamsAreClampedWithAWarning)
+{
+    const std::string text = Edited(MakeTinyWorld(), [](Json::Value& r) { r["provenance"]["params"]["landFraction"] = 5.0; });
+    WorldStructure imported;
+    const WorldImportResult res = Import(text, imported);
+    ASSERT_TRUE(res.ok);
+    EXPECT_TRUE(HasWarning(res, "landFraction"));
+    EXPECT_LE(imported.provenance.shape.landFraction, 0.65f);
+}
+
+TEST(WorldJsonImport, VersionMismatchesWarn)
+{
+    WorldJsonContext ctx;
+    ctx.rulesVersion = 9;
+    WorldStructure imported;
+    const WorldImportResult res = Import(Export(MakeTinyWorld()), imported, ctx);   // file says rules_version 4
+    ASSERT_TRUE(res.ok);
+    EXPECT_TRUE(HasWarning(res, "provenance.rules_version"));
+    const std::string text = Edited(MakeTinyWorld(), [](Json::Value& r) { r["provenance"]["generator_version"] = 99; });
+    const WorldImportResult res2 = Import(text, imported);
+    ASSERT_TRUE(res2.ok);
+    EXPECT_TRUE(HasWarning(res2, "provenance.generator_version"));
+    ctx.rulesVersion = 4;
+    EXPECT_FALSE(HasWarning(Import(Export(MakeTinyWorld()), imported, ctx), "rules_version"));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Regions AC11 (JSON parts): generic kinds round trip, unknown kinds survive
+// ---------------------------------------------------------------------------------------------------------------------
+
+TEST(WorldJsonImport, AC11_RegisteredTestKindRoundTripsExactlyAndNeedsNoWarning)
+{
+    TestPlacer placer("Test.Kind", {}, 7);
+    CoWSiteRegistry registry;
+    ASSERT_TRUE(registry.Register(&placer));
+    WorldJsonContext ctx;
+    ctx.registry = &registry;
+
+    const WorldStructure original = MakeTinyWorld();   // carries a Test.Kind site at cell 7 (variant 3, flags 9)
+    WorldStructure imported;
+    const WorldImportResult res = Import(Export(original, ctx), imported, ctx);
+    ASSERT_TRUE(res.ok);
+    EXPECT_FALSE(HasWarning(res, "not registered"));
+    const Site* site = imported.sites.Find(StringCRC("Test.Kind"), 7);
+    ASSERT_NE(site, nullptr);
+    EXPECT_EQ(site->region, 2);
+    EXPECT_EQ(site->variant, 3);
+    EXPECT_EQ(site->flags, 9);
+    EXPECT_TRUE(original.sites == imported.sites);
+}
+
+TEST(WorldJsonImport, AC11_UnregisteredKindKeepsItsSitesAndReExportsUnchanged)
+{
+    const WorldStructure original = MakeTinyWorldWithUnknownKind("Dragon.Hearth");
+    const std::string text = Export(original);
+
+    WorldStructure imported;
+    const WorldImportResult res = Import(text, imported);   // no registry: Dragon.Hearth and Test.Kind are unknown
+    ASSERT_TRUE(res.ok);
+    EXPECT_TRUE(HasWarning(res, "world.sites.Dragon.Hearth: kind is not registered"));
+    const Site* hearth = imported.sites.Find(StringCRC("Dragon.Hearth"), 8);
+    ASSERT_NE(hearth, nullptr);
+    EXPECT_EQ(hearth->variant, 4);
+    EXPECT_EQ(hearth->flags, 1);
+    EXPECT_EQ(hearth->region, 2);
+    EXPECT_STREQ(imported.sites.KindName(StringCRC("Dragon.Hearth").Value()), "Dragon.Hearth");
+    EXPECT_EQ(Export(imported), text);   // byte for byte: the unknown kind comes back under its own name
+}
+
+TEST(WorldJsonImport, AC11_CrcKeyedKindRoundTripsToTheSameKindId)
+{
+    WorldStructure original = MakeTinyWorld();
+    Site s; s.kindCrc = 0x0BADF00Du; s.cell = 1; s.region = 0; s.variant = 2; s.flags = 3;
+    original.sites.Add(s);
+    const std::string text = Export(original);
+    ASSERT_NE(text.find("crc:0badf00d"), std::string::npos);
+    WorldStructure imported;
+    ASSERT_TRUE(Import(text, imported).ok);
+    EXPECT_TRUE(original.sites == imported.sites);
+    EXPECT_EQ(Export(imported), text);
+}
+
+TEST(WorldJsonImport, MalformedCrcKeysAreTreatedAsKindNames)
+{
+    // "crc:ZZZZZZZZ" is not a crc key, so it is an ordinary (odd) kind name that hashes to some id.
+    const std::string text = Edited(MakeTinyWorld(), [](Json::Value& r)
+    {
+        Json::Value list(Json::arrayValue);
+        Json::Value site(Json::objectValue);
+        site["cell"] = 1; site["region"] = 0; site["variant"] = 0; site["flags"] = 0;
+        list.append(site);
+        r["world"]["sites"]["crc:ZZZZZZZZ"] = list;
+    });
+    WorldStructure imported;
+    ASSERT_TRUE(Import(text, imported).ok);
+    EXPECT_NE(imported.sites.Find(StringCRC("crc:ZZZZZZZZ"), 1), nullptr);
+}
+
+TEST(WorldJsonImport, EmptySiteListsAreAccepted)
+{
+    const std::string text = Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["sites"]["Empty.Kind"] = Json::Value(Json::arrayValue); });
+    WorldStructure imported;
+    ASSERT_TRUE(Import(text, imported).ok);
+    EXPECT_EQ(imported.sites.Count(), MakeTinyWorld().sites.Count());
+}
+
+TEST(WorldJsonImport, ImportReplacesTheDestinationWorldCompletely)
+{
+    WorldStructure out = MakeTinyWorldWithUnknownKind("Old.Kind");
+    WorldStructure small;
+    small.Resize(GridDimensions{ 2, 2 });
+    const std::string text = Export(small);
+    ASSERT_TRUE(Import(text, out).ok);
+    EXPECT_EQ(out.dimensions.width, 2);
+    EXPECT_EQ(out.sites.Count(), 0);
+    EXPECT_EQ(out.regions.regions.Size(), 0u);
+    EXPECT_EQ(out.sites.KindName(StringCRC("Old.Kind").Value()), nullptr);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Zone names (data-driven depth zones): written by name from the registry's table, resolved against it on import
+// ---------------------------------------------------------------------------------------------------------------------
+
+TEST(WorldJsonImport, ZoneNamesRoundTripThroughTheRegistryTable)
+{
+    const WorldStructure original = MakeTinyWorld();
+    const std::string text = Export(original);
+    bool sawZoneName = false;
+    for (const char* name : { "FirstShores", "WildReaches", "AncientInteriors" })
+    {
+        sawZoneName = sawZoneName || text.find(std::string("\"stratum\": \"") + name + "\"") != std::string::npos;
+    }
+    EXPECT_TRUE(sawZoneName);
+    WorldStructure imported;
+    ASSERT_TRUE(Import(text, imported).ok);
+    EXPECT_TRUE(SameCells(original, imported));
+}
+
+TEST(WorldJsonImport, UnknownZoneNameIsRefusedAndNamesTheField)
+{
+    const WorldStructure original = MakeTinyWorld();
+    const std::string text = Edited(original, [](Json::Value& root) { root["world"]["cells"][0]["stratum"] = "Nowhere"; });
+    ExpectRejected(text, "world.cells[0].stratum", "unknown stratum");
+}
+
+TEST(WorldJsonImport, WorldSavedUnderRenamedZonesIsRefusedByTheDefaultTable)
+{
+    // A registry loaded against renamed zones writes the new names; the shipped table does not know them.
+    ::Draoi::HexWorld::StratumTable renamed;
+    ::Draoi::HexWorld::StratumError zerr;
+    const std::vector<std::string> names = { "Shore", "Wilds", "Core" };
+    ASSERT_TRUE(renamed.LoadFromText(TestStrataText(names).c_str(), TestStrataSidecar(names).c_str(), zerr));
+    std::string biomes = Detail::ReadFileText(ShippedBiomesPath());
+    for (const auto& r : { std::pair<const char*, const char*>{ "\"FirstShores\"", "\"Shore\"" }, { "\"WildReaches\"", "\"Wilds\"" }, { "\"AncientInteriors\"", "\"Core\"" } })
+    {
+        for (size_t at = biomes.find(r.first); at != std::string::npos; at = biomes.find(r.first, at)) { biomes.replace(at, std::strlen(r.first), r.second); }
+    }
+    Draoi::HexWorld::BiomeRegistry reg;
+    Draoi::HexWorld::RegistryError regErr;
+    ASSERT_TRUE(reg.LoadFromText(biomes.c_str(), renamed, regErr)) << regErr.reason.AsCStr();
+
+    const WorldStructure original = MakeTinyWorld();
+    WorldJsonContext ctx;
+    ctx.biomes = &reg;
+    const std::string text = Export(original, ctx);
+    EXPECT_TRUE(text.find("\"stratum\": \"Shore\"") != std::string::npos || text.find("\"stratum\": \"Wilds\"") != std::string::npos ||
+                text.find("\"stratum\": \"Core\"") != std::string::npos);
+    WorldStructure back;
+    EXPECT_TRUE(Import(text, back, ctx).ok);        // round trips under its own table
+    WorldStructure refused;
+    EXPECT_FALSE(Import(text, refused).ok);          // the default table lacks the names
+}

@@ -6,7 +6,27 @@ from typing import Optional
 
 import click
 
+from dia_cli.commands.check.arch_layer_rules import parse_layer
 from dia_cli.utils.repo_root import find_repo_root
+
+# Layers the arch checker does not order but module docs legitimately use.
+_UNORDERED_LAYERS = ("tools/editor", "tools/inspector")
+
+
+def _root_for(parent: str) -> str:
+    """Library root a parent project lives under: Draoi* -> Draoi, everything else -> Dia."""
+    return "Draoi" if parent.startswith("Draoi") else "Dia"
+
+
+def _validate_layer(ctx, param, value):
+    if value is None:
+        return None
+    if parse_layer(value) is None and value not in _UNORDERED_LAYERS:
+        raise click.BadParameter(
+            f"unknown layer '{value}'. Use foundation/<core|maths|services|platform|application>, "
+            "assets/<core|tools>, domain/<name>/<core|tools>, tools/<editor|inspector> or draoi."
+        )
+    return value
 
 
 # ---------------------------------------------------------------------------
@@ -15,9 +35,11 @@ from dia_cli.utils.repo_root import find_repo_root
 
 def _derive_names(parent: str, name: str) -> dict:
     """Derive all name variants from parent (e.g. DiaCore) and name (e.g. Serializer)."""
-    # Strip "Dia" prefix for IDs
-    parent_short = parent[3:] if parent.startswith("Dia") else parent
-    parent_id = f"dia.{parent_short.lower()}"
+    root = _root_for(parent)
+    # Strip the "Dia"/"Draoi" prefix for IDs
+    parent_short = parent[len(root):] if parent.startswith(root) else parent
+    id_prefix = "draoi" if root == "Draoi" else "dia"
+    parent_id = f"{id_prefix}.{parent_short.lower()}"
     module_id = f"{parent_id}.{name.lower()}"
     namespace_parent = parent_short
 
@@ -28,10 +50,12 @@ def _derive_names(parent: str, name: str) -> dict:
         parent_id=parent_id,
         module_id=module_id,
         namespace_parent=namespace_parent,
-        full_path=f"Dia/{parent}/{name}/",
+        root=root,
+        full_path=f"{root}/{parent}/{name}/",
         header_file=f"{name}.h",
         impl_file=f"{name}.cpp",
-        module_md_file=f"{module_id}.architecture.module.md",
+        # Module doc filenames always start with "dia." — every tool globs dia.*.architecture.module.md
+        module_md_file=(module_id if module_id.startswith("dia.") else f"dia.{module_id}") + ".architecture.module.md",
     )
 
 
@@ -43,7 +67,7 @@ def _header_content(n: dict) -> str:
     return f"""\
 #pragma once
 
-namespace Dia
+namespace {n['root']}
 {{
 \tnamespace {n['namespace_parent']}
 \t{{
@@ -62,7 +86,7 @@ def _impl_content(n: dict) -> str:
     return f"""\
 #include "{n['parent']}/{n['name']}/{n['name']}.h"
 
-namespace Dia
+namespace {n['root']}
 {{
 \tnamespace {n['namespace_parent']}
 \t{{
@@ -80,7 +104,7 @@ name: {n['name']}
 layer: {layer}
 status: active
 maturity: dev
-path: Dia/{n['parent']}/{n['name']}/
+path: {n['full_path']}
 language: cpp
 parent_module_id: {n['parent_id']}
 summary: "TODO: describe this module"
@@ -94,7 +118,7 @@ public_api:
   headers:
     - {n['parent']}/{n['name']}/{n['name']}.h
   namespaces:
-    - Dia::{n['namespace_parent']}::{n['name']}
+    - {n['root']}::{n['namespace_parent']}::{n['name']}
   entry_points: []
 ---
 
@@ -156,10 +180,10 @@ def _update_vcxproj_filters(path: Path, name: str) -> None:
 @click.argument("name")
 @click.option(
     "--layer",
-    default="platform",
-    type=click.Choice(["platform", "framework", "application", "backend"]),
-    show_default=True,
-    help="Module layer classification.",
+    default=None,
+    callback=_validate_layer,
+    help="Module layer (e.g. foundation/core, domain/gameplay/core, draoi). "
+         "Defaults to 'draoi' for Draoi* parents, otherwise 'foundation/core'.",
 )
 @click.option(
     "--dry-run",
@@ -168,25 +192,27 @@ def _update_vcxproj_filters(path: Path, name: str) -> None:
     help="Print what would be created/modified without writing any files.",
 )
 def module(parent: str, name: str, layer: str, dry_run: bool) -> None:
-    """Scaffold all boilerplate for a new Dia engine module.
+    """Scaffold all boilerplate for a new Dia or Draoi module.
 
-    PARENT is the parent project (e.g. DiaCore, DiaAnimation2D).
+    PARENT is the parent project (e.g. DiaCore, DiaAnimation2D, DraoiHexWorld).
     NAME is PascalCase module name (e.g. Serializer, Timeline).
     """
     n = _derive_names(parent, name)
+    if layer is None:
+        layer = "draoi" if n["root"] == "Draoi" else "foundation/core"
 
     repo_root = find_repo_root(__file__)
 
     # Define all paths
-    module_dir = repo_root / "Dia" / parent / name
+    module_dir = repo_root / n["root"] / parent / name
     header_path = module_dir / n["header_file"]
     impl_path = module_dir / n["impl_file"]
 
-    docs_dir = repo_root / "Dia" / parent / "Docs"
+    docs_dir = repo_root / n["root"] / parent / "Docs"
     module_md_path = docs_dir / n["module_md_file"]
 
-    vcxproj_path = repo_root / "Dia" / parent / f"{parent}.vcxproj"
-    filters_path = repo_root / "Dia" / parent / f"{parent}.vcxproj.filters"
+    vcxproj_path = repo_root / n["root"] / parent / f"{parent}.vcxproj"
+    filters_path = repo_root / n["root"] / parent / f"{parent}.vcxproj.filters"
 
     rel = lambda p: str(p.relative_to(repo_root)).replace("\\", "/")
 

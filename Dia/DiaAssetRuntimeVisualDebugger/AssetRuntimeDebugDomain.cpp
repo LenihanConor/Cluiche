@@ -5,8 +5,8 @@
 #include "DiaAssetRuntimeVisualDebugger.h"
 
 #include <DiaAssetRuntime/AssetRuntime.h>
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 
 namespace Dia::AssetRuntime
 {

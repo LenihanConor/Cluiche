@@ -60,7 +60,8 @@ void DiaScalarFieldInspectorPlugin::OnGameDisconnected()
 
 void DiaScalarFieldInspectorPlugin::OnScalarFieldStateUpdate(const Json::Value& payload)
 {
-    GetBridge()->NotifyUIDataChanged("scalarfield_inspector.state", payload);
+    if (auto* bridge = GetBridge())
+        bridge->NotifyUIDataChanged("scalarfield_inspector.state", payload);
 }
 
 Json::Value DiaScalarFieldInspectorPlugin::HandleWritePoint(const Json::Value& req)

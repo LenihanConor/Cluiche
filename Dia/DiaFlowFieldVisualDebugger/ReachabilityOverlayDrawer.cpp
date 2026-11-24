@@ -2,7 +2,7 @@
 #ifdef DIA_DEBUG
 
 #include <DiaFlowField/FlowField.h>
-#include <DiaPathfinding/CellCoord.h>
+#include <DiaGeometry2D/Grid/CellCoord.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaCore/DebugDraw/IDebugContext.h>
@@ -31,7 +31,7 @@ void ReachabilityOverlayDrawer::Draw(Dia::Core::IDebugDraw& draw)
     {
         for (int col = 0; col < mField.GetWidth(); ++col)
         {
-            const auto& cell = mField.Sample(Dia::Pathfinding::CellCoord{col, row});
+            const auto& cell = mField.Sample(Dia::Geometry2D::CellCoord{col, row});
 
             const float cx = static_cast<float>(col) * mCellSize + mCellSize * 0.5f;
             const float cy = static_cast<float>(row) * mCellSize + mCellSize * 0.5f;

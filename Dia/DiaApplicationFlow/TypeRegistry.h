@@ -72,8 +72,9 @@ namespace Dia { namespace ApplicationFlow {
         static TypeRegistry& Global();
 
     private:
-        // 64 payload slots, 128 hash-table buckets — sized for ~50 modules with headroom.
-        Dia::Core::Containers::HashTable<Dia::Core::StringCRC, TypeMetadata> mFactories{64, 128};
+        // 128 payload slots, 256 hash-table buckets. Fixed size: a full table asserts at
+        // static init (CluicheTest passed 64 modules and crashed at startup).
+        Dia::Core::Containers::HashTable<Dia::Core::StringCRC, TypeMetadata> mFactories{128, 256};
     };
 
     // ---------------------------------------------------------------------------

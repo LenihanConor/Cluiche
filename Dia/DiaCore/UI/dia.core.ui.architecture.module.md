@@ -25,8 +25,7 @@ non_responsibilities:
   - Page management, rendering overlay, input injection — Dia::UI::IUISystem
   - Any concrete UI backend (CEF, Ultralight) — DiaUICEF, DiaUIUltralight
 
-dependent_modules:
-  - dia.ui
+dependent_modules: []
 
 dependencies:
   required: []

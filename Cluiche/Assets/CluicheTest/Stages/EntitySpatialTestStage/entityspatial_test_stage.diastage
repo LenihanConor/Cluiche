@@ -1,6 +1,8 @@
 {
     "name": "EntitySpatialTestStage",
     "manifest": "Stages/EntitySpatialTestStage/misc/ApplicationFlow/entityspatial_test_stage.diaapp",
+    "tags": ["test", "entity"],
+    "description": "Entity spatial queries and partitioning",
     "config": {
         "path_aliases": {
             "stage_root": "."

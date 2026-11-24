@@ -67,6 +67,7 @@ dependencies:
     - dia.core
     - dia.maths
     - dia.geometry2d
+    - dia.observation
   forbidden:
     - dia.graphics
     - dia.entity

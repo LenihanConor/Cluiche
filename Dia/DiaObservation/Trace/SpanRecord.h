@@ -19,6 +19,8 @@ namespace Dia
 			uint64_t             endSteadyNs;
 			uint32_t             threadId;
 			Dia::Core::StringCRC scenarioStep;
+			uint64_t             linkTraceId;     // 0 if no flow link
+			uint64_t             linkSpanId;      // 0 if no flow link
 		};
 	}
 } // namespace Observation

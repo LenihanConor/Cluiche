@@ -1,6 +1,8 @@
 {
     "name": "Mesh3DRenderSystemTestStage",
     "manifest": "Stages/Mesh3DRenderSystemTestStage/misc/ApplicationFlow/mesh3drendersystem_test_stage.diaapp",
+    "tags": ["test", "mesh3d"],
+    "description": "3D mesh rendering pipeline",
     "config": {
         "path_aliases": {
             "stage_root": "."

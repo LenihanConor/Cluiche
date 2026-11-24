@@ -5,7 +5,7 @@
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/Entity.h>
 #include <DiaMaths/Vector/Vector2D.h>
-#include <DiaMessageBus/MessageBusModule.h>
+#include "Modules/MessageBusHostModule.h"
 #include <DiaMessageBus/BusSubscriptionHandle.h>
 #include <DiaMessageBus/IFlushAdapter.h>
 #include <cstdint>
@@ -53,11 +53,11 @@ protected:
     void OnStop() override;
 
 private:
-    // Thin subclass to expose the protected lifecycle methods of MessageBusModule.
+    // Thin subclass to expose the protected lifecycle methods of MessageBusHostModule.
     // MessageBusDebugDomain's History tab needs GetLedgerHistory(), which only
-    // exists on MessageBusModule (not on a bare Bus) — see SpawnerTestStageModule
+    // exists on the host module (not on a bare Bus) — see SpawnerTestStageModule
     // for the identical pattern applied to EntitySpawnerModule.
-    class TestableMessageBusModule : public Dia::MessageBus::MessageBusModule
+    class TestableMessageBusModule : public Cluiche::AppFlow::MessageBusHostModule
     {
     public:
         TestableMessageBusModule() = default;
@@ -83,6 +83,11 @@ private:
     static constexpr float        kPulseIntervalSeconds = 2.0f;
     static constexpr float        kPingIntervalSeconds  = 3.0f;
     static constexpr uint32_t     kBurstTriggerFrame    = 150; // t ~= 5.0s at 30Hz
+
+    // Stress mode configuration (10k message test for CoW F-1)
+    static constexpr float        kStressPulseIntervalSeconds = 0.1f;  // 10x faster
+    static constexpr float        kStressPingIntervalSeconds  = 0.15f; // 10x faster
+    static constexpr uint32_t     kStressTargetMessages       = 10000;
 
     enum class FlashKind : uint8_t { None, Pulse, Ping, Pong, Burst };
 
@@ -156,12 +161,19 @@ private:
     uint32_t     mDroppedTotal                   = 0;
     unsigned int mFrameCounter                   = 0;
 
+    // --- Stress mode ---
+    bool         mStressMode                     = false;
+    float        mPulseInterval                  = kPulseIntervalSeconds;
+    float        mPingInterval                   = kPingIntervalSeconds;
+    unsigned int mDuplicatesDetected             = 0;
+
     // --- Metrics ---
     Dia::Observation::Metric::Gauge* mMetricPulsesSent    = nullptr;
     Dia::Observation::Metric::Gauge* mMetricPingsSent     = nullptr;
     Dia::Observation::Metric::Gauge* mMetricPongsReceived = nullptr;
     Dia::Observation::Metric::Gauge* mMetricBursts        = nullptr;
     Dia::Observation::Metric::Gauge* mMetricDropped       = nullptr;
+    Dia::Observation::Metric::Gauge* mMetricDuplicates    = nullptr;
 
 #ifdef DIA_DEBUG
     friend class MessageBusDebugLayer;

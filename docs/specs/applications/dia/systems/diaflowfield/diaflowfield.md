@@ -51,11 +51,11 @@ namespace Dia::FlowField {
     template<typename T>
     concept CFlowFieldGraph = Dia::Pathfinding::CPathGraph<T>
         && requires(const T& g,
-                    Dia::Pathfinding::CellCoord c,
+                    Dia::Geometry2D::CellCoord c,
                     float cellSize,
                     Dia::Maths::Vector2 worldPos) {
         { g.CellToWorldPosition(c, cellSize) } -> std::convertible_to<Dia::Maths::Vector2>;
-        { g.WorldToCell(worldPos, cellSize)  } -> std::convertible_to<Dia::Pathfinding::CellCoord>;
+        { g.WorldToCell(worldPos, cellSize)  } -> std::convertible_to<Dia::Geometry2D::CellCoord>;
     };
 }
 ```
@@ -73,7 +73,7 @@ namespace Dia::FlowField {
     public:
         // Sample the flow direction at a cell.
         // Returns {0,0} for cells that cannot reach the goal.
-        const FlowCell& Sample(Dia::Pathfinding::CellCoord cell) const;
+        const FlowCell& Sample(Dia::Geometry2D::CellCoord cell) const;
 
         // Convenience: sample direction from world position (requires cellSize).
         Dia::Maths::Vector2 SampleWorld(Dia::Maths::Vector2 worldPos, float cellSize) const;
@@ -96,7 +96,7 @@ namespace Dia::FlowField {
     // Synchronous: blocks until the full grid is processed.
     template<CFlowFieldGraph TGraph>
     FlowField ComputeFlowField(const TGraph&                    graph,
-                               Dia::Pathfinding::CellCoord      goalCell,
+                               Dia::Geometry2D::CellCoord      goalCell,
                                Dia::Pathfinding::IPathCostProvider& costs);
 }
 ```
@@ -117,7 +117,7 @@ namespace Dia::FlowField {
 
         // Returns existing field if clean; recomputes if dirty or absent.
         const FlowField& GetOrCompute(FlowFieldKey key,
-                                      Dia::Pathfinding::CellCoord goalCell);
+                                      Dia::Geometry2D::CellCoord goalCell);
 
         // Mark a specific field dirty — recomputed on next GetOrCompute.
         void Invalidate(FlowFieldKey key);
@@ -129,8 +129,8 @@ namespace Dia::FlowField {
         // OR whose field contains any cell in that region (conservative: invalidates if the
         // goal is inside the changed region; callers should also call this when an obstacle
         // change could affect routes passing through the region).
-        void InvalidateRegion(Dia::Pathfinding::CellCoord topLeft,
-                              Dia::Pathfinding::CellCoord bottomRight);
+        void InvalidateRegion(Dia::Geometry2D::CellCoord topLeft,
+                              Dia::Geometry2D::CellCoord bottomRight);
 
         int GetCachedCount() const;
     };
@@ -157,6 +157,7 @@ namespace Dia::FlowField {
 | Square + Hex support | Both `SquarePathGrid` and `HexPathGrid` satisfy `CFlowFieldGraph` via thin adapters. | inline | Approved |
 | Lifecycle Logging | `DIA_LOG_INFO` on compute start, completion (cells visited, ms elapsed), and invalidation. | inline | Approved |
 | Test Utilities | `DiaFlowField/Testing/` — `AssertCellDirection`, `AssertReachable`, `AssertUnreachable`, `MockFlowFieldGraph`. Ships with library; consumer opt-in via include. | inline | Approved |
+| Scalable Storage | Heap-sized `FlowField` storage (no 4096-cell cap) and a graph-aware `Sample` / `SampleWorld` overload so any `CFlowFieldGraph` (square, axial hex, rectangular hex) samples correctly. CoW Standard/Large hex maps need it. | @scalable-storage.md | Approved |
 
 ## Dependencies on Other Systems
 

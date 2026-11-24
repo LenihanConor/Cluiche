@@ -1,0 +1,19 @@
+{
+    "version": 3,
+    "processing_units": [
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                { "instance_id": "MessageBusHostModule", "type_id": "MessageBusHostModule", "stages": ["FixtureHostStage"], "dependencies": [], "channels": [] },
+                { "instance_id": "RandomStreamModule", "type_id": "RandomStreamModule", "stages": ["FixtureHostStage"], "dependencies": [], "channels": [] },
+                { "instance_id": "SimQueryHostModule", "type_id": "SimQueryHostModule", "stages": ["FixtureHostStage"], "dependencies": [], "channels": [] },
+                { "instance_id": "WorldStepModule", "type_id": "WorldStepModule", "stages": ["FixtureHostStage"], "dependencies": ["MessageBusHostModule", "SimQueryHostModule"], "channels": [] },
+                { "instance_id": "WeatherModule", "type_id": "WeatherModule", "stages": ["FixtureHostStage"], "dependencies": ["MessageBusHostModule", "WorldStepModule", "WorldGenerationModule", "SimQueryHostModule"], "requires_tick_after": ["WorldStepModule"], "config": { "spinup_weeks": 52 }, "channels": [{ "id": "JobSystemService", "role": "consumes" }] }
+            ]
+        }
+    ],
+    "stages": [],
+    "streams": []
+}

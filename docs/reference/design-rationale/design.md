@@ -270,7 +270,7 @@ Traditional game engines have issues:
 
 **2. Platform Abstraction**
 - Core engine portable (DiaCore, DiaMaths)
-- Backends pluggable (DiaSFML, can swap for SDL/Direct3D)
+- Backends pluggable (DiaSDL for window/input, DiaBgfx for rendering)
 - No platform #ifdefs in core code
 
 **[→ Why Dia vs existing engines?](why-dia.md)**
@@ -695,4 +695,4 @@ Cluiche and Dia prioritize:
 
 ---
 
-**[→ Back to Documentation Index](../README.md)**
+**[→ Back to Documentation Index](../README.md)**

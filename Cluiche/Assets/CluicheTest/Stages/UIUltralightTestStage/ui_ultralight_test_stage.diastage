@@ -1,6 +1,8 @@
 {
     "name": "UIUltralightTestStage",
     "manifest": "Stages/UIUltralightTestStage/misc/ApplicationFlow/ui_ultralight_test_stage.diaapp",
+    "tags": ["test", "ui"],
+    "description": "UI rendering and event handling",
     "config": {
         "path_aliases": {
             "stage_root": ".",

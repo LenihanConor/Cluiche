@@ -32,6 +32,28 @@ namespace Dia
 			Tracer::Instance().OnSpanOpen(mRecord);
 		}
 
+		ScopedZone::ScopedZone(const Dia::Core::StringCRC& name, TraceCategory category, const TraceLink& link)
+		{
+			mRecord = SpanRecord{};
+
+			if (!Tracer::Instance().IsStarted())
+				return;
+
+			mRecord.name     = name;
+			mRecord.category = category;
+			mRecord.linkTraceId = link.traceId;
+			mRecord.linkSpanId  = link.spanId;
+			mRecord.startSteadyNs = static_cast<uint64_t>(
+				std::chrono::steady_clock::now().time_since_epoch().count());
+#ifdef _WIN32
+			mRecord.threadId = static_cast<uint32_t>(GetCurrentThreadId());
+#else
+			mRecord.threadId = 0;
+#endif
+
+			Tracer::Instance().OnSpanOpen(mRecord);
+		}
+
 		ScopedZone::~ScopedZone()
 		{
 			if (!Tracer::Instance().IsStarted())

@@ -14,7 +14,7 @@ namespace Dia
 		/// \brief Define a point with color and texture coordinates
 		///
 		/// A vertex is an improved point. It has a position and other
-		/// extra attributes that will be used for drawing: in SFML,
+		/// extra attributes that will be used for drawing: here,
 		/// vertices have a color and a pair of texture coordinates.
 		///
 		/// The vertex is the building block of drawing. Everything which

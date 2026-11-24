@@ -1,6 +1,8 @@
 {
     "name": "RigidBody2DTestStage",
     "manifest": "Stages/RigidBody2DTestStage/misc/ApplicationFlow/rigidbody2d_stage.diaapp",
+    "tags": ["test", "physics"],
+    "description": "Rigid body solver, contacts and sleeping",
     "config": {
         "path_aliases": {
             "stage_root": "."

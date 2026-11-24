@@ -2,7 +2,7 @@
 #ifdef DIA_DEBUG
 
 #include <DiaPathfinding/SquarePathGrid.h>
-#include <DiaPathfinding/CellCoord.h>
+#include <DiaGeometry2D/Grid/CellCoord.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaCore/DebugDraw/IDebugContext.h>
@@ -27,7 +27,7 @@ void GridPassabilityDrawer::Draw(Dia::Core::IDebugDraw& draw)
     const float scale    = mCtx.GetDebugScale();
     const float halfCell = mCellSize * scale * 0.5f;
 
-    mGrid.VisitCells([&](Dia::Pathfinding::CellCoord coord, bool passable)
+    mGrid.VisitCells([&](Dia::Geometry2D::CellCoord coord, bool passable)
     {
         const float cx = static_cast<float>(coord.x) * mCellSize;
         const float cy = static_cast<float>(coord.y) * mCellSize;

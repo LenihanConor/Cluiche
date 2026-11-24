@@ -5,7 +5,7 @@
 #include <DiaGridVisibility/VisibilityGroupId.h>
 #include <DiaGridVisibility/VisibilityState.h>
 #include <DiaPathfinding/CPathGraph.h>
-#include <DiaPathfinding/CellCoord.h>
+#include <DiaGeometry2D/Grid/CellCoord.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaEntity/Entity.h>
 
@@ -45,25 +45,25 @@ namespace Dia::GridVisibility::Testing {
                 mPassable.Add(true);
         }
 
-        void SetPassable(Dia::Pathfinding::CellCoord cell, bool passable) {
+        void SetPassable(Dia::Geometry2D::CellCoord cell, bool passable) {
             if (IsInBounds(cell))
                 mPassable[static_cast<unsigned int>(CellIndex(cell))] = passable;
         }
 
         // CPathGraph requirements:
-        void GetNeighbours(Dia::Pathfinding::CellCoord cell,
-                           Dia::Core::Containers::DynamicArrayC<Dia::Pathfinding::CellCoord, 16>& out) const {
+        void GetNeighbours(Dia::Geometry2D::CellCoord cell,
+                           Dia::Core::Containers::DynamicArrayC<Dia::Geometry2D::CellCoord, 16>& out) const {
             out.RemoveAll();
             const int dx[] = { 0, 1, 0, -1 };
             const int dy[] = { -1, 0, 1, 0 };
             for (int i = 0; i < 4; ++i) {
-                Dia::Pathfinding::CellCoord nb{ cell.x + dx[i], cell.y + dy[i] };
+                Dia::Geometry2D::CellCoord nb{ cell.x + dx[i], cell.y + dy[i] };
                 if (IsInBounds(nb))
                     out.Add(nb);
             }
         }
 
-        bool IsPassable(Dia::Pathfinding::CellCoord cell) const {
+        bool IsPassable(Dia::Geometry2D::CellCoord cell) const {
             if (!IsInBounds(cell)) return false;
             return mPassable[static_cast<unsigned int>(CellIndex(cell))];
         }
@@ -73,11 +73,11 @@ namespace Dia::GridVisibility::Testing {
         int GetHeight() const { return mHeight; }
 
     private:
-        bool IsInBounds(Dia::Pathfinding::CellCoord cell) const {
+        bool IsInBounds(Dia::Geometry2D::CellCoord cell) const {
             return cell.x >= 0 && cell.y >= 0 && cell.x < mWidth && cell.y < mHeight;
         }
 
-        int CellIndex(Dia::Pathfinding::CellCoord cell) const {
+        int CellIndex(Dia::Geometry2D::CellCoord cell) const {
             return cell.y * mWidth + cell.x;
         }
 
@@ -102,7 +102,7 @@ namespace Dia::GridVisibility::Testing {
 
     template<CVisibilityGraph TGraph>
     inline void AssertCellVisible(const GridVisibilitySystem<TGraph>& sys,
-                                  Dia::Pathfinding::CellCoord cell,
+                                  Dia::Geometry2D::CellCoord cell,
                                   VisibilityGroupId groupId) {
         EXPECT_EQ(sys.GetCellState(cell, groupId), VisibilityState::Visible)
             << "Expected cell (" << cell.x << "," << cell.y << ") to be Visible";
@@ -110,7 +110,7 @@ namespace Dia::GridVisibility::Testing {
 
     template<CVisibilityGraph TGraph>
     inline void AssertCellRevealed(const GridVisibilitySystem<TGraph>& sys,
-                                   Dia::Pathfinding::CellCoord cell,
+                                   Dia::Geometry2D::CellCoord cell,
                                    VisibilityGroupId groupId) {
         EXPECT_EQ(sys.GetCellState(cell, groupId), VisibilityState::Revealed)
             << "Expected cell (" << cell.x << "," << cell.y << ") to be Revealed";
@@ -118,7 +118,7 @@ namespace Dia::GridVisibility::Testing {
 
     template<CVisibilityGraph TGraph>
     inline void AssertCellUnexplored(const GridVisibilitySystem<TGraph>& sys,
-                                     Dia::Pathfinding::CellCoord cell,
+                                     Dia::Geometry2D::CellCoord cell,
                                      VisibilityGroupId groupId) {
         EXPECT_EQ(sys.GetCellState(cell, groupId), VisibilityState::Unexplored)
             << "Expected cell (" << cell.x << "," << cell.y << ") to be Unexplored";

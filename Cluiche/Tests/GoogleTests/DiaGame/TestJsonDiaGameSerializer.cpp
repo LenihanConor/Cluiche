@@ -22,6 +22,20 @@ TEST(JsonDiaGameSerializer, Load_NameAndVersion)
     EXPECT_STREQ(m.version.AsCStr(), "2.0");
 }
 
+TEST(JsonDiaGameSerializer, Load_PercentInStringFieldsIsLiteral)
+{
+    JsonDiaGameSerializer s;
+    DiaGameManifest m;
+    const char* json = R"({"name":"100%s%n","version":"1%d","imports":[{"path":"a%s/b.diaapp"}],"config":{"asset_root":"r%s","asset_catalogue":"c%n.json"}})";
+    EXPECT_TRUE(s.Load(json, m).ok);
+    EXPECT_STREQ(m.name.AsCStr(), "100%s%n");
+    EXPECT_STREQ(m.version.AsCStr(), "1%d");
+    ASSERT_EQ(m.imports.Size(), 1u);
+    EXPECT_STREQ(m.imports[0].path.AsCStr(), "a%s/b.diaapp");
+    EXPECT_STREQ(m.config.assetRoot.AsCStr(), "r%s");
+    EXPECT_STREQ(m.config.assetCatalogue.AsCStr(), "c%n.json");
+}
+
 TEST(JsonDiaGameSerializer, Load_MissingNameDefaultsToEmpty)
 {
     JsonDiaGameSerializer s;
@@ -239,6 +253,111 @@ TEST(JsonDiaGameSerializer, Save_BufferTooSmall_ReturnsFalure)
 
     char tiny[4] = {};
     EXPECT_FALSE(s.Save(m, tiny, sizeof(tiny)).ok);
+}
+
+// ---------------------------------------------------------------------------
+// editor.manifests (game-scoped editor plugins)
+// ---------------------------------------------------------------------------
+
+TEST(JsonDiaGameSerializer, Load_EditorManifests_Present)
+{
+    JsonDiaGameSerializer s;
+    DiaGameManifest m;
+    const char* json = R"({"name":"G","version":"1","imports":[],"config":{},
+        "editor":{"manifests":["a_editor.diaapp","sub/b%d.diaapp"]}})";
+    ASSERT_TRUE(s.Load(json, m).ok);
+    ASSERT_EQ(m.editorManifests.Size(), 2u);
+    EXPECT_STREQ(m.editorManifests[0].AsCStr(), "a_editor.diaapp");
+    EXPECT_STREQ(m.editorManifests[1].AsCStr(), "sub/b%d.diaapp");
+}
+
+TEST(JsonDiaGameSerializer, Load_EditorManifests_AbsentIsEmpty)
+{
+    JsonDiaGameSerializer s;
+    DiaGameManifest m;
+    ASSERT_TRUE(s.Load(R"({"name":"G","version":"1","imports":[],"config":{}})", m).ok);
+    EXPECT_EQ(m.editorManifests.Size(), 0u);
+}
+
+TEST(JsonDiaGameSerializer, Load_EditorNotObject_IsEmpty)
+{
+    JsonDiaGameSerializer s;
+    DiaGameManifest m;
+    ASSERT_TRUE(s.Load(R"({"name":"G","version":"1","imports":[],"editor":"oops"})", m).ok);
+    EXPECT_EQ(m.editorManifests.Size(), 0u);
+}
+
+TEST(JsonDiaGameSerializer, Load_EditorManifestsNotArray_IsEmpty)
+{
+    JsonDiaGameSerializer s;
+    DiaGameManifest m;
+    ASSERT_TRUE(s.Load(R"({"name":"G","version":"1","imports":[],"editor":{"manifests":"x.diaapp"}})", m).ok);
+    EXPECT_EQ(m.editorManifests.Size(), 0u);
+}
+
+TEST(JsonDiaGameSerializer, Load_EditorManifests_NonStringAndEmptyEntriesFiltered)
+{
+    JsonDiaGameSerializer s;
+    DiaGameManifest m;
+    ASSERT_TRUE(s.Load(R"({"name":"G","version":"1","imports":[],
+        "editor":{"manifests":[1,"","ok.diaapp",null,{"a":1}]}})", m).ok);
+    ASSERT_EQ(m.editorManifests.Size(), 1u);
+    EXPECT_STREQ(m.editorManifests[0].AsCStr(), "ok.diaapp");
+}
+
+TEST(JsonDiaGameSerializer, Load_EditorManifests_OverCapacityTruncated)
+{
+    JsonDiaGameSerializer s;
+    DiaGameManifest m;
+    ASSERT_TRUE(s.Load(R"({"name":"G","version":"1","imports":[],"editor":{"manifests":
+        ["1","2","3","4","5","6","7","8","9","10"]}})", m).ok);
+    EXPECT_EQ(m.editorManifests.Size(), 8u);
+}
+
+TEST(JsonDiaGameSerializer, Save_EditorManifests_RoundTrip)
+{
+    JsonDiaGameSerializer s;
+    DiaGameManifest m;
+    m.name = "G";
+    m.version = "1";
+    m.editorManifests.Add(Dia::Core::Containers::String256("%s", "x.diaapp"));
+    m.editorManifests.Add(Dia::Core::Containers::String256("%s", "y/z.diaapp"));
+
+    char buf[4096] = {};
+    ASSERT_TRUE(s.Save(m, buf, sizeof(buf)).ok);
+
+    DiaGameManifest m2;
+    ASSERT_TRUE(s.Load(buf, m2).ok);
+    ASSERT_EQ(m2.editorManifests.Size(), 2u);
+    EXPECT_STREQ(m2.editorManifests[0].AsCStr(), "x.diaapp");
+    EXPECT_STREQ(m2.editorManifests[1].AsCStr(), "y/z.diaapp");
+}
+
+TEST(JsonDiaGameSerializer, Save_EmptyEditorManifests_NoEditorKey)
+{
+    JsonDiaGameSerializer s;
+    DiaGameManifest m;
+    m.name = "G";
+    m.version = "1";
+
+    char buf[4096] = {};
+    ASSERT_TRUE(s.Save(m, buf, sizeof(buf)).ok);
+    EXPECT_EQ(strstr(buf, "\"editor\""), nullptr);
+}
+
+TEST(DiaGameManifest, Move_KeepsEditorManifests)
+{
+    DiaGameManifest a;
+    a.editorManifests.Add(Dia::Core::Containers::String256("%s", "x.diaapp"));
+
+    DiaGameManifest b(std::move(a));
+    ASSERT_EQ(b.editorManifests.Size(), 1u);
+    EXPECT_STREQ(b.editorManifests[0].AsCStr(), "x.diaapp");
+
+    DiaGameManifest c;
+    c = std::move(b);
+    ASSERT_EQ(c.editorManifests.Size(), 1u);
+    EXPECT_STREQ(c.editorManifests[0].AsCStr(), "x.diaapp");
 }
 
 // ---------------------------------------------------------------------------

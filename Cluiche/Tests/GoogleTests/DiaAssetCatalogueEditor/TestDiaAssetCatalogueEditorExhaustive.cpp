@@ -31,6 +31,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
+#include <string>
 
 using namespace Dia::AssetCatalogue;
 using namespace Dia::AssetCatalogue::Editor;
@@ -42,6 +43,15 @@ using namespace Dia::Core;
 // ===========================================================================
 namespace
 {
+    // Per-process temp file path, so fixtures that write the same file in every
+    // test do not collide when `--shards` runs them in separate processes.
+    std::string ShardSafeTempPath(const char* name)
+    {
+        char buf[256];
+        _snprintf_s(buf, sizeof(buf), _TRUNCATE, "C:\\Temp\\%u_%s", GetCurrentProcessId(), name);
+        return std::string(buf);
+    }
+
     AssetRecord MakeRecord(const char* id, const char* type, const char* sourcePath = "")
     {
         AssetRecord rec;
@@ -656,6 +666,8 @@ TEST_F(GenerateDefaultIdTest, DeepNestedPath)
 // ===========================================================================
 // FileDiscoverer (Integration — real FS scan)
 // ===========================================================================
+static unsigned int sScanDirCounter = 0;
+
 class FileDiscovererScanTest : public ::testing::Test
 {
 protected:
@@ -669,7 +681,7 @@ protected:
         RegisterType(typeRegistry, "texture", "Texture", "*.png");
         RegisterType(typeRegistry, "config", "Config", "*.config.json");
 
-        _snprintf_s(tempRoot, sizeof(tempRoot), _TRUNCATE, "Cluiche\\out\\test_discover_%u", GetTickCount());
+        _snprintf_s(tempRoot, sizeof(tempRoot), _TRUNCATE, "Cluiche\\out\\test_discover_%lu_%u", GetCurrentProcessId(), sScanDirCounter++); // pid + counter: GetTickCount collides across shards
         CreateDirectoryA(tempRoot, NULL);
 
         char subDir[512];
@@ -796,6 +808,51 @@ TEST_F(AssetTypeEditorRegistryTest, MultipleTypes)
     EXPECT_EQ(reg.FindEditorForType(StringCRC("texture")), StringCRC("TexEd"));
     EXPECT_EQ(reg.FindEditorForType(StringCRC("config")), StringCRC("ConfigEd"));
     EXPECT_EQ(reg.FindEditorForType(StringCRC("entity")), StringCRC("EntityEd"));
+}
+
+// ===========================================================================
+// AssetTypeEditorRegistry::UnregisterTypeEditor
+// ===========================================================================
+TEST_F(AssetTypeEditorRegistryTest, UnregisterRemovesOwnRoute)
+{
+    reg.RegisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd"));
+    EXPECT_TRUE(reg.UnregisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd")));
+    EXPECT_EQ(reg.FindEditorForType(StringCRC("cowthing")), StringCRC());
+}
+
+TEST_F(AssetTypeEditorRegistryTest, UnregisterWithOtherEditorKeepsRoute)
+{
+    reg.RegisterTypeEditor(StringCRC("diascene"), StringCRC("DiaSceneEditor"));
+    EXPECT_FALSE(reg.UnregisterTypeEditor(StringCRC("diascene"), StringCRC("CowEd")));
+    EXPECT_EQ(reg.FindEditorForType(StringCRC("diascene")), StringCRC("DiaSceneEditor"));
+}
+
+TEST_F(AssetTypeEditorRegistryTest, UnregisterUnknownTypeReturnsFalse)
+{
+    EXPECT_FALSE(reg.UnregisterTypeEditor(StringCRC("nothing"), StringCRC("CowEd")));
+}
+
+TEST_F(AssetTypeEditorRegistryTest, UnregisterTwiceSecondReturnsFalse)
+{
+    reg.RegisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd"));
+    EXPECT_TRUE(reg.UnregisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd")));
+    EXPECT_FALSE(reg.UnregisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd")));
+}
+
+TEST_F(AssetTypeEditorRegistryTest, ReRegisterAfterUnregisterSucceeds)
+{
+    reg.RegisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd"));
+    reg.UnregisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd"));
+    EXPECT_TRUE(reg.RegisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd2")));
+    EXPECT_EQ(reg.FindEditorForType(StringCRC("cowthing")), StringCRC("CowEd2"));
+}
+
+TEST_F(AssetTypeEditorRegistryTest, UnregisterLeavesOtherRoutes)
+{
+    reg.RegisterTypeEditor(StringCRC("a"), StringCRC("EdA"));
+    reg.RegisterTypeEditor(StringCRC("b"), StringCRC("EdB"));
+    reg.UnregisterTypeEditor(StringCRC("a"), StringCRC("EdA"));
+    EXPECT_EQ(reg.FindEditorForType(StringCRC("b")), StringCRC("EdB"));
 }
 
 // ===========================================================================
@@ -1147,7 +1204,8 @@ protected:
     {
         RegisterBuiltInAssetTypes(typeRegistry);
 
-        const char* rulesPath = "C:\\Temp\\test_excluded_rules.json";
+        const std::string rulesPathStr = ShardSafeTempPath("test_excluded_rules.json");
+        const char* rulesPath = rulesPathStr.c_str();
         const char* rulesJson =
             "{\n"
             "  \"rules\": [\n"
@@ -1470,12 +1528,12 @@ protected:
 
     bool LoadScopeRule()
     {
-        return WriteScopeRule("C:\\Temp\\test_manual_scope_rule.json", typeRegistry, engine);
+        return WriteScopeRule(ShardSafeTempPath("test_manual_scope_rule.json").c_str(), typeRegistry, engine);
     }
 
     bool LoadTagRule()
     {
-        return WriteTagRule("C:\\Temp\\test_manual_tag_rule.json", typeRegistry, engine);
+        return WriteTagRule(ShardSafeTempPath("test_manual_tag_rule.json").c_str(), typeRegistry, engine);
     }
 };
 
@@ -1667,7 +1725,8 @@ protected:
 
     bool LoadRules(const char* json)
     {
-        const char* path = "C:\\Temp\\test_getrule.json";
+        const std::string pathStr = ShardSafeTempPath("test_getrule.json");
+        const char* path = pathStr.c_str();
         FILE* f = nullptr;
         fopen_s(&f, path, "w");
         if (!f) return false;

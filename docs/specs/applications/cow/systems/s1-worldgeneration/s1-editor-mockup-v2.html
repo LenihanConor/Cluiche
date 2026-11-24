@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>S-1 World Generation - editor panel mockup v2 (plan task 17)</title>
+<!--
+  MOCKUP ONLY. Visual gate for worldgen system plan task 17 (Features 6/7, the rest). No panel code is written until the user signs this off.
+  Full panel, same look as s1-editor-mockup.html (v1, approved for task 9). Everything new in v2 is tagged [NEW] in the UI.
+  New in v2: Validation section, generation progress + Cancel + last-outcome card, busy state, World file (Export/Import, locked banner,
+  discard confirm, import error), region layer + region edges + Sites overlay (per-kind toggles) + Guarantee evidence overlay,
+  Cell Inspector region/site fields.
+  Every state is reachable from the SCENARIO bar at the top of the view area (or via the URL hash, e.g. #gen=running&val=fail&outcome=timeout).
+  Sample data only. Controls map to the cow.worldgen.* commands that exist today unless the notes at the bottom of the panel say GAP.
+-->
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background:#0c0e10; font-family:'Consolas','Courier New',monospace; font-size:12px; color:#d4d4d4; height:100vh; overflow:hidden; user-select:none; }
+#viewport { position:fixed; left:520px; right:0; top:58px; bottom:0; display:flex; align-items:center; justify-content:center; }
+#panel { position:fixed; top:0; left:0; width:520px; height:100vh; background:#181818; border-right:1px solid #2a2a2a; display:flex; flex-direction:column; }
+.hdr { background:#1f1f1f; border-bottom:1px solid #2d2d2d; padding:7px 10px; display:flex; gap:8px; align-items:center; }
+.hdr .t { font-size:10px; color:#7a7a7a; letter-spacing:2px; font-weight:700; flex:1; }
+.pill { font-size:10px; padding:1px 6px; border-radius:8px; background:#243b2a; color:#7fd18b; }
+.pill.busy { background:#3b3524; color:#e0b84c; } .pill.fail { background:#3b2424; color:#e07070; } .pill.lock { background:#2a3550; color:#8fb0e8; }
+#scroll { flex:1; overflow-y:auto; }
+#scroll::-webkit-scrollbar { width:6px; } #scroll::-webkit-scrollbar-thumb { background:#333; }
+.sec { border-bottom:1px solid #2a2a2a; }
+.sec > .sh { display:flex; align-items:center; gap:6px; padding:5px 10px; background:#1c1c1c; color:#9a9a9a; font-size:10px; letter-spacing:1.5px; font-weight:700; cursor:pointer; }
+.sec > .sh .c { color:#555; width:10px; } .sec > .sh .r { margin-left:auto; color:#666; letter-spacing:0; font-weight:400; }
+.sec.closed > .sb { display:none; } .sec.closed > .sh .c::before { content:'\25B8'; } .sec:not(.closed) > .sh .c::before { content:'\25BE'; }
+.sb { padding:6px 10px 8px; }
+.row { display:flex; align-items:center; gap:6px; margin:3px 0; }
+.row label { width:128px; color:#aaa; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.row .v { width:46px; text-align:right; color:#9ec7e8; flex-shrink:0; }
+.row .st { width:14px; text-align:center; font-size:9px; color:#555; flex-shrink:0; }
+.track { position:relative; flex:1; height:14px; display:flex; align-items:center; }
+.track input[type=range] { width:100%; height:3px; accent-color:#5a9fd4; cursor:pointer; }
+.dtick { position:absolute; top:1px; width:1px; height:12px; background:#666; pointer-events:none; }
+.modified label { color:#e8c97a; }
+.sub { color:#666; font-size:10px; letter-spacing:1px; margin:7px 0 2px; }
+input[type=text], input[type=number], select { background:#101010; border:1px solid #333; color:#d4d4d4; font:inherit; padding:2px 5px; height:20px; }
+input[type=text] { flex:1; min-width:0; }
+button { background:#2a2a2a; border:1px solid #3a3a3a; color:#d4d4d4; font:inherit; padding:2px 9px; height:21px; cursor:pointer; }
+button:hover { background:#333; } button.pri { background:#2a4a66; border-color:#3d6a92; } button.dng { background:#5a2a2a; border-color:#8a4040; }
+button:disabled { opacity:.35; cursor:default; } button.on { background:#2a4a66; border-color:#3d6a92; }
+.seg { display:flex; } .seg button { border-right-width:0; } .seg button:last-child { border-right-width:1px; }
+.bar { background:#3b3524; border-bottom:1px solid #5a4d2a; color:#e0c87a; padding:6px 10px; display:none; align-items:center; gap:8px; }
+.bar.show { display:flex; } .bar span { flex:1; } .bar.info { background:#26324a; border-color:#3d5280; color:#9db8ea; }
+.tim { display:grid; grid-template-columns:96px 1fr 52px; gap:2px 6px; align-items:center; }
+.tim .n { color:#aaa; } .tim .b { height:7px; background:#222; } .tim .b i { display:block; height:100%; background:#5a9fd4; }
+.tim .b.skip i { background:#2f3a44; } .tim .ms { text-align:right; color:#9ec7e8; } .tim .ms.skip { color:#555; }
+.legend { display:flex; flex-wrap:wrap; gap:2px 10px; margin:4px 0; color:#aaa; } .legend i { display:inline-block; width:9px; height:9px; margin-right:4px; }
+.tg { display:flex; flex-wrap:wrap; gap:2px 12px; } .tg label { color:#aaa; cursor:pointer; } .tg input { vertical-align:middle; margin-right:3px; }
+.kv { display:grid; grid-template-columns:96px 1fr; gap:1px 8px; } .kv .k { color:#777; } .kv .h { color:#e8c97a; margin-top:4px; letter-spacing:1px; font-size:10px; grid-column:1/3; }
+.kv .lay { color:#9ec7e8; }
+.stub { color:#666; font-style:italic; padding:4px 0; }
+.new { color:#e07a5f; font-size:9px; margin-left:4px; letter-spacing:0; font-weight:400; }
+canvas { image-rendering:pixelated; border:1px solid #222; }
+#scen { position:fixed; left:520px; right:0; top:0; height:58px; background:#13161a; border-bottom:1px solid #262b31; display:flex; flex-wrap:wrap; align-items:center; gap:4px 16px; padding:3px 10px; white-space:nowrap; }
+#scen .g { display:flex; align-items:center; gap:3px; } #scen .g b { color:#6b7a8a; font-size:9px; letter-spacing:1px; margin-right:3px; }
+#scen button { height:19px; padding:0 6px; font-size:11px; }
+/* new widgets */
+.card { background:#141414; border:1px solid #2a2a2a; padding:6px 8px; margin:4px 0; }
+.card .ttl { display:flex; align-items:center; gap:8px; } .card .ttl b { letter-spacing:1px; font-size:10px; color:#9a9a9a; }
+.badge { font-size:10px; padding:0 6px; border-radius:3px; background:#243b2a; color:#7fd18b; }
+.badge.warn { background:#3b3524; color:#e0b84c; } .badge.bad { background:#3b2424; color:#e07070; } .badge.mute { background:#262626; color:#888; } .badge.info { background:#26324a; color:#8fb0e8; }
+.prog { position:relative; height:10px; background:#222; margin:4px 0 2px; } .prog i { display:block; height:100%; background:#5a9fd4; }
+.prog.t i { background:#c9a43a; } .progl { display:flex; justify-content:space-between; color:#888; font-size:10px; }
+.dim { color:#777; } .ok { color:#7fd18b; } .bad { color:#e07070; } .warnc { color:#e0b84c; }
+.g-row { border-top:1px solid #222; padding:3px 0; } .g-row:first-child { border-top:0; }
+.g-head { display:flex; align-items:center; gap:6px; cursor:pointer; } .g-head .car { color:#555; width:10px; }
+.g-head .id { flex:1; color:#d4d4d4; } .g-body { display:none; margin:3px 0 3px 16px; color:#aaa; } .g-row.open .g-body { display:block; } .g-row.open .car::before { content:'\25BE'; } .g-row:not(.open) .car::before { content:'\25B8'; }
+.diag { color:#c9a0a0; margin:1px 0; } .diag.terrain { color:#d9c07a; }
+.chips { display:flex; flex-wrap:wrap; gap:3px; margin:2px 0; } .chip { background:#222; border:1px solid #333; padding:0 5px; color:#9ec7e8; cursor:pointer; font-size:11px; } .chip:hover { background:#2d3a48; }
+.mgrid { display:grid; grid-template-columns:auto 1fr; gap:0 10px; } .mgrid span:nth-child(odd) { color:#777; }
+.kindrow { display:flex; align-items:center; gap:6px; margin:1px 0 1px 14px; color:#aaa; } .kindrow input { margin:0; } .kindrow .sw { width:14px; text-align:center; font-size:13px; line-height:1; } .kindrow .n { margin-left:auto; color:#666; }
+.wlist { border:1px solid #2a2a2a; background:#101010; max-height:86px; overflow-y:auto; margin:3px 0; } .wl { padding:2px 6px; display:flex; gap:8px; cursor:pointer; } .wl:hover { background:#1c242d; } .wl.sel { background:#233447; } .wl .m { margin-left:auto; color:#666; }
+.err { background:#2c1c1c; border:1px solid #5a3030; color:#e0a0a0; padding:5px 8px; margin:4px 0; } .err b { color:#f0b0b0; }
+.warnbox { background:#2c281a; border:1px solid #5a4d2a; color:#d9c07a; padding:4px 8px; margin:4px 0; }
+.hint { color:#e0b84c; font-size:10px; margin:2px 0; }
+.dis { opacity:.45; pointer-events:none; }
+#modal { position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:9; } #modal.show { display:flex; }
+#modal .box { width:430px; background:#1e1e1e; border:1px solid #444; padding:14px 16px; box-shadow:0 8px 30px rgba(0,0,0,.6); } #modal h4 { font-size:12px; letter-spacing:1px; margin-bottom:6px; color:#e8c97a; }
+#modal p { color:#bbb; margin:4px 0; line-height:1.4; } #modal .bt { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+.gap { margin:6px 0; color:#aaa; width:100%; } .gap td { padding:1px 8px 1px 0; vertical-align:top; } .gap .okc { color:#7fd18b; white-space:nowrap; } .gap .no { color:#e07a5f; white-space:nowrap; } .gap .q { color:#e0b84c; white-space:nowrap; }
+code { color:#9ec7e8; }
+</style>
+</head>
+<body>
+
+<div id="scen">
+  <div class="g"><b>GENERATION</b><button data-k="gen" data-v="idle">idle</button><button data-k="gen" data-v="running">running</button><button data-k="gen" data-v="busyhint">busy (slider drag)</button></div>
+  <div class="g"><b>LAST OUTCOME</b><button data-k="outcome" data-v="success">success</button><button data-k="outcome" data-v="unsat">unsatisfiable</button><button data-k="outcome" data-v="timeout">timeout</button><button data-k="outcome" data-v="cancel">cancelled</button><button data-k="outcome" data-v="error">error</button></div>
+  <div class="g"><b>VALIDATION</b><button data-k="val" data-v="pass">pass</button><button data-k="val" data-v="fail">fail</button><button data-k="val" data-v="none">none registered</button></div>
+  <div class="g"><b>WORLD</b><button data-k="world" data-v="gen">generated</button><button data-k="world" data-v="locked">imported (locked)</button><button data-k="world" data-v="importerr">import error</button></div>
+  <div class="g"><b>DIALOG</b><button id="dlgBtn">locked: drag slider</button></div>
+</div>
+
+<div id="viewport"><canvas id="map" width="900" height="560"></canvas></div>
+
+<div id="modal"><div class="box">
+  <h4>DISCARD THE IMPORTED WORLD? <span class="new">[NEW]</span></h4>
+  <p>The world <b>my_world</b> was imported from a file and is <b>locked</b>. Changing <b>Rivers</b> re-generates from the seed and params, which replaces the imported terrain, regions and sites.</p>
+  <p class="dim">Hand edits in the file are lost unless you exported them. Provenance: seed 12345678, preset continental, rules v4.</p>
+  <div class="bt"><button id="mCancel">Keep imported world</button><button id="mDiscard" class="dng">Discard and apply</button></div>
+</div></div>
+
+<div id="panel">
+  <div class="hdr"><span class="t">WORLD GENERATION</span><span class="pill" id="pill">Complete</span></div>
+  <div class="bar" id="lockbar"><span><b>Imported world is locked.</b> <span class="dim" id="lockSrc"></span> Changing params asks before discarding it.</span><button id="unlockBtn">Unlock &amp; edit</button></div>
+  <div class="bar" id="busybar"><span>Generating attempt 3 of 6&hellip; world-changing controls are disabled until it ends or you Cancel. <span class="new">[NEW]</span></span><button class="dng" id="busyCancel">Cancel</button></div>
+
+  <div id="scroll">
+
+    <div class="sec" id="s-world"><div class="sh"><span class="c"></span>WORLD<span class="r" id="worldSummary"></span></div><div class="sb">
+      <div class="row"><label>Seed</label><input type="text" id="seed" value="12345678"><button id="rnd">Random</button><button class="pri" id="regen">Regenerate</button><button class="dng" id="cancelBtn">Cancel<span class="new">[NEW]</span></button></div>
+      <div id="progBox" style="display:none">
+        <div class="prog" id="prog"><i style="width:36%"></i></div>
+        <div class="progl"><span id="progA">attempt 3 of 6</span><span id="progT">1.8 s of 5.0 s budget</span></div>
+        <div class="dim" style="font-size:10px">Attempt 1: layout check failed (RegionCountRange) &middot; attempt 2: failed (NodeSpacing)</div>
+      </div>
+      <div class="row"><label>Map size</label>
+        <div class="seg" id="sizeSeg"><button data-s="Small" class="on">Small 66&times;42</button><button data-s="Standard">Standard 80&times;52</button><button data-s="Large">Large 104&times;64</button></div></div>
+      <div class="row"><label>Preset</label>
+        <select id="preset"><option value="continental">continental</option><option value="archipelago">archipelago</option><option value="highlands">highlands</option><option value="">(modified)</option></select>
+        <button id="presetLoad">Load</button><button id="presetSave">Save&hellip;</button></div>
+      <div class="row"><label>Status</label><span id="status" style="color:#aaa">Complete &middot; revision 14 &middot; 38 ms</span></div>
+      <div class="card" id="outcomeCard"></div>
+    </div></div>
+
+    <div class="sec" id="s-file"><div class="sh"><span class="c"></span>WORLD FILE<span class="new">[NEW]</span><span class="r" id="fileSum">worlds/ &middot; 3 files</span></div><div class="sb">
+      <div class="row"><label>Export as</label><input type="text" id="expName" value="world_12345678"><button id="expGo" class="pri">Export</button></div>
+      <div class="row" id="expMsg" style="display:none"><label></label><span class="ok" id="expMsgT"></span></div>
+      <div class="sub">IMPORT</div>
+      <div class="wlist" id="wlist"></div>
+      <div class="row"><button id="impGo" class="pri">Import selected</button><span class="dim" id="impHint">opens locked; replaces the current world</span></div>
+      <div id="impErr"></div>
+      <div id="prov"></div>
+    </div></div>
+
+    <div class="sec" id="s-val"><div class="sh"><span class="c"></span>VALIDATION<span class="new">[NEW]</span><span class="r" id="valSum"></span></div><div class="sb">
+      <div class="row"><button id="valGo" class="pri">Validate</button><span class="dim" id="valWhen"></span></div>
+      <div id="valBody"></div>
+    </div></div>
+
+    <div class="sec" id="s-shape"><div class="sh"><span class="c"></span>TERRAIN SHAPE<span class="r">17 sliders &middot; live preview</span></div><div class="sb" id="shape"></div></div>
+
+    <div class="sec closed" id="s-timing"><div class="sh"><span class="c"></span>STAGE TIMINGS<span class="r" id="timTotal"></span></div><div class="sb"><div class="tim" id="tim"></div>
+      <div class="stub" style="margin-top:4px">A slider only re-runs its stage and the stages after it. Skipped stages show their cached time.</div></div></div>
+
+    <div class="sec" id="s-view"><div class="sh"><span class="c"></span>VIEW<span class="r" id="viewSum"></span></div><div class="sb">
+      <div class="row"><label>Colour by</label><select id="mode" style="flex:1"></select></div>
+      <div class="legend" id="legend"></div>
+      <div class="sub">DRAWERS</div>
+      <div class="tg" id="drawers"></div>
+      <div id="kinds"></div>
+      <div id="layerHint"></div>
+    </div></div>
+
+    <div class="sec" id="s-cell"><div class="sh"><span class="c"></span>CELL INSPECTOR<span class="r" id="cellHead">no selection</span></div><div class="sb">
+      <div class="row"><label>Cell x, y</label><input type="number" id="cx" value="23" style="width:56px"><input type="number" id="cy" value="17" style="width:56px"><button id="cgo">Select</button><button id="cclr">Clear</button></div>
+      <div class="kv" id="cell"></div>
+    </div></div>
+
+    <div class="sec" id="s-gap"><div class="sh"><span class="c"></span>MOCKUP NOTES: gaps, assumptions, questions</div><div class="sb">
+      <div class="sub">WIDGETS vs debug-panel.html (CoW copy, Cluiche/Assets/CoW/Global/Presentation/UI/)</div>
+      <table class="gap">
+        <tr><td class="okc">OK</td><td>Card, ctrl row, <code>sendCommand(domain, cmd, args)</code>, <code>updateDomainState</code>, slider with default tick; and, from tasks 8c/9: button, select, text/number input, checkbox, segmented, collapsible section, kv grid, timing bars, legend swatches.</td></tr>
+        <tr><td class="no">NEW</td><td>Progress bar with two labels (attempt N of M; elapsed of budget). CoW-local.</td></tr>
+        <tr><td class="no">NEW</td><td>Expandable row (guarantee row with body) and clickable cell chips that call <code>cells.select.cell</code>. CoW-local.</td></tr>
+        <tr><td class="no">NEW</td><td>Selectable list (world files) with a modified-time column. CoW-local.</td></tr>
+        <tr><td class="no">NEW</td><td>Modal confirm dialog (Discard imported world). CoW-local; first modal in the debug panel. If a shared modal is preferred it would also touch CluicheTest's panel, which needs sign-off (AD-001).</td></tr>
+        <tr><td class="no">NEW</td><td>Info/warn/error strip (lock bar exists in v1; busy bar and error box are the same widget, three colours). CoW-local.</td></tr>
+        <tr><td class="okc">NOTE</td><td>All of these live in the CoW copy of <code>debug-panel.html</code>. Nothing needs to change in CluicheTest's copy unless we decide to share the modal.</td></tr>
+      </table>
+      <div class="sub">COMMANDS THIS PANEL ASSUMES</div>
+      <table class="gap">
+        <tr><td class="okc">EXISTS</td><td><code>regenerate</code>, <code>cancel</code>, <code>export {name, overwrite}</code>, <code>import {name}</code>, <code>report</code>, <code>status</code> (state, locked, source, generating, progress{attempts, maxAttempts, elapsedSeconds, timeoutSeconds}, layout, generation{outcome, message, attempts}), <code>regions</code>, <code>sites</code>, <code>cell</code>, <code>layers {layer:"regions"}</code>, view <code>toggle</code> of <code>regions.edges</code>, <code>sites</code>, <code>sites.&lt;kind&gt;</code>, <code>view.siteKinds</code>.</td></tr>
+        <tr><td class="no">GAP</td><td><b>No <code>cow.worldgen.validate</code> command.</b> The validator is a library call; the Validate button needs a command (runs the registered guarantees on the current world and returns the full <code>ValidationResult</code>).</td></tr>
+        <tr><td class="no">GAP</td><td><b><code>report.finalValidation</code> is thin:</b> guarantee ids are CRC numbers (no names) and only counts of diagnostics and violating cells. The rows here need names, diagnostic text, violating cell indices, proof-path count and measurements.</td></tr>
+        <tr><td class="no">GAP</td><td><b>No world-file listing.</b> The import list needs a <code>cow.worldgen.worlds</code> query (names, size, modified time, which directory) over the out and deployed worlds directories.</td></tr>
+        <tr><td class="no">GAP</td><td><b>Import error shape:</b> the reply has <code>field</code> and an error message; there is no line/column. The box shows what exists.</td></tr>
+        <tr><td class="no">GAP</td><td>Evidence overlay needs a drawer that reads the last <code>ValidationResult</code> (violating cells, proof paths) from the session. No such drawer or snapshot yet.</td></tr>
+        <tr><td class="no">GAP</td><td>Status has no per-layer availability after an import (only derivable layers are rebuilt). The layer picker needs <code>layers</code> summary to flag unavailable layers.</td></tr>
+        <tr><td class="no">GAP</td><td>Cell reply: sites at the cell, region and zone exist; "fragment / absorbed" flag per cell does not (only world totals in <code>regions</code>). Shown as optional.</td></tr>
+      </table>
+      <div class="sub">OPEN QUESTIONS (need your call)</div>
+      <table class="gap">
+        <tr><td class="q">Q1</td><td>Should <b>Validate run automatically</b> after every Regenerate (and after Import)? Mockup: manual button plus the layout summary from <code>status</code>. Auto-run would make the section always current but costs a validator pass per Regenerate (2 ms at Small).</td></tr>
+        <tr><td class="q">Q2</td><td><b>Where does the world list come from?</b> Mockup merges out (<code>Cluiche/out/CoW/worlds</code>) and deployed worlds directories like presets do, out wins on a name clash. OK?</td></tr>
+        <tr><td class="q">Q3</td><td>Should the <b>evidence overlay</b> draw every guarantee's proof paths, or only the expanded guarantee's? Mockup: only the expanded row's evidence plus violating cells of all failing rows.</td></tr>
+        <tr><td class="q">Q4</td><td>On a failed Regenerate the previous world stays and the state reads <code>Failed</code>. Mockup shows the pill as "Complete" with a red last-outcome card ("previous world kept"). Is that the wording you want?</td></tr>
+        <tr><td class="q">Q5</td><td>Dragging a slider on a locked world opens the confirm. "Keep" leaves the slider at the old value. Should "Discard" also unlock (yes in the mockup)?</td></tr>
+        <tr><td class="q">Q6</td><td>Dynasty Starts: <b>no fixed toggle.</b> Per the 2026-10-18 amendment they are a site kind drawn by the generic Sites overlay; the dragon layer registers the kind and a row appears under Sites automatically (see the example row "Hearth", marked registered kind).</td></tr>
+      </table>
+    </div></div>
+
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const P = [
+ ['landFraction','Land fraction',0.20,0.65,0.01,0.42,1],['continents','Continents',1,3,1,1,1],['islands','Islands',0,6,1,4,1],
+ ['continentIslands','Continent islands',0,1,0.01,0.7,1],['peninsulas','Peninsulas',0,3,1,2,1],['coastline','Coastline',0,1,0.01,0.5,1],
+ ['mountainousness','Mountainousness',0,1,0.01,0.55,2],['spineToRing','Spine to ring',0,1,0.01,0.15,2],['orientationDeg','Orientation (deg)',0,360,1,30,2],
+ ['passes','Passes',0,4,1,2,3],['barrier','Barrier',0,1,0.01,0.6,3],['ruggedness','Ruggedness',0,1,0.01,0.4,4],
+ ['rivers','Rivers',0,1,0.01,0.5,6],['valleyDepth','Valley depth',0,1,0.01,0.4,6],['lakes','Lakes',0,12,1,4,7],
+ ['latitudeNorthDeg','Latitude north',-90,90,1,60,8],['latitudeSouthDeg','Latitude south',-90,90,1,20,8],
+ ['temperatureOffset','Temperature offset',-0.3,0.3,0.01,0,8],['moistureOffset','Moisture offset',-0.3,0.3,0.01,0,8],
+];
+const STAGES = ['SeedFields','Landmass','Mountains','Barrier','Elevation','Drainage','Rivers','Lakes','Climate'];
+const BASE_MS = [3,9,7,4,6,5,8,3,5];
+const vals = {}; P.forEach(p=>vals[p[0]]=p[5]);
+const DIMS = {Small:[66,42],Standard:[80,52],Large:[104,64]};
+let size='Small', selected=[23,17], mode='Terrain';
+const S = { gen:'idle', outcome:'success', val:'pass', world:'gen' };   // scenario state
+const MODES = {
+ Terrain:[['Plain','#8aa56a'],['Hills','#a58f5a'],['Mountain','#8a8a8a'],['Water','#2f5f8f'],['River','#4f95d0']],
+ Biome:[['Grassland','#a6c04a'],['Forest','#2f7d3a'],['Wetland','#4fb39a'],['Desert','#d9b45a'],['Alpine','#c4c9d1'],['Water','#1f4f8f']],
+ Regions:[['region 1..16','#e05a5a'],['mainland','#7ab870'],['islands','#5aa0c8'],['none (ocean)','#1a1e24']],
+ Elevation:[['low','#2f6f4f'],['mid','#b0a050'],['high','#f0ece0']],
+ Landmass:[['main','#c08050'],['other','#5080c0'],['water','#1d3a5a']],
+};
+const UNAVAIL_AFTER_IMPORT = ['Coast distance','Land potential','Drainage','Flow accumulation'];
+const KINDS = [
+ {id:'CoW.Node.Corridor',name:'Corridor Node',col:'#e8a33d',shape:'diamond',glyph:'◆',n:9,on:true},
+ {id:'CoW.Node.River',name:'River Node',col:'#3d9be8',shape:'triangle',glyph:'▲',n:5,on:true},
+ {id:'CoW.Node.Hunting',name:'Hunting Ground',col:'#b5483a',shape:'square',glyph:'■',n:47,on:true},
+ {id:'CoW.Node.Resource',name:'Resource Deposit',col:'#9b59d0',shape:'star',glyph:'★',n:56,on:true},
+ {id:'Dragon.Site.Hearth',name:'Hearth (example registered kind)',col:'#d98a2b',shape:'circle',glyph:'●',n:10,on:true,reg:true},
+];
+const DRAW = {tiles:1,grid:0,sel:1,edges:1,sites:1,evid:0};
+
+// ---- deterministic world ----
+function hash(x,y){ let h=(x*374761393+y*668265263+(vals.landFraction*100|0))^(x*y); h=(h^(h>>>13))*1274126177; return ((h^(h>>>16))>>>0)/4294967295; }
+function elev(x,y){ const [w,hh]=DIMS[size]; const dx=(x/w-0.5)*2, dy=(y/hh-0.5)*2; const blob=1-Math.sqrt(dx*dx*0.9+dy*dy*1.4)*(1.3-vals.landFraction); const n=(hash(x>>1,y>>1)-0.5)*(0.25+vals.ruggedness*0.35); return Math.max(0,Math.min(1,blob*0.8+n+0.15)); }
+function terrainAt(x,y){ const e=elev(x,y); if(e<0.28) return 'Water'; if(e>0.62) return 'Mountain'; if(e>0.48) return 'Hills'; if(hash(x*3,y*7)<vals.rivers*0.12&&e<0.42) return 'River'; return 'Plain'; }
+function biomeAt(x,y){ const t=terrainAt(x,y); if(t==='Water') return 'Water'; if(t==='Mountain') return 'Alpine'; const h=hash(x>>2,y>>2); return h<0.3?'Grassland':h<0.62?'Forest':h<0.78?'Wetland':'Desert'; }
+const BIOCOL={Grassland:'#a6c04a',Forest:'#2f7d3a',Wetland:'#4fb39a',Desert:'#d9b45a',Alpine:'#c4c9d1',Water:'#1f4f8f'};
+let seeds=[], regionOf=null, sites=[];
+function buildRegions(){
+  const [w,h]=DIMS[size]; seeds=[]; let tries=0;
+  while(seeds.length<14 && tries<4000){ tries++; const x=Math.floor(hash(tries,3)*w), y=Math.floor(hash(tries,9)*h); if(elev(x,y)<0.3) continue; if(seeds.every(s=>(s[0]-x)**2+(s[1]-y)**2>40)) seeds.push([x,y]); }
+  regionOf=new Int16Array(w*h);
+  for(let x=0;x<w;x++)for(let y=0;y<h;y++){ if(elev(x,y)<0.28){regionOf[y*w+x]=0;continue;} let b=0,bd=1e9; seeds.forEach((s,i)=>{ const d=(s[0]-x)**2+(s[1]-y)**2*1.3; if(d<bd){bd=d;b=i+1;} }); regionOf[y*w+x]=b; }
+  sites=[]; const per=[[0,9],[1,5],[2,47],[3,56],[4,10]];
+  per.forEach(([k,n])=>{ let c=0,t=0; while(c<n&&t<8000){ t++; const x=Math.floor(hash(t,20+k)*w), y=Math.floor(hash(t,40+k)*h); if(elev(x,y)<0.3) continue; if(sites.some(s=>s.x===x&&s.y===y)) continue; sites.push({k,x,y}); c++; } });
+}
+const VIOL=[[18,14],[19,14],[31,22]];   // sample violating cells for the failing scenario
+const PROOF=[[[10,20],[11,19],[12,19],[13,18],[14,18],[15,17],[16,17]],[[28,10],[28,11],[29,11],[30,12],[30,13]]];
+
+// ---- map ----
+function colour(x,y){
+  const e=elev(x,y), t=terrainAt(x,y);
+  if(mode==='Terrain') return {Water:'#2f5f8f',Plain:'#8aa56a',Hills:'#a58f5a',Mountain:'#8a8a8a',River:'#4f95d0'}[t];
+  if(mode==='Biome') return BIOCOL[biomeAt(x,y)];
+  if(mode==='Regions'){ const r=regionOf[y*DIMS[size][0]+x]; return r?`hsl(${(r*137.5)%360},55%,52%)`:'#1a1e24'; }
+  if(mode==='Elevation'){ const k=Math.round(e*255); return `rgb(${k},${Math.min(255,k+30)},${Math.round(k*0.7)})`; }
+  return e>0.28?'#c08050':'#1d3a5a';
+}
+function marker(g,cx,cy,shape,col,s){
+  g.fillStyle=col; g.strokeStyle='#000'; g.lineWidth=1; g.beginPath();
+  if(shape==='circle'){ g.arc(cx,cy,s,0,7); }
+  else if(shape==='square'){ g.rect(cx-s*.85,cy-s*.85,s*1.7,s*1.7); }
+  else if(shape==='diamond'){ g.moveTo(cx,cy-s*1.15); g.lineTo(cx+s*1.15,cy); g.lineTo(cx,cy+s*1.15); g.lineTo(cx-s*1.15,cy); g.closePath(); }
+  else if(shape==='triangle'){ g.moveTo(cx,cy-s); g.lineTo(cx+s*1.05,cy+s*.8); g.lineTo(cx-s*1.05,cy+s*.8); g.closePath(); }
+  else { for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, r=i%2?s*.5:s*1.2; g.lineTo(cx+r*Math.cos(a),cy+r*Math.sin(a)); } g.closePath(); }
+  g.fill(); g.stroke();
+}
+function drawMap(){
+  const c=$('map'), g=c.getContext('2d'); g.fillStyle='#0c0e10'; g.fillRect(0,0,c.width,c.height);
+  const [w,h]=DIMS[size], R=Math.min(c.width/(w*1.5+0.5), c.height/(h*Math.sqrt(3)+1)); const hh=R*Math.sqrt(3);
+  const pos=(x,y)=>[R+x*R*1.5, hh/2+y*hh+((x%2)?hh/2:0)];
+  const dis = (mode==='Regions'&&S.world==='locked'&&false);
+  if(DRAW.tiles) for(let x=0;x<w;x++)for(let y=0;y<h;y++){ const [cx,cy]=pos(x,y);
+    g.beginPath(); for(let i=0;i<6;i++){ const a=Math.PI/3*i; g.lineTo(cx+R*Math.cos(a),cy+R*Math.sin(a)); } g.closePath();
+    g.fillStyle=colour(x,y); g.fill(); if(DRAW.grid){g.strokeStyle='rgba(0,0,0,.35)';g.stroke();} }
+  const NB_E=[[0,-1],[1,-1],[1,0],[0,1],[-1,0],[-1,-1]], NB_O=[[0,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0]], EC=[[4,5],[5,0],[0,1],[1,2],[2,3],[3,4]];
+  if(DRAW.edges){ g.strokeStyle='#0a0a0a'; g.lineWidth=2.2; for(let x=0;x<w;x++)for(let y=0;y<h;y++){ const r=regionOf[y*w+x]; const nb=(x%2)?NB_O:NB_E; const [cx,cy]=pos(x,y);
+    nb.forEach((d,i)=>{ const nx=x+d[0], ny=y+d[1]; if(nx<0||ny<0||nx>=w||ny>=h) return; if(nx+ny*w<x+y*w) return; const r2=regionOf[ny*w+nx]; if(r2===r) return; const a=Math.PI/3*EC[i][0], b=Math.PI/3*EC[i][1];
+      g.beginPath(); g.moveTo(cx+R*Math.cos(a),cy+R*Math.sin(a)); g.lineTo(cx+R*Math.cos(b),cy+R*Math.sin(b)); g.stroke(); }); } g.lineWidth=1; }
+  if(DRAW.sites) sites.forEach(s=>{ const k=KINDS[s.k]; if(!k.on) return; const [cx,cy]=pos(s.x,s.y); marker(g,cx,cy,k.shape,k.col,R*0.42); });
+  if(DRAW.evid && S.val!=='none'){
+    const open=document.querySelector('.g-row.open'); const showAll=false;
+    g.lineWidth=2.5; g.strokeStyle='#4be0c0'; PROOF.forEach(p=>{ if(S.val==='fail'&&!open) return; g.beginPath(); p.forEach((q,i)=>{ const [cx,cy]=pos(q[0],q[1]); i?g.lineTo(cx,cy):g.moveTo(cx,cy); }); g.stroke(); });
+    if(S.val==='fail') VIOL.forEach(q=>{ const [cx,cy]=pos(q[0],q[1]); g.strokeStyle='#ff4a4a'; g.lineWidth=3; g.beginPath(); g.arc(cx,cy,R*0.95,0,7); g.stroke(); });
+    g.lineWidth=1; }
+  if(DRAW.sel && selected[0]!=null){ const [cx,cy]=pos(selected[0],selected[1]); g.beginPath(); for(let i=0;i<6;i++){ const a=Math.PI/3*i; g.lineTo(cx+R*Math.cos(a),cy+R*Math.sin(a)); } g.closePath(); g.lineWidth=2.5; g.strokeStyle='#fff'; g.stroke(); g.lineWidth=1; }
+  if(mode==='Regions' && S.world==='importerr'){ }
+  c._geom={R,hh,w,h};
+}
+$('map').addEventListener('click',e=>{ const c=$('map'), {R,hh,w,h}=c._geom, r=c.getBoundingClientRect(); const mx=(e.clientX-r.left)*c.width/r.width, my=(e.clientY-r.top)*c.height/r.height; let best=null,bd=1e9;
+  for(let x=0;x<w;x++)for(let y=0;y<h;y++){ const cx=R+x*R*1.5, cy=hh/2+y*hh+((x%2)?hh/2:0), d=(cx-mx)**2+(cy-my)**2; if(d<bd){bd=d;best=[x,y];} }
+  selectCell(best[0],best[1]); });
+function selectCell(x,y){ selected=[x,y]; $('cx').value=x; $('cy').value=y; cellPanel(); drawMap(); }
+
+// ---- panel: shape ----
+let pendingSlider=null;
+function buildShape(){
+  const el=$('shape'); el.innerHTML=''; let last=0;
+  P.forEach(p=>{
+    if(p[6]!==last){ last=p[6]; const s=document.createElement('div'); s.className='sub'; s.textContent='STAGE '+last+' · '+STAGES[last].toUpperCase(); el.appendChild(s); }
+    const r=document.createElement('div'); r.className='row'; r.id='r-'+p[0];
+    const tick=((p[5]-p[2])/(p[3]-p[2]))*100;
+    r.innerHTML=`<label title="${p[0]}">${p[1]}</label><div class="track"><input type="range" min="${p[2]}" max="${p[3]}" step="${p[4]}" value="${vals[p[0]]}"><div class="dtick" style="left:${tick}%"></div></div><span class="v"></span><span class="st">●</span>`;
+    const inp=r.querySelector('input'), v=r.querySelector('.v');
+    const fmt=x=>p[4]>=1?String(Math.round(x)):(+x).toFixed(2);
+    v.textContent=fmt(vals[p[0]]);
+    inp.addEventListener('input',()=>{ if(S.world==='locked'){ const old=vals[p[0]]; inp.value=old; v.textContent=fmt(old); pendingSlider=p; $('modal').classList.add('show'); return; }
+      if(S.gen==='busyhint'||S.gen==='running'){ inp.value=vals[p[0]]; return; }
+      vals[p[0]]=+inp.value; v.textContent=fmt(+inp.value); regionOf=null; ensure(); drawMap(); });
+    el.appendChild(r);
+  });
+}
+function ensure(){ if(!regionOf) buildRegions(); }
+
+// ---- panel: view ----
+function buildView(){
+  const m=$('mode'); const keep=m.value;
+  m.innerHTML=Object.keys(MODES).map(k=>`<option ${k===mode?'selected':''}>${k}${k==='Regions'?' [NEW]':''}</option>`).join('')+UNAVAIL_AFTER_IMPORT.map(k=>`<option disabled>${k}${S.world==='locked'?' (unavailable after import)':''}</option>`).join('');
+  m.onchange=()=>{ mode=m.value.replace(' [NEW]',''); legend(); drawMap(); };
+  legend();
+  const D=[['tiles','Tiles'],['grid','Grid lines'],['sel','Selection'],['edges','Region edges'],['sites','Sites'],['evid','Guarantee evidence']];
+  $('drawers').innerHTML=D.map(d=>`<label><input type="checkbox" data-d="${d[0]}" ${DRAW[d[0]]?'checked':''}>${d[1]}${['edges','sites','evid'].includes(d[0])?'<span class="new">[NEW]</span>':''}</label>`).join('');
+  $('drawers').querySelectorAll('input').forEach(i=>i.onchange=()=>{ DRAW[i.dataset.d]=i.checked?1:0; buildKinds(); drawMap(); });
+  buildKinds();
+  $('layerHint').innerHTML = S.world==='locked' ? `<div class="warnbox">Imported world: only layers derivable from the cells are available (Terrain, Biome, Regions, Elevation, Landmass). Others are greyed in <b>Colour by</b> until you unlock and regenerate. <span class="new">[NEW]</span></div>` : '';
+}
+function legend(){ $('legend').innerHTML=MODES[mode].map(l=>`<span><i style="background:${l[1]}"></i>${l[0]}</span>`).join(''); }
+function buildKinds(){
+  const el=$('kinds'); if(!DRAW.sites){ el.innerHTML=''; return; }
+  el.innerHTML=`<div class="sub">SITE KINDS <span class="new">[NEW]</span> <span class="dim" style="letter-spacing:0">one toggle per registered kind; colour and shape come from the kind</span></div>`+
+   KINDS.map((k,i)=>`<div class="kindrow"><input type="checkbox" data-k="${i}" ${k.on?'checked':''}><span class="sw" style="color:${k.col}">${k.glyph}</span><span>${k.name}</span>${k.reg?'<span class="badge info">registered</span>':'<span class="badge mute">built-in</span>'}<span class="n">${k.n}</span></div>`).join('')+
+   `<div class="dim" style="margin:2px 0 0 14px;font-size:10px">Dynasty Starts have no fixed toggle: the dragon layer registers that kind and a row appears here.</div>`;
+  el.querySelectorAll('input').forEach(i=>i.onchange=()=>{ KINDS[+i.dataset.k].on=i.checked; drawMap(); });
+}
+
+// ---- panel: cell ----
+function cellPanel(){
+  const [x,y]=selected; if(x==null){ $('cellHead').textContent='no selection'; $('cell').innerHTML='<span class="stub" style="grid-column:1/3">Click a cell in the view, or type x, y.</span>'; return; }
+  ensure(); const w=DIMS[size][0], idx=y*w+x, e=elev(x,y), r=regionOf[idx];
+  $('cellHead').textContent=`(${x}, ${y}) · index ${idx}`;
+  const here=sites.filter(s=>s.x===x&&s.y===y).map(s=>KINDS[s.k]);
+  const zone=r? (x<w*0.33?'First Shores':x<w*0.66?'Wild Reaches':'Ancient Interiors'):'—';
+  const rec=r?{cells:62+r*3,purity:(0.5+((r*7)%5)/20).toFixed(2),biome:['Grassland','Forest','Wetland','Desert'][r%4]}:null;
+  $('cell').innerHTML=`
+   <span class="k">terrain</span><span>${terrainAt(x,y)}</span><span class="k">biome</span><span>${biomeAt(x,y)}</span>
+   <span class="k">elevation</span><span>${e.toFixed(2)}</span><span class="k">landmass</span><span>${e>0.28?'1 (main)':'0 (water)'}</span>
+   <span class="h">REGION &amp; SITES <span class="new">[NEW]</span></span>
+   <span class="k">region</span><span>${r?`<span class="chip" style="cursor:default">#${r}</span> ${zone}`:'none (ocean)'}</span>
+   <span class="k">region biome</span><span>${rec?`${rec.biome} · purity ${rec.purity} · ${rec.cells} cells`:'—'}</span>
+   <span class="k">sites here</span><span>${here.length?here.map(k=>`<span style="color:${k.col}">${k.glyph}</span> ${k.name}`).join('<br>'):'<span class="dim">none</span>'}</span>
+   <span class="k">zone mismatch</span><span>${r&&((x*7+y)%23===0)?'<span class="warnc">absorbed into region #'+r+' (zone differs)</span>':'<span class="dim">no</span>'} <span class="new">[NEW, optional]</span></span>
+   <span class="h">STAGE VALUES (layers)</span>
+   <span class="k">landPotential</span><span class="lay">${S.world==='locked'?'<span class="dim">unavailable</span>':(e*1.1).toFixed(3)}</span><span class="k">coastDistance</span><span class="lay">${S.world==='locked'?'<span class="dim">unavailable</span>':Math.max(0,Math.round((e-0.28)*20))}</span>`;
+}
+
+// ---- panel: outcome card / progress / status ----
+function setPill(){
+  const p=$('pill'); let cls='', txt='Complete';
+  if(S.gen==='running'||S.gen==='busyhint'){ cls='busy'; txt='Generating…'; }
+  else if(S.world==='locked'||S.world==='importerr'){ cls='lock'; txt='Imported · locked'; }
+  p.className='pill '+cls; p.textContent=txt;
+}
+function outcomeCard(){
+  const o={
+   success:{b:'Success',c:'',t:'Generated on attempt 1 of 6 · 38 ms · revision 14',x:'Layout guarantee satisfied.',keep:false},
+   unsat:{b:'Unsatisfiable',c:'bad',t:'6 of 6 attempts failed · 2.1 s',x:'Last failure: WorldLayoutGuarantee (RegionCountRange, NodeSpacing).',keep:true},
+   timeout:{b:'Timeout',c:'warn',t:'Budget exceeded after attempt 4 · 5.0 s of 5.0 s',x:'Timed out before a world satisfied the guarantees.',keep:true},
+   cancel:{b:'Cancelled',c:'mute',t:'Cancelled during attempt 2 · 0.9 s',x:'You cancelled the Regenerate.',keep:true},
+   error:{b:'Error',c:'bad',t:'Failed at attempt 1',x:'Terrain generation error: ocean border check failed (seed 12345678). See the Errors log.',keep:true},
+  }[S.outcome];
+  const gens=S.gen==='running'||S.gen==='busyhint';
+  $('outcomeCard').innerHTML=`<div class="ttl"><b>LAST REGENERATE <span class="new">[NEW]</span></b><span class="badge ${o.c}">${o.b}</span><span class="dim" style="margin-left:auto">${gens?'in progress':'report revision 9'}</span></div>
+   <div style="margin-top:3px">${o.t}</div><div class="dim">${o.x}</div>
+   ${o.keep?'<div class="hint">Previous world kept: revision 13, unchanged. <span class="dim">(view and params still show it)</span></div>':''}
+   <div class="row" style="margin:4px 0 0"><button id="repBtn">Show attempts (report)</button><span class="dim">${S.outcome==='success'?'1 attempt':'6 attempts · first 3 shown'}</span></div>
+   <div id="attBox" style="display:none;margin-top:3px" class="dim"></div>`;
+  $('repBtn').onclick=()=>{ const b=$('attBox'); b.style.display=b.style.display==='none'?'block':'none';
+    b.innerHTML=S.outcome==='success'?'#1 sub-seed 0x9E37… · ok':'#1 sub-seed 0x9E37… · failed: WorldLayoutGuarantee (RegionCountRange)<br>#2 sub-seed 0x3C6E… · failed: WorldLayoutGuarantee (NodeSpacing)<br>#3 sub-seed 0xA54F… · failed: WorldLayoutGuarantee (RegionCountRange)'; };
+}
+function applyGen(){
+  const gens=S.gen==='running'||S.gen==='busyhint', locked=S.world==='locked';
+  $('progBox').style.display=gens?'block':'none'; $('busybar').classList.toggle('show',gens);
+  $('regen').disabled=gens||locked; $('cancelBtn').disabled=!gens; $('rnd').disabled=gens;
+  ['s-shape','sizeSeg'].forEach(id=>{ const e=$(id); if(e) e.classList.toggle('dis',gens); });
+  $('presetLoad').disabled=gens||locked; $('presetSave').disabled=gens; $('expGo').disabled=gens; $('impGo').disabled=gens; $('valGo').disabled=gens;
+  $('status').textContent=gens?'Generating… attempt 3 of 6 · busy':'Complete · revision 14 · 38 ms';
+  if(S.gen==='busyhint') $('shape').insertAdjacentHTML('afterbegin','');
+  setPill();
+}
+
+// ---- panel: validation ----
+function valPanel(){
+  const none=S.val==='none';
+  $('valSum').textContent= none?'no guarantees registered': S.val==='pass'?'1 of 1 satisfied':'0 of 1 satisfied';
+  $('valWhen').textContent= none?'':'ran on revision 14 · 2.1 ms';
+  let h='';
+  if(none){
+    h=`<div class="stub">No guarantees are registered. S-1 ships only <code>WorldLayoutGuarantee</code>, which is always present, so this state only appears if it is unregistered (tests). The dragon layer adds its own (Hearth↔Nexus, dynasty spacing, world-throne).</div>`;
+  } else {
+    const pass=S.val==='pass';
+    h=`<div class="card"><div class="ttl"><b>OVERALL</b><span class="badge ${pass?'':'bad'}">${pass?'PASSED':'FAILED'}</span><span class="dim" style="margin-left:auto">${pass?'all guarantees satisfied':'1 guarantee failed'}</span></div></div>
+     <div class="g-row ${pass?'':'open'}" id="g1"><div class="g-head"><span class="car"></span><span class="id">WorldLayoutGuarantee</span><span class="badge ${pass?'':'bad'}">${pass?'satisfied':'violated'}</span></div>
+      <div class="g-body">`;
+    if(pass){
+      h+=`<div class="dim">No violations.</div><div class="sub">MEASUREMENTS</div><div class="mgrid"><span>mainland regions</span><span>14 (10–16)</span><span>built-in nodes</span><span>117 (node-limited)</span><span>absorbed cells</span><span>0</span><span>fragment cells</span><span>0</span></div>`;
+    } else {
+      h+=`<div class="diag">RegionCountRange: mainland has 9 regions, expected 10–16.</div>
+       <div class="diag terrain">NodeSpacing: 3 node pairs closer than 3 (terrain cause: barrier corridor on narrow ridge).</div>
+       <div class="sub">VIOLATING CELLS (click to select)</div><div class="chips">${VIOL.map(q=>`<span class="chip" data-c="${q[0]},${q[1]}">(${q[0]}, ${q[1]})</span>`).join('')}</div>
+       <div class="sub">PROOF PATHS</div><div class="dim">0 (layout guarantees record no paths)</div>
+       <div class="sub">MEASUREMENTS</div><div class="mgrid"><span>mainland regions</span><span class="bad">9 (10–16)</span><span>node pairs too close</span><span class="bad">3</span></div>`;
+    }
+    h+=`</div></div>
+     <div class="g-row" id="g2"><div class="g-head"><span class="car"></span><span class="id">HearthNexusReachability <span class="badge info">registered kind example</span></span><span class="badge mute">not registered</span></div>
+      <div class="g-body"><div class="dim">Shown for layout only: appears when the dragon layer registers it. Evidence here would list unreachable Hearths, one proof path per reachable Hearth (profile name, length) and a pairDistance/minimumSpacing measurement set.</div>
+      <div class="chips"><span class="chip">proof path: Hearth (12,9) → Nexus (30,18) · 17 cells · profile terrain-table</span></div></div></div>`;
+  }
+  $('valBody').innerHTML=h;
+  document.querySelectorAll('.g-head').forEach(hd=>hd.onclick=()=>{ hd.parentElement.classList.toggle('open'); drawMap(); });
+  document.querySelectorAll('.chip[data-c]').forEach(c=>c.onclick=()=>{ const [x,y]=c.dataset.c.split(',').map(Number); selectCell(x,y); });
+}
+
+// ---- panel: world file ----
+const FILES=[['world_12345678','2.1 MB','today 11:42','out'],['archipelago_test','1.4 MB','yesterday','out'],['my_world','2.1 MB','Nov 10','deployed']];
+let selFile=2;
+function filePanel(){
+  $('wlist').innerHTML=FILES.map((f,i)=>`<div class="wl ${i===selFile?'sel':''}" data-i="${i}"><span>${f[0]}.wld.json</span><span class="dim">${f[3]}</span><span class="m">${f[1]} · ${f[2]}</span></div>`).join('');
+  $('wlist').querySelectorAll('.wl').forEach(e=>e.onclick=()=>{ selFile=+e.dataset.i; filePanel(); });
+  $('fileSum').textContent=`worlds/ · ${FILES.length} files`;
+  $('impErr').innerHTML = S.world==='importerr' ? `<div class="err"><b>Import failed, nothing changed.</b><br>field <code>cells[1203].biome</code>: unknown biome name "Savanna".<br><span class="dim">All-or-nothing: the previous world is still loaded (revision 14).</span></div>`+`<div class="warnbox">Warning: file has no provenance; would import with seed 0. <span class="dim">(shown only when the import succeeds with a warning)</span></div>` : '';
+  const locked=S.world==='locked';
+  $('prov').innerHTML = locked ? `<div class="card"><div class="ttl"><b>IMPORTED WORLD</b><span class="badge info">locked</span></div>
+    <div class="kv" style="margin-top:3px"><span class="k">file</span><span>my_world.wld.json (deployed)</span><span class="k">seed</span><span>12345678</span><span class="k">preset</span><span>continental</span><span class="k">rules version</span><span>4</span><span class="k">generator</span><span>S-1 terrain v1 / biomes v1</span><span class="k">regions</span><span>14 mainland + 4 island · sites 117</span></div>
+    <div class="row" style="margin:5px 0 0"><button id="unl2">Unlock &amp; edit</button><button id="disc2" class="dng">Discard (regenerate from provenance)</button></div></div>` : '';
+  if(locked){ $('unl2').onclick=()=>setScen('world','gen'); $('disc2').onclick=()=>setScen('world','gen'); }
+  $('lockSrc').textContent='my_world.wld.json · seed 12345678 · continental · rules v4.';
+}
+$('expGo').onclick=()=>{ $('expMsg').style.display='flex'; $('expMsgT').textContent='Wrote Cluiche/out/CoW/worlds/'+$('expName').value+'.wld.json (2.1 MB)'; };
+$('impGo').onclick=()=>setScen('world','locked');
+
+// ---- scenarios ----
+function setScen(k,v){
+  S[k]=v;
+  document.querySelectorAll('#scen button[data-k]').forEach(b=>b.classList.toggle('on',S[b.dataset.k]===b.dataset.v));
+  $('lockbar').classList.toggle('show',S.world==='locked'); $('unlockBtn').disabled=false;
+  if(S.world==='locked'){ $('worldSummary').textContent='imported · locked'; $('regen').disabled=true; } else { $('worldSummary').textContent='continental · 66×42'; }
+  applyGen(); outcomeCard(); valPanel(); filePanel(); buildView(); cellPanel(); drawMap();
+}
+$('unlockBtn').onclick=()=>setScen('world','gen'); $('busyCancel').onclick=()=>setScen('gen','idle'); $('cancelBtn').onclick=()=>{ setScen('gen','idle'); setScen('outcome','cancel'); };
+$('regen').onclick=()=>{ setScen('gen','running'); };
+$('dlgBtn').onclick=()=>{ setScen('world','locked'); $('modal').classList.add('show'); };
+$('mCancel').onclick=()=>$('modal').classList.remove('show'); $('mDiscard').onclick=()=>{ $('modal').classList.remove('show'); setScen('world','gen'); };
+document.querySelectorAll('#scen button[data-k]').forEach(b=>b.onclick=()=>setScen(b.dataset.k,b.dataset.v));
+document.querySelectorAll('.sec > .sh').forEach(h=>h.addEventListener('click',()=>h.parentElement.classList.toggle('closed')));
+$('valGo').onclick=()=>{ $('valWhen').textContent='ran just now · 2.0 ms'; };
+$('cgo').onclick=()=>selectCell(+$('cx').value,+$('cy').value); $('cclr').onclick=()=>{ selected=[null,null]; cellPanel(); drawMap(); };
+$('rnd').onclick=()=>{ $('seed').value=Math.floor(Math.random()*1e8); };
+function renderTimings(){ const t=$('tim'); t.innerHTML=''; let total=0; BASE_MS.forEach((b,i)=>{ total+=b; t.innerHTML+=`<span class="n">${i} ${STAGES[i]}</span><span class="b"><i style="width:${b/9*100}%"></i></span><span class="ms">${b} ms</span>`; }); $('timTotal').textContent=`ran 9 of 9 · ${total} ms`; }
+
+buildShape(); renderTimings(); buildRegions();
+$('sizeSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{ $('sizeSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); size=b.dataset.s; buildRegions(); drawMap(); cellPanel(); });
+// URL hash: #gen=running&val=fail&outcome=timeout&world=locked&mode=Regions&open=file,val&dialog=1&sel=18,14
+(function(){ const q=Object.fromEntries(location.hash.slice(1).split('&').filter(Boolean).map(s=>s.split('=')));
+  if(q.mode) mode=q.mode; if(q.sel){ selected=q.sel.split(',').map(Number); }
+  if(q.evid) DRAW.evid=1; if(q.sites==='0') DRAW.sites=0; if(q.edges==='0') DRAW.edges=0;
+  if(q.collapse) q.collapse.split(',').forEach(id=>$('s-'+id).classList.add('closed'));
+  if(q.scrollto) setTimeout(()=>$('s-'+q.scrollto).scrollIntoView(),50);
+  ['gen','outcome','val','world'].forEach(k=>{ if(q[k]) S[k]=q[k]; });
+  setScen('gen',S.gen); if(q.dialog) $('modal').classList.add('show'); })();
+</script>
+</body>
+</html>

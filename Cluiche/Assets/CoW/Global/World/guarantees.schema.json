@@ -1,0 +1,246 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "cow.guarantees",
+  "entries": [
+    {
+      "key": "kDynastySpacingMinimum",
+      "kind": "parameter",
+      "label": "kDynastySpacingMinimum",
+      "description": "Minimum hex distance between any two dynasty starts.",
+      "type": "float",
+      "min": 1.0,
+      "max": 100.0,
+      "default": 10.0
+    },
+    {
+      "key": "site_kinds[].id",
+      "kind": "field",
+      "label": "id",
+      "description": "Site kind id (CoW.Site.X). Referenced by guarantees and the marker overlay.",
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    {
+      "key": "site_kinds[].protected",
+      "kind": "field",
+      "label": "protected",
+      "description": "Protected kinds drive terrain.is_protected.",
+      "type": "bool"
+    },
+    {
+      "key": "site_kinds[].display_name",
+      "kind": "field",
+      "label": "display_name",
+      "description": "Name shown for the site kind.",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "site_kinds[].colour",
+      "kind": "field",
+      "label": "colour",
+      "description": "Marker colour as #RRGGBB.",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "site_kinds[].shape",
+      "kind": "field",
+      "label": "shape",
+      "description": "Marker shape (Triangle, Diamond, Ring, Star).",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "site_kinds[].variant_label",
+      "kind": "field",
+      "label": "variant_label",
+      "description": "Name of the variant axis, for kinds that have variants.",
+      "type": "string"
+    },
+    {
+      "key": "site_kinds[].variant_count",
+      "kind": "field",
+      "label": "variant_count",
+      "description": "Number of variants of this kind.",
+      "type": "int"
+    },
+    {
+      "key": "guarantees[].id",
+      "kind": "field",
+      "label": "id",
+      "description": "Guarantee id (CoW.Guarantee.X).",
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    {
+      "key": "guarantees[].label",
+      "kind": "field",
+      "label": "label",
+      "description": "Name shown for the guarantee.",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "guarantees[].type",
+      "kind": "field",
+      "label": "type",
+      "description": "Guarantee type: reach_any, min_spacing or variant_cover.",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "guarantees[].from",
+      "kind": "field",
+      "label": "from",
+      "description": "Site kind the path starts at (reach_any).",
+      "type": "string"
+    },
+    {
+      "key": "guarantees[].to",
+      "kind": "field",
+      "label": "to",
+      "description": "Site kind the path must reach (reach_any).",
+      "type": "string"
+    },
+    {
+      "key": "guarantees[].noun",
+      "kind": "field",
+      "label": "noun",
+      "description": "Singular noun used in reports.",
+      "type": "string"
+    },
+    {
+      "key": "guarantees[].to_noun",
+      "kind": "field",
+      "label": "to_noun",
+      "description": "Singular noun for the target (reach_any).",
+      "type": "string"
+    },
+    {
+      "key": "guarantees[].to_noun_plural",
+      "kind": "field",
+      "label": "to_noun_plural",
+      "description": "Plural noun for the target (reach_any).",
+      "type": "string"
+    },
+    {
+      "key": "guarantees[].kind",
+      "kind": "field",
+      "label": "kind",
+      "description": "Site kind the guarantee applies to (min_spacing, variant_cover).",
+      "type": "string"
+    },
+    {
+      "key": "guarantees[].minimum_param",
+      "kind": "field",
+      "label": "minimum_param",
+      "description": "Name of the parameter holding the minimum spacing.",
+      "type": "string"
+    },
+    {
+      "key": "guarantees[].noun_plural",
+      "kind": "field",
+      "label": "noun_plural",
+      "description": "Plural noun used in reports.",
+      "type": "string"
+    },
+    {
+      "key": "guarantees[].minimum_key",
+      "kind": "field",
+      "label": "minimum_key",
+      "description": "Report key for the minimum value (min_spacing).",
+      "type": "string"
+    },
+    {
+      "key": "guarantees[].distance_key",
+      "kind": "field",
+      "label": "distance_key",
+      "description": "Report key for the measured distance (min_spacing).",
+      "type": "string"
+    },
+    {
+      "key": "guarantees[].variant_count",
+      "kind": "field",
+      "label": "variant_count",
+      "description": "Number of variants that must be covered (variant_cover).",
+      "type": "int"
+    },
+    {
+      "key": "guarantees[].to_stratum",
+      "kind": "field",
+      "label": "to_stratum",
+      "description": "Stratum the variants must be reachable in (variant_cover).",
+      "type": "string"
+    },
+    {
+      "key": "guarantees[].variant_noun",
+      "kind": "field",
+      "label": "variant_noun",
+      "description": "Noun for one variant in reports (variant_cover).",
+      "type": "string"
+    },
+    {
+      "key": "guarantees[].target_noun",
+      "kind": "field",
+      "label": "target_noun",
+      "description": "Noun for the target stratum in reports (variant_cover).",
+      "type": "string"
+    },
+    {
+      "key": "guarantees[].count_key",
+      "kind": "field",
+      "label": "count_key",
+      "description": "Report key for the per-variant count (variant_cover).",
+      "type": "string"
+    },
+    {
+      "key": "guarantees[].target_count_key",
+      "kind": "field",
+      "label": "target_count_key",
+      "description": "Report key for the target cell count (variant_cover).",
+      "type": "string"
+    },
+    {
+      "key": "marker_overlay.overlay_id",
+      "kind": "field",
+      "label": "overlay_id",
+      "description": "Debug overlay id for the markers.",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "marker_overlay.label",
+      "kind": "field",
+      "label": "label",
+      "description": "Name shown for the overlay.",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "marker_overlay.kind",
+      "kind": "field",
+      "label": "kind",
+      "description": "Site kind drawn by the overlay.",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "marker_overlay.spacing_guarantee",
+      "kind": "field",
+      "label": "spacing_guarantee",
+      "description": "Guarantee id whose spacing the overlay shows.",
+      "type": "string"
+    },
+    {
+      "key": "marker_overlay.fallback_ring",
+      "kind": "field",
+      "label": "fallback_ring",
+      "description": "Ring radius used when the spacing guarantee is absent.",
+      "type": "int"
+    }
+  ]
+}

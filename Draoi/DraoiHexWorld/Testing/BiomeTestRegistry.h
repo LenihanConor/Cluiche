@@ -1,0 +1,269 @@
+// Test utilities for the biome registry. Ships with the library (no gtest dependency): failures print and abort.
+// Spec: docs/specs/applications/cow/systems/s1-worldgeneration/biome-registry.md
+// The shipped data files are supplied by the host application via SetTestAssetPaths (repo-relative paths).
+#pragma once
+
+#include <DraoiHexWorld/BiomeRegistry.h>
+#include <DraoiHexWorld/CellVocabulary.h>
+#include <DraoiHexWorld/StratumTable.h>
+
+#include <cstdio>
+#include <cstdlib>
+#include <filesystem>
+#include <cstring>
+#include <fstream>
+#include <initializer_list>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
+
+namespace Draoi {
+namespace HexWorld {
+namespace Testing {
+
+inline const StratumTable& ShippedStratumTable();
+
+// Repo-relative paths of the shipped data the helpers load. The host application's tests set these once (before any test runs).
+struct TestAssetPaths
+{
+    std::string strata;         // strata.json
+    std::string strataSidecar;  // strata.schema.json
+    std::string biomes;         // biomes.json
+    std::string biomesExtra;    // fixture: shipped rows plus one appended climate biome
+};
+
+inline TestAssetPaths& AssetPaths() { static TestAssetPaths paths; return paths; }
+inline void SetTestAssetPaths(const TestAssetPaths& paths) { AssetPaths() = paths; }
+
+namespace Detail
+{
+    inline std::string FindUpwards(const char* relative, bool wantDirectory);
+
+    // Resolves a repo-relative asset path set through SetTestAssetPaths. Aborts if none was set or the file is missing.
+    inline std::string ResolveAsset(const std::string& relative)
+    {
+        std::string found = relative.empty() ? std::string() : FindUpwards(relative.c_str(), false);
+        if (found.empty())
+        {
+            std::fprintf(stderr, "BiomeTestRegistry: asset path not set or not found ('%s'); call SetTestAssetPaths\n", relative.c_str());
+            std::fflush(stderr);
+            std::abort();
+        }
+        return found;
+    }
+
+    // Walks up from this header's directory until `<dir>/<relative>` is a regular file or directory.
+    inline std::string FindUpwards(const char* relative, bool wantDirectory)
+    {
+        std::error_code ec;
+        std::filesystem::path dir = std::filesystem::absolute(std::filesystem::path(__FILE__), ec).parent_path();
+        while (!dir.empty())
+        {
+            const std::filesystem::path candidate = dir / relative;
+            if (wantDirectory ? std::filesystem::is_directory(candidate, ec) : std::filesystem::is_regular_file(candidate, ec))
+            {
+                return candidate.string();
+            }
+            const std::filesystem::path parent = dir.parent_path();
+            if (parent == dir) { break; }
+            dir = parent;
+        }
+        return {};
+    }
+
+    inline std::string ReadFileText(const std::string& path)
+    {
+        std::ifstream     in(path, std::ios::binary);
+        std::stringstream ss;
+        ss << in.rdbuf();
+        return ss.str();
+    }
+
+    inline void LoadOrAbort(BiomeRegistry& reg, const std::string& path, const char* what)
+    {
+        std::ifstream in(path, std::ios::binary);
+        std::stringstream ss;
+        ss << in.rdbuf();
+        RegistryError err;
+        if (path.empty() || !in.good() || !reg.LoadFromText(ss.str().c_str(), ShippedStratumTable(), err))
+        {
+            std::fprintf(stderr, "BiomeTestRegistry: failed to load %s (path='%s') field=%s id=%s row=%u reason=%s\n", what,
+                         path.c_str(), err.field.AsCStr(), err.id.AsCStr(), err.row, err.reason.AsCStr());
+            std::fflush(stderr);
+            std::abort();
+        }
+    }
+}
+
+// Absolute paths of the shipped strata.json and its sidecar strata.schema.json.
+inline std::string ShippedStrataPath() { return Detail::ResolveAsset(AssetPaths().strata); }
+inline std::string ShippedStratumSidecarPath() { return Detail::ResolveAsset(AssetPaths().strataSidecar); }
+
+// The shipped stratum table (FirstShores, WildReaches, AncientInteriors), loaded once per process. Aborts if it cannot be loaded.
+inline const StratumTable& ShippedStratumTable()
+{
+    static StratumTable strata;
+    static bool loaded = false;
+    if (!loaded)
+    {
+        loaded = true;
+        StratumError err;
+        const std::string strataText = Detail::ReadFileText(ShippedStrataPath());
+        const std::string sidecarText = Detail::ReadFileText(ShippedStratumSidecarPath());
+        if (strataText.empty() || sidecarText.empty() || !strata.LoadFromText(strataText.c_str(), sidecarText.c_str(), err))
+        {
+            std::fprintf(stderr, "BiomeTestRegistry: failed to load shipped strata: field=%s reason=%s\n", err.field.c_str(), err.reason.c_str());
+            std::fflush(stderr);
+            std::abort();
+        }
+    }
+    return strata;
+}
+
+// A three-stratum depth-set strata file naming the strata `names` (the shipped numbers: 4-6, 4-6, 2-4 regions,
+// innermost main-landmass-only with min coast depth 3) and the matching sidecar (shares 0.45 / 0.40 / 0.15).
+// For tests that need a differently named table; a name list of another length is allowed for load-fault tests.
+// An extra (non-depth) stratum set for TestStrataText / TestStrataSidecar: its id, ordered flag, assigner type and strata
+// names (regions 1-2 each, a sidecar share of 1/N each).
+struct TestExtraSet
+{
+    std::string              id;
+    bool                     ordered = false;
+    std::string              assignerType = "coast_cost_bands";
+    std::vector<std::string> names;
+};
+
+inline std::string TestStrataText(const std::vector<std::string>& names, const std::vector<TestExtraSet>& extraSets = {})
+{
+    std::string list;
+    for (size_t i = 0; i < names.size(); ++i)
+    {
+        const bool inner = (i + 1 == names.size());
+        list += std::string(i == 0 ? "" : ",") + "{\"name\":\"" + names[i] + "\",\"regions_min\":" + (inner ? "2" : "4") +
+                ",\"regions_max\":" + (inner ? "4" : "6") + (inner ? ",\"main_landmass_only\":true,\"min_coast_depth\":3" : "") + "}";
+    }
+    std::string extra;
+    for (const TestExtraSet& set : extraSets)
+    {
+        std::string strata;
+        for (size_t i = 0; i < set.names.size(); ++i)
+        {
+            strata += std::string(i == 0 ? "" : ",") + "{\"name\":\"" + set.names[i] + "\",\"regions_min\":1,\"regions_max\":2}";
+        }
+        extra += ",{\"id\":\"" + set.id + "\",\"ordered\":" + (set.ordered ? "true" : "false") + ",\"assigner\":{\"type\":\"" +
+                 set.assignerType + "\",\"metric\":\"coast_cost\"},\"strata\":[" + strata + "]}";
+    }
+    return "{\"format\":\"cow.strata\",\"version\":1,\"sets\":[{\"id\":\"depth\",\"ordered\":true,"
+           "\"assigner\":{\"type\":\"coast_cost_bands\",\"metric\":\"coast_cost\"},\"strata\":[" + list + "]}" + extra + "]}";
+}
+
+inline std::string TestStrataSidecar(const std::vector<std::string>& names, const std::vector<float>& shares = { 0.45f, 0.40f, 0.15f },
+                                     const std::vector<TestExtraSet>& extraSets = {})
+{
+    std::string entries;
+    for (size_t i = 0; i < names.size(); ++i)
+    {
+        char buf[64];
+        std::snprintf(buf, sizeof(buf), "%g", static_cast<double>(i < shares.size() ? shares[i] : 0.0f));
+        entries += std::string(i == 0 ? "" : ",") + "{\"key\":\"depth." + names[i] + ".share\",\"kind\":\"parameter\",\"label\":\"share\","
+                   "\"description\":\"test\",\"type\":\"float\",\"min\":0.0,\"max\":1.0,\"default\":" + buf + "}";
+    }
+    if (!names.empty())
+    {
+        // The innermost stratum declares min_coast_depth (TestStrataText), so the sidecar carries its live value.
+        entries += ",{\"key\":\"depth." + names.back() + ".min_coast_depth\",\"kind\":\"parameter\",\"label\":\"depth\","
+                   "\"description\":\"test\",\"type\":\"float\",\"min\":0.0,\"max\":16.0,\"default\":3.0}";
+    }
+    for (const TestExtraSet& set : extraSets)
+    {
+        for (const std::string& name : set.names)
+        {
+            char buf[64];
+            std::snprintf(buf, sizeof(buf), "%g", set.names.empty() ? 0.0 : 1.0 / static_cast<double>(set.names.size()));
+            entries += ",{\"key\":\"" + set.id + "." + name + ".share\",\"kind\":\"parameter\",\"label\":\"share\","
+                       "\"description\":\"test\",\"type\":\"float\",\"min\":0.0,\"max\":1.0,\"default\":" + buf + "}";
+        }
+    }
+    return "{\"format\":\"dia.value_schema\",\"version\":1,\"for\":\"cow.strata\",\"entries\":[" + entries + "]}";
+}
+
+// Absolute path of the shipped biomes.json (for WorldGenerationModule::SetBiomesPath in module tests).
+inline std::string ShippedBiomesPath() { return Detail::ResolveAsset(AssetPaths().biomes); }
+
+// The shipped biomes.json, loaded once per process. Aborts if it cannot be loaded.
+inline const BiomeRegistry& ShippedBiomeRegistry()
+{
+    static BiomeRegistry reg;
+    static bool loaded = false;
+    if (!loaded)
+    {
+        loaded = true;
+        Detail::LoadOrAbort(reg, Detail::ResolveAsset(AssetPaths().biomes), "shipped biomes.json");
+    }
+    return reg;
+}
+
+// Shipped rows plus one appended climate biome (Biome.Savanna). Aborts if it cannot be loaded.
+inline const BiomeRegistry& ExtraBiomeRegistry()
+{
+    static BiomeRegistry reg;
+    static bool loaded = false;
+    if (!loaded)
+    {
+        loaded = true;
+        Detail::LoadOrAbort(reg, Detail::ResolveAsset(AssetPaths().biomesExtra), "biomes_extra.json");
+    }
+    return reg;
+}
+
+// The shipped biomes.json with textual edits applied (each `from` must occur once; the first occurrence is replaced),
+// loaded into a fresh registry. For fixtures that change a priority, an envelope or a row. Aborts on a bad edit or load.
+inline BiomeRegistry LoadShippedVariant(std::initializer_list<std::pair<const char*, const char*>> edits)
+{
+    std::ifstream     in(Detail::ResolveAsset(AssetPaths().biomes), std::ios::binary);
+    std::stringstream ss;
+    ss << in.rdbuf();
+    std::string text = ss.str();
+    for (const auto& e : edits)
+    {
+        const size_t at = text.find(e.first);
+        if (at == std::string::npos)
+        {
+            std::fprintf(stderr, "BiomeTestRegistry: variant edit target missing: %s\n", e.first);
+            std::fflush(stderr);
+            std::abort();
+        }
+        text.replace(at, std::strlen(e.first), e.second);
+    }
+    BiomeRegistry reg;
+    RegistryError err;
+    if (!reg.LoadFromText(text.c_str(), ShippedStratumTable(), err))
+    {
+        std::fprintf(stderr, "BiomeTestRegistry: variant failed to load: field=%s id=%s row=%u reason=%s\n", err.field.AsCStr(),
+                     err.id.AsCStr(), err.row, err.reason.AsCStr());
+        std::fflush(stderr);
+        std::abort();
+    }
+    return reg;
+}
+
+// Id -> index in `reg`. Aborts with a message if the id is absent.
+inline BiomeIndex B(const BiomeRegistry& reg, const char* id)
+{
+    const BiomeIndex b = reg.Find(Dia::Core::StringCRC(id));
+    if (b == kNoBiome)
+    {
+        std::fprintf(stderr, "BiomeTestRegistry: unknown biome id '%s'\n", id);
+        std::fflush(stderr);
+        std::abort();
+    }
+    return b;
+}
+
+inline BiomeIndex B(const char* id) { return B(ShippedBiomeRegistry(), id); }
+
+} // namespace Testing
+} // namespace HexWorld
+} // namespace Draoi

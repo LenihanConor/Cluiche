@@ -4,7 +4,7 @@ module_id: dia.simtime
 name: DiaSimTime
 path: Dia/DiaSimTime
 parent_module_id: dia.application
-layer: foundation/application
+layer: domain/gameplay/core
 status: active
 maturity: dev
 version: "1.0"
@@ -19,15 +19,17 @@ dependencies:
   forbidden: []
 public_api:
   headers:
-    - DiaSimTime/DiaMainTime.h
-    - DiaSimTime/DiaRenderTime.h
+    - DiaSimTime/SimTimeScheduler.h
+    - DiaSimTime/SimTimeRegistry.h
+    - DiaSimTime/SimTimeBudget.h
   namespaces:
     - Dia::SimTime::
   entry_points:
-    - DiaMainTime
-    - DiaRenderTime
+    - SimTimeScheduler
+    - SimTimeRegistry
+    - SimTimeBudget
 responsibilities:
-  - DiaMainTime: trivial MainPU presence module (MainTimeContext is computed directly by ProcessingUnit; no active publishing needed)
+  - (Moved to Cluiche/CluicheGameBaseline/Modules per PD-012: DiaSimTimeModule, DiaMainTime, DiaRenderTime) DiaMainTime: trivial MainPU presence module (MainTimeContext is computed directly by ProcessingUnit; no active publishing needed)
   - DiaRenderTime: sole reader of the sim-time FrameStream on RenderPU; pushes RenderTimeContext into the owning ProcessingUnit each tick
 non_responsibilities:
   - Does not publish SimTimeContext itself — that is DiaSimTimeModule (a later phase, not yet built)

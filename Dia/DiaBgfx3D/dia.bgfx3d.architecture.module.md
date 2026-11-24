@@ -27,8 +27,9 @@ responsibilities:
   - Provide Dia::Bgfx3D::Canvas3D extending Dia::Bgfx::Canvas
   - Dispatch 3D sub-renderer passes before inherited 2D passes in ProcessFrame(FrameData3D)
   - Provide Dia::Bgfx3D::MaterialRegistry — StringCRC to ShaderProgram + base colour mapping
-  - (Pending) MeshRenderer, SkinnedMeshRenderer, ShadowRenderer — added when DiaMesh3D/DiaSkinning3D ship
-  - (Pending) MeshGpuCache — lazy vertex/index upload when DiaMesh3D ships
+  - Provide MeshRenderer (lit static meshes, up to 32 directional and 32 point lights), ShadowRenderer (shadow-map pass) and DebugGeometry3DRenderer
+  - Provide MeshGpuCache — lazy vertex/index upload for registered meshes
+  - (Pending) SkinnedMeshRenderer — added when DiaSkinning3D ships (the skinned vertex shader exists)
 
 non_responsibilities:
   - 2D rendering — owned by DiaBgfx (inherited unchanged)
@@ -54,12 +55,13 @@ dependencies:
   required:
     - dia.bgfx
     - dia.graphics.frame
-    - dia.graphics.interface
-    - dia.graphics3d.frame
-    - dia.core.core
     - dia.core.crc
     - dia.maths.vector
     - dia.mesh3d
     - dia.observation
+    - dia.core.containers.arrays
+    - dia.graphics.misc
+    - dia.graphics3d
+    - dia.maths.matrix
   forbidden: []
 ---

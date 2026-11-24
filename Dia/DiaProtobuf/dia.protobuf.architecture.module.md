@@ -23,5 +23,6 @@ non_responsibilities:
 dependencies:
   required:
     - dia.json
+    - dia.core.json.external.json
   forbidden: []
 ---

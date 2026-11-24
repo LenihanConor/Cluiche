@@ -5,7 +5,7 @@
 #include <DiaCore/Colour/RGBA.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaFlowField/FlowCell.h>
-#include <DiaPathfinding/CellCoord.h>
+#include <DiaGeometry2D/Grid/CellCoord.h>
 #include <cmath>
 #include <cstdio>
 
@@ -147,7 +147,7 @@ void PathfindingTestDrawer::Draw(Dia::Core::IDebugDraw& draw)
     }
 
     // --- 3. Start markers (X cross per agent) ---
-    static const Dia::Pathfinding::CellCoord kStarts[kAgentCount] = {{1,1},{1,13},{18,13}};
+    static const Dia::Geometry2D::CellCoord kStarts[kAgentCount] = {{1,1},{1,13},{18,13}};
     for (int i = 0; i < kAgentCount; ++i)
     {
         Dia::Maths::Vector2D c = CellCenter(kStarts[i].x, kStarts[i].y);

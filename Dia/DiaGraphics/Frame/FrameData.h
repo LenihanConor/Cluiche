@@ -5,6 +5,7 @@
 #include "DebugFrameData.h"
 #include "UIFrameData.h"
 #include "EntityFrameData.h"
+#include "CellFieldFrameData.h"
 #include <DiaCamera2D/Camera2D.h>
 
 namespace Dia
@@ -14,7 +15,7 @@ namespace Dia
 		///
 		/// Frame - A single frame that stores all the info that the render
 		///
-		class FrameData: public DebugFrameData, public UIFrameData, public EntityFrameData
+		class FrameData: public DebugFrameData, public UIFrameData, public EntityFrameData, public CellFieldFrameData
 		{
 		public:
 			// TODO - UI SHOULD BE SAVE AT A DIFFERENT FRAME RATE AS I DONT WANT IT BEING PLAYED BACK
@@ -24,6 +25,9 @@ namespace Dia
 
 			void Clear();
 			void Copy(const FrameData& rhs);
+
+			// IDebugDraw: CellField requests are stored in CellFieldFrameData (no primitive budget)
+			void RequestDrawCellField(const Dia::Core::CellFieldDrawRequest& request) override { RequestDrawCellFieldData(request); }
 
 			const Dia::Camera2D::Camera2D& GetCamera() const { return mCamera; }
 			void SetCamera(const Dia::Camera2D::Camera2D& camera) { mCamera = camera; }

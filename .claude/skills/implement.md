@@ -118,8 +118,8 @@ After all tasks complete. This is the ONLY point in the workflow that runs the f
 1. Update plan status to `Done`
 2. Update spec status to `Done`
 3. Run full verification: `dia pipeline --target googletest` (unfiltered)
-4. Run Observation Opportunity Scan (per CLAUDE.md) on all files touched
-5. Report summary: tasks completed vs blocked, files created/modified, test results, observation opportunities
+4. Run Observation Opportunity Scan (per CLAUDE.md) on all files touched, then implement every High-priority finding (scoped build/test, separate commit). Low findings are only reported.
+5. Report summary: tasks completed vs blocked, files created/modified, test results, High findings implemented, Low findings deferred
 
 ## Resume Behavior
 

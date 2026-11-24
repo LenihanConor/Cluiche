@@ -132,10 +132,12 @@ Next step: /refactor-plan <slug>
 
 ## Cluiche Context
 
-Engine modules: DiaCore, DiaMaths, DiaGeometry2D, DiaGraphics, DiaWindow, DiaInput, DiaUI/Awesomium/CEF/Ultralight, DiaApplicationFlow, DiaAPI, DiaSFML, DiaLogger, DiaRigidBody2D, DiaSoftBody2D, DiaWebSocket, DiaEditor, DiaPython
+Engine modules: DiaCore, DiaMaths, DiaGeometry2D, DiaGraphics, DiaWindow, DiaInput, DiaUI/Awesomium/CEF/Ultralight, DiaApplicationFlow, DiaAPI, DiaSDL, DiaBgfx, DiaLogger, DiaRigidBody2D, DiaSoftBody2D, DiaWebSocket, DiaEditor, DiaPython
 
-Applications: CluicheTest (demo + testbed), CluicheEditor (plugin editor), GoogleTests
+Draoi packages (gameplay libraries between Dia and the applications, `Draoi/`): DraoiHexWorld, DraoiHexWorldTerrain, DraoiGameSpeed. Layer order is Application -> Draoi -> Dia; dependencies point down only.
+
+Applications: CluicheTest (demo + testbed), CluicheEditor (plugin editor), CoW, GoogleTests
 
 PD constraints: PD-001 StringCRC, PD-002 ProcessingUnit/Phase/Module, PD-003 Component system, PD-004 no STL in public APIs, PD-005 x64 Windows, PD-007 C++20
 
-When auditing: flag any violation of PD-001 through PD-007 as debt. Note which Dia module the subsystem belongs to and whether its boundaries are clean relative to its declared responsibilities.
+When auditing: flag any violation of PD-001 through PD-007 as debt. Note which Dia module the subsystem belongs to and whether its boundaries are clean relative to its declared responsibilities. Also state which layer (Dia, Draoi or application) the code belongs in per the CLAUDE.md layer boundary rule, and flag any Dia -> Draoi or Draoi -> application dependency as debt.

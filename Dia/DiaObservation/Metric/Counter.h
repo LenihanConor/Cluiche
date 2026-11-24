@@ -20,6 +20,7 @@ namespace Dia
 
                 void     Inc(uint64_t delta = 1);
                 uint64_t Value() const;
+                void     Reset(); // zeroes every shard (used when a retired metric is revived)
 
             private:
                 friend struct CounterShard;

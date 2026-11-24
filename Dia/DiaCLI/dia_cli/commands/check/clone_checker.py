@@ -56,10 +56,10 @@ def _find_cpd_executable(repo_root: Path | None = None) -> str | None:
 
 
 def _collect_source_files(repo_root: Path) -> list[Path]:
-    """Collect all .cpp and .h files under Dia/ and Cluiche/, excluding noise."""
+    """Collect all .cpp and .h files under Dia/, Draoi/ and Cluiche/, excluding noise."""
     _EXCLUDES = {"External", ".venv", "bin", "out", ".claude"}
     files: list[Path] = []
-    for root_dir in (repo_root / "Dia", repo_root / "Cluiche"):
+    for root_dir in (repo_root / "Dia", repo_root / "Draoi", repo_root / "Cluiche"):
         if not root_dir.exists():
             continue
         for f in root_dir.rglob("*"):

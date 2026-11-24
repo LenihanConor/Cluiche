@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.htnvisualdebugger
 name: DiaHTNVisualDebugger
-layer: domain/gameplay/tools
+layer: 4.1-Gameplay
 path: Dia/DiaHTNVisualDebugger
 status: active
 maturity: dev
@@ -16,6 +16,7 @@ dependencies:
   required:
     - dia.core
     - dia.htn
+    - dia.debug.visualdebugger
   forbidden: []
 
 public_api:

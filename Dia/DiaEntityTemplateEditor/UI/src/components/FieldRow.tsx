@@ -1,5 +1,5 @@
 import { CSSProperties, useState, useEffect, ChangeEvent, FocusEvent } from 'react';
-import { theme, inputStyle } from '@dia/editor-ui';
+import { theme, inputStyle, ValueLabel, componentFieldToValueInfo } from '@dia/editor-ui';
 import type { FieldEntry } from '../types';
 
 interface FieldRowProps {
@@ -56,6 +56,9 @@ export function FieldRow({ componentType, field, onChange }: FieldRowProps) {
         setInputVal(hasValue ? String(field.value) : '');
     }, [field.value, hasValue]);
 
+    // Described schema fields get label + unit + tooltip; undescribed render the raw name as before.
+    const binding = componentFieldToValueInfo(field, componentType);
+
     const inputType = isNumeric ? 'number' : 'text';
 
     const overrideStyle: CSSProperties = hasValue
@@ -109,7 +112,13 @@ export function FieldRow({ componentType, field, onChange }: FieldRowProps) {
 
     return (
         <div style={rowStyle} data-testid={`field-row-${field.name}`}>
-            <span style={labelStyle}>{field.name}</span>
+            {binding ? (
+                <span style={labelStyle}>
+                    <ValueLabel entry={binding.entry} forId={binding.forId} inspector fallbackLabel={field.name} />
+                </span>
+            ) : (
+                <span style={labelStyle}>{field.name}</span>
+            )}
             <input
                 style={computedInputStyle}
                 type={inputType}

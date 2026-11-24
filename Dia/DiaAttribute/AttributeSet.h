@@ -5,6 +5,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Handle.h>
 #include <DiaCore/Containers/HandlePool.h>
+#include <DiaCore/Containers/Arrays/DynamicArray.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Containers/HashTables/HashTable.h>
 
@@ -19,6 +20,15 @@
 #include <DiaSaveGame/ISaveable.h>
 
 namespace Dia::Attribute {
+
+    // -----------------------------------------------------------------------
+    // BandValue — Feature 7 band-based initialization
+    // -----------------------------------------------------------------------
+    struct BandValue
+    {
+        Dia::Core::StringCRC attribute_name;
+        Dia::Core::StringCRC band_name;
+    };
 
     // -----------------------------------------------------------------------
     // ModifierOperation / AttributeModifier
@@ -84,6 +94,7 @@ namespace Dia::Attribute {
     public:
         static const unsigned int kMaxModifiersPerAttribute    = 16;
         static const uint32_t     kMaxModifiersPerAttributeSet = 256;
+        static const unsigned int kMaxBandValuesPerCall        = 64;
 
         AttributeSet();
         ~AttributeSet();
@@ -99,10 +110,24 @@ namespace Dia::Attribute {
         // AttributeSet from a schema, in place. See class comment above.
         void InitializeFromSchema(const AttributeSchema& schema);
 
+        // Feature 7: Initializes attributes from band names instead of direct floats.
+        // Resolves each band_name to a float using the schema's band ranges, stores as base value.
+        // For each BandValue:
+        // - If the attribute has no bands defined, logs a warning and uses default_value
+        // - If the band_name is not in the attribute's bands, logs a warning and uses default_value
+        // - Otherwise, resolves to midpoint of [min, max]
+        // Attributes not listed in band_values are left unchanged (keep their current base value).
+        // AC-3, AC-4, AC-5, AC-9, AC-10
+        void InitializeFromBands(const AttributeSchema& schema, const Dia::Core::Containers::DynamicArrayC<BandValue, kMaxBandValuesPerCall>& band_values);
+
         float GetValue(Dia::Core::StringCRC attribute_name) const;
         float GetBaseValue(Dia::Core::StringCRC attribute_name) const;
         void  SetBaseValue(Dia::Core::StringCRC attribute_name, float value);
 
+        // Kind-aware legality: Add and Multiply are valid only on Float and Int attributes (an Int
+        // result is rounded half away from zero, then clamped). Override is valid on every kind but its
+        // value must be valid for the kind (Bool exactly 0 or 1; Enum an in-range ordinal; Int a whole
+        // number). An illegal call returns an invalid handle and logs a DIA_LOG_WARNING naming the attribute.
         [[nodiscard]] ModifierHandle AddModifier(const AttributeModifier& modifier);
         void RemoveModifier(ModifierHandle handle);
 
@@ -143,14 +168,39 @@ namespace Dia::Attribute {
         float GetValueByIndex(unsigned int index) const;
 
         // Name of the attribute at `index`. Returns a default (zero) StringCRC and asserts
-        // if index is out of range. O(index) — intended for one-off registration-time
-        // iteration, not per-frame use.
+        // if index is out of range. O(1).
         Dia::Core::StringCRC GetAttributeNameByIndex(unsigned int index) const;
 
         // Schema-invariant clamp range of the attribute at `index`. Returns 0.0f and asserts
         // if index is out of range. Same index-stability contract as GetValueByIndex.
         float GetMinimumValueByIndex(unsigned int index) const;
         float GetMaximumValueByIndex(unsigned int index) const;
+
+        // Raw base value (modifiers excluded) of the attribute at `index`. O(1). Returns 0.0f
+        // and asserts if index is out of range.
+        float GetBaseValueByIndex(uint32_t index) const;
+
+        // SILENT O(1) base-value write: no observer notifications. Asserts and does nothing
+        // if index is out of range. Resolved values are computed on demand, so nothing
+        // cached needs invalidating.
+        void SetBaseValueByIndex(uint32_t index, float value);
+
+        // Atomic bulk base-value commit. `values` holds one float per attribute in schema
+        // order. Returns false and changes nothing if `count` != GetAttributeCount() (or
+        // values is null). Otherwise commits ALL values first, then fires OnAttributeChanged
+        // (and the reached-max/min edges) only for attributes whose resolved value actually
+        // changed, in index order, so observers see the fully committed state.
+        bool ReplaceBaseValues(const float* values, uint32_t count);
+
+        // Re-initialises this set in place for `schema` (slots in schema order, name map rebuilt) with `values`
+        // as the base values (one per attribute, schema order). Returns false and changes nothing if `count`
+        // != schema.GetAttributeCount() (or values is null while count > 0).
+        // Modifiers: those on an attribute present (by name) in both the old and new schema are kept, with their
+        // ModifierHandles still valid (handles carry the attribute name, not an index). Modifiers on an attribute
+        // absent from the new schema are dropped and their handles freed.
+        // Observers: after the swap, OnAttributeChanged (and the reached-max/min edges) fire for each kept
+        // attribute whose resolved value changed; added or removed attributes fire nothing.
+        bool ReplaceSchemaAndValues(const AttributeSchema& schema, const float* values, uint32_t count);
 
         // -------------------------------------------------------------------
         // Modifier-stack inspection
@@ -203,9 +253,12 @@ namespace Dia::Attribute {
 
         struct AttributeSlot
         {
+            Dia::Core::StringCRC name;
             float base_value    = 0.0f;
             float minimum_value = 0.0f;
             float maximum_value = 0.0f;
+            AttributeKind kind  = AttributeKind::Float;
+            uint32_t      enumCount = 0;   // Enum kind only: number of valid ordinals
             Dia::Core::Containers::DynamicArrayC<ModifierEntry, kMaxModifiersPerAttribute> modifiers;
 
             // Per-SLOT reentrancy guard for ResolveValue (see AttributeSet.cpp). Deliberately
@@ -228,7 +281,14 @@ namespace Dia::Attribute {
         void NotifyIfChanged(Dia::Core::StringCRC attribute_name, const AttributeSlot& slot, float before, float after);
 
         Dia::Core::StringCRC mSchemaName;
-        Dia::Core::Containers::HashTable<Dia::Core::StringCRC, AttributeSlot> mSlots;
+        // Schema-ordered slot storage (index i == schema attribute i) plus name -> index map.
+        // Capacity is the runtime schema size, hence DynamicArray rather than DynamicArrayC.
+        // Slots are never added/removed after InitializeFromSchema, so storage never relocates.
+        Dia::Core::Containers::DynamicArray<AttributeSlot> mSlots;
+        Dia::Core::Containers::HashTable<Dia::Core::StringCRC, uint32_t> mSlotIndexByName;
+
+        AttributeSlot*       FindSlot(Dia::Core::StringCRC attribute_name);
+        const AttributeSlot* FindSlot(Dia::Core::StringCRC attribute_name) const;
 
         // Non-owning — caller (SetConditionRegistry) retains lifetime.
         Dia::Condition::ConditionRegistry* mConditionRegistry = nullptr;

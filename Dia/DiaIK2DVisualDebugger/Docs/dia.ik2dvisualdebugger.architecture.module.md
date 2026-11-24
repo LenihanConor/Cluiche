@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.ik2dvisualdebugger
 name: DiaIK2DVisualDebugger
 owner_team: TBD
-layer: domain/animation/tools
+layer: 4.1-Animation
 status: active
 maturity: dev
 
@@ -33,7 +33,6 @@ non_responsibilities:
 dependent_modules:
   - dia.ik2d
   - dia.rig2d
-  - dia.visualdebugger
   - dia.graphics
   - dia.maths
   - dia.core
@@ -59,7 +58,8 @@ dependencies:
     - dia.rig2d
     - dia.ik2d
     - dia.graphics
-    - dia.visualdebugger
+    - dia.debug.visualdebugger
+    - dia.observation
   forbidden:
     - dia.application  # debug draw is not lifecycle-aware
 ---

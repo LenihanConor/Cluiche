@@ -42,18 +42,6 @@ namespace Dia
 				: String<128>(rhs, startIndex, numberElements)
 			{}
 
-			//-----------------------------------------------------------------------------
-			inline
-			String128::String128 (const char* pRawString, ...)
-				: String<128>()
-			{
-				DIA_ASSERT(pRawString != NULL, "Invalid Data");
-
-				va_list args;
-				va_start(args, pRawString);
-				Format(pRawString, args);
-				va_end(args);
-			}
 			
 			//-----------------------------------------------------------------------------
 			inline

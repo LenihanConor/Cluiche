@@ -79,6 +79,28 @@ TEST(DynamicArray, CopyConstructor_CreatesIndependentCopy)
     EXPECT_EQ(copy.At(0), 1) << "Copy should be independent of original";
 }
 
+// Test: Copy constructor from empty sources must not assert
+TEST(DynamicArray, CopyConstructor_DefaultConstructedEmptySource_Works)
+{
+    DynamicArray<int> original;
+    DynamicArray<int> copy(original);
+
+    EXPECT_EQ(copy.Size(), 0);
+    EXPECT_EQ(copy.Capacity(), 0);
+    EXPECT_TRUE(copy.IsEmpty());
+}
+
+TEST(DynamicArray, CopyConstructor_EmptySourceWithCapacity_KeepsCapacity)
+{
+    DynamicArray<int> original(4);
+    DynamicArray<int> copy(original);
+
+    EXPECT_EQ(copy.Size(), 0);
+    EXPECT_EQ(copy.Capacity(), 4);
+    copy.Add(7);
+    EXPECT_EQ(copy.At(0), 7);
+}
+
 // Test: Add single element
 TEST(DynamicArray, Add_AppendsElementAndIncreasesSize)
 {

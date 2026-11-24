@@ -1,0 +1,278 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "cow.biomes",
+  "entries": [
+    {
+      "key": "biomes[].id",
+      "kind": "parameter",
+      "label": "Biome id",
+      "description": "Unique biome identifier (Biome.X). ROW ORDER IS SIGNIFICANT: row order is the runtime biome index and the classification tie-break (lowest index wins). Reordering rows changes generated worlds; appending a row changes none.",
+      "type": "string",
+      "unique": true,
+      "required": true
+    },
+    {
+      "key": "biomes[].name",
+      "kind": "parameter",
+      "label": "Name",
+      "description": "Display name.",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "biomes[].colour",
+      "kind": "parameter",
+      "label": "Colour",
+      "description": "Display colour as #rrggbb.",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "biomes[].description",
+      "kind": "parameter",
+      "label": "Description",
+      "description": "Short factual description.",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "biomes[].tags",
+      "kind": "parameter",
+      "label": "Tags",
+      "description": "List of tags drawn from this vocabulary.",
+      "type": "enum[]",
+      "values": [
+        {
+          "id": "land",
+          "label": "land",
+          "description": "Walkable land cell."
+        },
+        {
+          "id": "water",
+          "label": "water",
+          "description": "Aquatic-only cells that land species cannot enter (Ocean, Lake)."
+        },
+        {
+          "id": "aquatic",
+          "label": "aquatic",
+          "description": "Aquatic species can live here (water biomes, and Wetland)."
+        },
+        {
+          "id": "wet",
+          "label": "wet",
+          "description": "Persistently wet land."
+        },
+        {
+          "id": "cold",
+          "label": "cold",
+          "description": "Cold climate."
+        },
+        {
+          "id": "hot",
+          "label": "hot",
+          "description": "Hot climate."
+        },
+        {
+          "id": "forest",
+          "label": "forest",
+          "description": "Tree-dominated cover."
+        },
+        {
+          "id": "open",
+          "label": "open",
+          "description": "Open ground without tree cover."
+        },
+        {
+          "id": "fuel",
+          "label": "fuel",
+          "description": "This biome has a fire-succession rule to BurnedAshland (Grassland, TemperateForest, Scrub). Does not gate ignition or spread: land plus biomass answers that."
+        },
+        {
+          "id": "mountain",
+          "label": "mountain",
+          "description": "High mountain terrain; distinct from volcanic."
+        },
+        {
+          "id": "volcanic",
+          "label": "volcanic",
+          "description": "Land shaped by a vent; distinct from mountain."
+        },
+        {
+          "id": "succession",
+          "label": "succession",
+          "description": "Not placed by the generator; produced by ecology succession."
+        }
+      ],
+      "required": true
+    },
+    {
+      "key": "biomes[].generated",
+      "kind": "parameter",
+      "label": "Generated",
+      "description": "True when the generator may place this biome; false for succession biomes.",
+      "type": "bool",
+      "required": true
+    },
+    {
+      "key": "biomes[].zones",
+      "kind": "parameter",
+      "label": "Zones",
+      "description": "List of StratumIndex ids where the biome is valid; empty means no zone admits it.",
+      "type": "enum[]",
+      "values": [
+        {
+          "id": "None",
+          "label": "None",
+          "description": "Ocean and lake cells."
+        },
+        {
+          "id": "FirstShores",
+          "label": "FirstShores",
+          "description": "Outermost land ring."
+        },
+        {
+          "id": "WildReaches",
+          "label": "WildReaches",
+          "description": "Middle land ring."
+        },
+        {
+          "id": "AncientInteriors",
+          "label": "AncientInteriors",
+          "description": "Innermost land."
+        }
+      ],
+      "required": true
+    },
+    {
+      "key": "biomes[].roles",
+      "kind": "parameter",
+      "label": "Roles",
+      "description": "List of structural roles this row holds. Each role is held by exactly one row.",
+      "type": "enum[]",
+      "values": [
+        {
+          "id": "ocean",
+          "label": "ocean",
+          "description": "The ocean biome."
+        },
+        {
+          "id": "lake",
+          "label": "lake",
+          "description": "The lake biome."
+        },
+        {
+          "id": "fallback",
+          "label": "fallback",
+          "description": "Biome used for an unknown id."
+        }
+      ]
+    },
+    {
+      "key": "biomes[].climate.t0",
+      "kind": "parameter",
+      "label": "Climate temperature centre",
+      "description": "Temperature centre of the climate envelope. Rows with a climate block compete in the climate score, in row order.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "key": "biomes[].climate.m0",
+      "kind": "parameter",
+      "label": "Climate moisture centre",
+      "description": "Moisture centre of the climate envelope.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "key": "biomes[].climate.wt",
+      "kind": "parameter",
+      "label": "Climate temperature width",
+      "description": "Temperature width of the climate envelope; must be greater than 0.",
+      "type": "float",
+      "min": 0.01,
+      "max": 2.0
+    },
+    {
+      "key": "biomes[].climate.wm",
+      "kind": "parameter",
+      "label": "Climate moisture width",
+      "description": "Moisture width of the climate envelope; must be greater than 0.",
+      "type": "float",
+      "min": 0.01,
+      "max": 2.0
+    },
+    {
+      "key": "biomes[].pin.rule",
+      "kind": "parameter",
+      "label": "Pin rule",
+      "description": "Terrain test that pins cells to this biome before climate scoring.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "water_ocean",
+          "label": "water_ocean",
+          "description": "Ocean water cells."
+        },
+        {
+          "id": "water_lake",
+          "label": "water_lake",
+          "description": "Lake water cells."
+        },
+        {
+          "id": "vent",
+          "label": "vent",
+          "description": "Volcanic vent cells and volcanic barrier chains."
+        },
+        {
+          "id": "alpine",
+          "label": "alpine",
+          "description": "Mountain, peak, cliff and pass terrain."
+        },
+        {
+          "id": "wetland",
+          "label": "wetland",
+          "description": "Wetland-eligible land cells."
+        }
+      ]
+    },
+    {
+      "key": "biomes[].pin.priority",
+      "kind": "parameter",
+      "label": "Pin priority",
+      "description": "Pin precedence; higher is tested first. Must be distinct across rows.",
+      "type": "int",
+      "min": 0,
+      "max": 1000
+    },
+    {
+      "key": "biomes[].plateau",
+      "kind": "parameter",
+      "label": "Plateau climate",
+      "description": "Plateau interior biome: wet or dry by mean moisture. At most one row per value.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "wet",
+          "label": "wet",
+          "description": "Used for wet plateau interiors."
+        },
+        {
+          "id": "dry",
+          "label": "dry",
+          "description": "Used for dry plateau interiors."
+        }
+      ]
+    },
+    {
+      "key": "forbidden",
+      "kind": "parameter",
+      "label": "Forbidden pairs",
+      "description": "List of unordered forbidden neighbour pairs; each element is a 2-element array of biome ids.",
+      "type": "ref[2][]",
+      "ref": "cow.biomes/biomes[].id"
+    }
+  ]
+}

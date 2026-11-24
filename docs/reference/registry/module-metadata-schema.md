@@ -30,7 +30,7 @@ schema: dia.module.v1
 module_id: dia.core.containers.arrays
 name: Arrays
 owner_team: TBD
-layer: platform
+layer: foundation/core
 status: active
 maturity: stable
 
@@ -116,13 +116,14 @@ Markdown documentation follows YAML frontmatter.
 
 #### layer
 - **Type:** Enum
-- **Values:**
-  - `platform` - Foundation layer (DiaCore, DiaMaths)
-  - `framework` - Application framework (DiaApplicationFlow)
-  - `application` - Application code (Cluiche)
-  - `backend` - Backend implementations (DiaSFML)
+- **Values:** (rules in `dia_cli/commands/check/arch_layer_rules.py`; a lower level may not depend on a higher one)
+  - `foundation/core`, `foundation/maths`, `foundation/services`, `foundation/platform`, `foundation/application` - Dia level 1
+  - `assets/core`, `assets/tools` - Dia level 2
+  - `domain/<domain>/core`, `domain/<domain>/tools` - Dia level 3 (visual, physics, animation, gameplay)
+  - `tools/editor`, `tools/inspector` - Dia tooling (not ordered by `dia check arch`)
+  - `draoi` - the Draoi layer (`Draoi/`), level 5, above every Dia layer. Dia code must not depend on it
 - **Purpose:** Architectural layer classification
-- **Example:** `layer: platform`
+- **Example:** `layer: foundation/core`
 
 ---
 
@@ -372,7 +373,7 @@ Markdown documentation follows YAML frontmatter.
 schema: dia.module.v1
 module_id: dia.core
 name: DiaCore
-layer: platform
+layer: foundation/core
 status: active
 
 path: Dia/DiaCore
@@ -399,7 +400,7 @@ dependencies:
 schema: dia.module.v1
 module_id: dia.core.containers.arrays
 name: Arrays
-layer: platform
+layer: foundation/core
 status: active
 
 path: Dia/DiaCore/Containers/Arrays
@@ -421,23 +422,22 @@ dependencies:
 ```yaml
 ---
 schema: dia.module.v1
-module_id: dia.sfml
-name: DiaSFML
-layer: backend
+module_id: dia.sdl
+name: DiaSDL
+layer: foundation/platform
 status: active
 
-path: Dia/DiaSFML
+path: Dia/DiaSDL
 language: cpp
 
 dependencies:
   required:
     - dia.core
-    - dia.maths
-    - dia.graphics
     - dia.window
     - dia.input
   forbidden:
-    - dia.application  # Backend shouldn't know app
+    - dia.bgfx       # Window/input backend stays renderer-agnostic
+    - dia.graphics
 ---
 ```
 
@@ -450,7 +450,7 @@ dependencies:
 schema: dia.module.v1
 module_id: dia.example.deprecated
 name: ExampleDeprecated
-layer: backend
+layer: foundation/platform
 status: deprecated  # Being phased out
 maturity: legacy
 

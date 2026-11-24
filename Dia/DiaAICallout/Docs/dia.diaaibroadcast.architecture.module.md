@@ -56,6 +56,7 @@ dependencies:
     - dia.core
     - dia.geometry2d
     - dia.messagebus
+    - dia.maths.vector
   forbidden:
     - dia.entityspatial
     - dia.blackboard

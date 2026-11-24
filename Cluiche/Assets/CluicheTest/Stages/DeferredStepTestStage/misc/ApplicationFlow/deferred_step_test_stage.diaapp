@@ -1,0 +1,73 @@
+{
+    "version": 3,
+    "processing_units": [
+        {
+            "instance_id": "MainPU",
+            "frequency_hz": 30,
+            "dedicated_thread": false,
+            "modules": []
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "DeferredStepClockModule",
+                    "type_id": "DeferredStepClockModule",
+                    "stages": [
+                        "DeferredStepTestStage"
+                    ],
+                    "dependencies": [],
+                    "channels": []
+                },
+                {
+                    "instance_id": "DeferredStepModule",
+                    "type_id": "DeferredStepModule",
+                    "stages": [
+                        "DeferredStepTestStage"
+                    ],
+                    "dependencies": [],
+                    "requires_tick_after": ["DeferredStepClockModule"],
+                    "config": {
+                        "worker_cap": "auto",
+                        "ranges_per_worker": 4
+                    },
+                    "channels": [
+                        {
+                            "id": "JobSystemService",
+                            "role": "consumes"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "DeferredStepTestStageModule",
+                    "type_id": "DeferredStepTestStageModule",
+                    "stages": [
+                        "DeferredStepTestStage"
+                    ],
+                    "dependencies": [],
+                    "requires_tick_after": ["DeferredStepModule"],
+                    "channels": [
+                        {
+                            "id": "AutomationService",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "RenderToSim",
+                            "role": "reads"
+                        }
+                    ],
+                    "config": {
+                        "k": 7,
+                        "spin_ms": 50,
+                        "steps": 20,
+                        "cells": 4096,
+                        "worker_cap": "auto"
+                    }
+                }
+            ]
+        }
+    ],
+    "_comment": "SimPU module order is load-bearing. (1) DeferredStepClockModule is listed BEFORE DeferredStepModule so the key advances before DeferredStepModule reads it and Ticks, i.e. an apply due at key K lands in the sim step the key reaches K. (2) DeferredStepTestStageModule (the consumer) is listed AFTER DeferredStepModule: stop runs in reverse list order, so the consumer unregisters its channel while the scheduler is alive (DeferredStepModule::DoStop asserts no channels remain). To force worker_cap=1 edit DeferredStepModule.config.worker_cap."
+}

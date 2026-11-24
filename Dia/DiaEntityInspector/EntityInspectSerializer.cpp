@@ -342,6 +342,8 @@ Json::Value SerializeInspectPayload(
 
             Json::Value comp(Json::objectValue);
             comp["name"] = compName;
+            if (desc)
+                comp["id"] = desc->typeId.AsChar();   // valueschema `for` (component type id string)
 
             Json::Value fields(Json::arrayValue);
             if (desc)

@@ -10,7 +10,7 @@
 #include <DiaEntity/Domain.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <DiaAIBudget/AIBudgetModule.h>
+#include "Modules/AIBudgetModule.h"
 #include <DiaAIBudget/AIBudgetScheduler.h>
 #include <DiaUtilityAI/UtilitySetComponent.h>
 #include <DiaUtilityAI/UtilitySet.h>

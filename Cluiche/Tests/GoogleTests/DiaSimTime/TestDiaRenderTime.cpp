@@ -12,8 +12,8 @@
 //     no real work — MainTimeContext is already computed directly by ProcessingUnit).
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
-#include <DiaSimTime/DiaMainTime.h>
-#include <DiaSimTime/DiaRenderTime.h>
+#include "Modules/DiaMainTime.h"
+#include "Modules/DiaRenderTime.h"
 #include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/RenderModule.h>
 #include <DiaApplicationFlow/Application.h>

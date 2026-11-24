@@ -1,0 +1,1283 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "cow.worldgen.layers",
+  "entries": [
+    {
+      "key": "relief",
+      "kind": "field",
+      "label": "Relief",
+      "description": "Elevation shaded as terrain relief (default base layer; hillshade comes from the elevation layer).",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.terrain",
+        "default_base": true,
+        "elevation_layer": "worldgen.elevation"
+      }
+    },
+    {
+      "key": "elevation",
+      "kind": "field",
+      "label": "Elevation",
+      "description": "Final elevation after valley carving: ocean 0, land from the coast level up to 1, lakes at their surface.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.terrain"
+      }
+    },
+    {
+      "key": "latitude",
+      "kind": "field",
+      "label": "Latitude",
+      "description": "Normalised distance from the equator: 0 at the equator, 1 at the pole.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.blue"
+      }
+    },
+    {
+      "key": "coast_distance",
+      "kind": "field",
+      "label": "Coast distance",
+      "description": "Hex steps from the nearest coast cell.",
+      "unit": "cells",
+      "type": "float",
+      "min": 0,
+      "max": 20,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.green"
+      }
+    },
+    {
+      "key": "land_potential",
+      "kind": "field",
+      "label": "Land potential",
+      "description": "Landmass stage land potential before thresholding (ocean cells may hold -infinity, shown at the low end).",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.green"
+      }
+    },
+    {
+      "key": "island_potential",
+      "kind": "field",
+      "label": "Island potential",
+      "description": "Landmass stage island-blob potential.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.green"
+      }
+    },
+    {
+      "key": "landmass",
+      "kind": "field",
+      "label": "Landmass id",
+      "description": "Landmass id per cell: 0 is ocean, 1.. one per landmass (ids saturate at 255, so this is a ramp, not a palette).",
+      "type": "float",
+      "min": 0,
+      "max": 16,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.purple"
+      }
+    },
+    {
+      "key": "ridge_mask",
+      "kind": "field",
+      "label": "Ridge mask",
+      "description": "Mountain ridge strength produced by the Mountains stage.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.heat"
+      }
+    },
+    {
+      "key": "barrier_mask",
+      "kind": "field",
+      "label": "Barrier mask",
+      "description": "Barrier (plateau or volcanic chain) strength.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.heat"
+      }
+    },
+    {
+      "key": "elevation_raw",
+      "kind": "field",
+      "label": "Raw elevation",
+      "description": "Elevation before drainage fill and valley carving.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.terrain"
+      }
+    },
+    {
+      "key": "filled_elevation",
+      "kind": "field",
+      "label": "Filled elevation",
+      "description": "Elevation after depression filling (drainage).",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.terrain"
+      }
+    },
+    {
+      "key": "basin_depth",
+      "kind": "field",
+      "label": "Basin depth",
+      "description": "Depth of each depression removed by the fill.",
+      "type": "float",
+      "min": 0,
+      "max": 0.05,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.blue"
+      }
+    },
+    {
+      "key": "flow_accumulation",
+      "kind": "field",
+      "label": "Flow accumulation",
+      "description": "Number of upstream cells draining through each cell.",
+      "unit": "cells",
+      "type": "float",
+      "min": 0,
+      "max": 200,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.blue"
+      }
+    },
+    {
+      "key": "valley_carve",
+      "kind": "field",
+      "label": "Valley carve",
+      "description": "Elevation removed by river valley carving.",
+      "type": "float",
+      "min": 0,
+      "max": 0.04,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.purple"
+      }
+    },
+    {
+      "key": "slope",
+      "kind": "field",
+      "label": "Slope",
+      "description": "Steepest elevation drop to a neighbour, used to classify cliffs.",
+      "type": "float",
+      "min": 0,
+      "max": 0.5,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.grey"
+      }
+    },
+    {
+      "key": "ocean_depth",
+      "kind": "field",
+      "label": "Ocean depth",
+      "description": "Depth below the coast level for ocean cells.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.blue"
+      }
+    },
+    {
+      "key": "zone_cost",
+      "kind": "field",
+      "label": "Zone cost",
+      "description": "Depth-zone cost field (distance-like cost from the shore).",
+      "type": "float",
+      "min": 0,
+      "max": 40,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.heat"
+      }
+    },
+    {
+      "key": "terrain_type",
+      "kind": "field",
+      "label": "Terrain type",
+      "description": "Classified terrain per cell.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "deepWater",
+          "label": "Deep water",
+          "description": "Ocean beyond the shallows.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "shallowWater",
+          "label": "Shallow water",
+          "description": "Ocean near the coast.",
+          "colour": "#d89d61"
+        },
+        {
+          "id": "lake",
+          "label": "Lake",
+          "description": "Inland lake.",
+          "colour": "#d8d861"
+        },
+        {
+          "id": "river",
+          "label": "River",
+          "description": "River cell.",
+          "colour": "#9dd861"
+        },
+        {
+          "id": "lowland",
+          "label": "Lowland",
+          "description": "Low flat land.",
+          "colour": "#61d861"
+        },
+        {
+          "id": "hills",
+          "label": "Hills",
+          "description": "Rolling hills.",
+          "colour": "#61d89d"
+        },
+        {
+          "id": "highland",
+          "label": "Highland",
+          "description": "High plateau land.",
+          "colour": "#61d8d8"
+        },
+        {
+          "id": "mountain",
+          "label": "Mountain",
+          "description": "Mountain.",
+          "colour": "#619dd8"
+        },
+        {
+          "id": "peak",
+          "label": "Peak",
+          "description": "Mountain peak.",
+          "colour": "#6161d8"
+        },
+        {
+          "id": "cliff",
+          "label": "Cliff",
+          "description": "Steep cliff.",
+          "colour": "#9d61d8"
+        },
+        {
+          "id": "pass",
+          "label": "Pass",
+          "description": "Pass through a barrier.",
+          "colour": "#d861d8"
+        },
+        {
+          "id": "volcano",
+          "label": "Volcano",
+          "description": "Volcanic vent.",
+          "colour": "#d8619d"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "water_source",
+      "kind": "field",
+      "label": "Water source",
+      "description": "What kind of water a cell holds.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "none",
+          "label": "None",
+          "description": "Dry land.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "ocean",
+          "label": "Ocean",
+          "description": "Ocean.",
+          "colour": "#9dd861"
+        },
+        {
+          "id": "lake",
+          "label": "Lake",
+          "description": "Lake.",
+          "colour": "#61d8d8"
+        },
+        {
+          "id": "river",
+          "label": "River",
+          "description": "River.",
+          "colour": "#9d61d8"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "stratum",
+      "kind": "field",
+      "label": "Depth zone",
+      "description": "Distance-from-shore zone (None for ocean).",
+      "type": "enum",
+      "values": [
+        {
+          "id": "none",
+          "label": "None",
+          "description": "Ocean.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "firstShores",
+          "label": "First shores",
+          "description": "Near the coast.",
+          "colour": "#9dd861"
+        },
+        {
+          "id": "wildReaches",
+          "label": "Wild reaches",
+          "description": "Mid interior.",
+          "colour": "#61d8d8"
+        },
+        {
+          "id": "ancientInteriors",
+          "label": "Ancient interiors",
+          "description": "Deep interior.",
+          "colour": "#9d61d8"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "flow_direction",
+      "kind": "field",
+      "label": "Flow direction",
+      "description": "Direction water flows out of the cell, as a Dia hex direction.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "ne",
+          "label": "NE",
+          "description": "Direction 0.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "n",
+          "label": "N",
+          "description": "Direction 1.",
+          "colour": "#d8c761"
+        },
+        {
+          "id": "nw",
+          "label": "NW",
+          "description": "Direction 2.",
+          "colour": "#83d861"
+        },
+        {
+          "id": "sw",
+          "label": "SW",
+          "description": "Direction 3.",
+          "colour": "#61d8a5"
+        },
+        {
+          "id": "s",
+          "label": "S",
+          "description": "Direction 4.",
+          "colour": "#61a5d8"
+        },
+        {
+          "id": "se",
+          "label": "SE",
+          "description": "Direction 5.",
+          "colour": "#8361d8"
+        },
+        {
+          "id": "sink",
+          "label": "Sink",
+          "description": "Terminal cell (sea or lake).",
+          "colour": "#d861c7"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "river_mask",
+      "kind": "field",
+      "label": "River mask",
+      "description": "Cells that hold a river.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "no",
+          "label": "No river",
+          "description": "Not a river cell.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "yes",
+          "label": "River",
+          "description": "River cell.",
+          "colour": "#61d8d8"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "lake_mask",
+      "kind": "field",
+      "label": "Lake mask",
+      "description": "Lake id per cell: none, then lake 1..12 in rank order.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "none",
+          "label": "None",
+          "description": "Not a lake cell.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "lake1",
+          "label": "Lake 1",
+          "description": "Lake id 1.",
+          "colour": "#d89861"
+        },
+        {
+          "id": "lake2",
+          "label": "Lake 2",
+          "description": "Lake id 2.",
+          "colour": "#d8cf61"
+        },
+        {
+          "id": "lake3",
+          "label": "Lake 3",
+          "description": "Lake id 3.",
+          "colour": "#aad861"
+        },
+        {
+          "id": "lake4",
+          "label": "Lake 4",
+          "description": "Lake id 4.",
+          "colour": "#73d861"
+        },
+        {
+          "id": "lake5",
+          "label": "Lake 5",
+          "description": "Lake id 5.",
+          "colour": "#61d886"
+        },
+        {
+          "id": "lake6",
+          "label": "Lake 6",
+          "description": "Lake id 6.",
+          "colour": "#61d8bd"
+        },
+        {
+          "id": "lake7",
+          "label": "Lake 7",
+          "description": "Lake id 7.",
+          "colour": "#61bdd8"
+        },
+        {
+          "id": "lake8",
+          "label": "Lake 8",
+          "description": "Lake id 8.",
+          "colour": "#6186d8"
+        },
+        {
+          "id": "lake9",
+          "label": "Lake 9",
+          "description": "Lake id 9.",
+          "colour": "#7361d8"
+        },
+        {
+          "id": "lake10",
+          "label": "Lake 10",
+          "description": "Lake id 10.",
+          "colour": "#aa61d8"
+        },
+        {
+          "id": "lake11",
+          "label": "Lake 11",
+          "description": "Lake id 11.",
+          "colour": "#d861cf"
+        },
+        {
+          "id": "lake12",
+          "label": "Lake 12",
+          "description": "Lake id 12.",
+          "colour": "#d86198"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "pass_mask",
+      "kind": "field",
+      "label": "Pass mask",
+      "description": "Cells flagged as a pass through a mountain barrier.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "no",
+          "label": "No pass",
+          "description": "Not a pass.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "yes",
+          "label": "Pass",
+          "description": "Pass cell.",
+          "colour": "#61d8d8"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "volcanic",
+      "kind": "field",
+      "label": "Volcanic",
+      "description": "Cells flagged as volcanic.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "no",
+          "label": "Not volcanic",
+          "description": "Not volcanic.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "yes",
+          "label": "Volcanic",
+          "description": "Volcanic cell.",
+          "colour": "#61d8d8"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "temperature",
+      "kind": "field",
+      "label": "Temperature",
+      "description": "Temperature per cell (0 cold to 1 hot), from latitude, elevation and the temperature offset.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.heat"
+      }
+    },
+    {
+      "key": "moisture",
+      "kind": "field",
+      "label": "Moisture",
+      "description": "Moisture per cell (0 dry to 1 wet), from water proximity, rain shadow and the moisture offset.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.blue"
+      }
+    },
+    {
+      "key": "water_distance",
+      "kind": "field",
+      "label": "Water distance",
+      "description": "Hex steps to the nearest ocean, lake or river (rivers start with a penalty); saturates at 32.",
+      "type": "float",
+      "min": 0,
+      "max": 32,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.blue"
+      }
+    },
+    {
+      "key": "air_moisture",
+      "kind": "field",
+      "label": "Air moisture",
+      "description": "Moisture carried by the wind sweeps before rain-out.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.green"
+      }
+    },
+    {
+      "key": "rain_out",
+      "kind": "field",
+      "label": "Rain out",
+      "description": "Moisture dropped on each cell as rain (rain shadow diagnostic).",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.grey"
+      }
+    },
+    {
+      "key": "biome_score",
+      "kind": "field",
+      "label": "Biome score",
+      "description": "Climate score of the winning climate biome (0 is a perfect match, lower is a worse fit).",
+      "type": "float",
+      "min": -1,
+      "max": 0,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.heat"
+      }
+    },
+    {
+      "key": "biome_pin",
+      "kind": "field",
+      "label": "Biome pin",
+      "description": "Which pin rule fixed the biome before the climate score was used.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "none",
+          "label": "None",
+          "description": "Classified by climate score.",
+          "colour": "#6e7681"
+        },
+        {
+          "id": "wetland",
+          "label": "Wetland",
+          "description": "Wetland pin.",
+          "colour": "#4f9a8a"
+        },
+        {
+          "id": "alpine",
+          "label": "Alpine",
+          "description": "Alpine pin.",
+          "colour": "#d8dde5"
+        },
+        {
+          "id": "volcanic",
+          "label": "Volcanic",
+          "description": "Volcanic pin.",
+          "colour": "#c8553d"
+        },
+        {
+          "id": "water",
+          "label": "Water",
+          "description": "Ocean or lake.",
+          "colour": "#2f6fb5"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "biome_index",
+      "kind": "field",
+      "label": "Biome",
+      "description": "Final biome per cell.",
+      "type": "enum",
+      "valuesFrom": {
+        "format": "cow.biomes",
+        "records": "biomes",
+        "id": "id",
+        "label": "name",
+        "colour": "colour",
+        "description": "description"
+      },
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "fixup_changes",
+      "kind": "field",
+      "label": "Biome fix-ups",
+      "description": "Cells changed by a stage 14 fix-up after the climate pick.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "none",
+          "label": "None",
+          "description": "Not changed.",
+          "colour": "#3a424c"
+        },
+        {
+          "id": "zone",
+          "label": "Zone",
+          "description": "Changed because the biome is not valid in the depth zone.",
+          "colour": "#e0a030"
+        },
+        {
+          "id": "neighbour",
+          "label": "Neighbour",
+          "description": "Changed to remove a forbidden neighbour pair.",
+          "colour": "#d84a8a"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "regions",
+      "kind": "field",
+      "label": "Regions",
+      "description": "Region id per cell (S-1 region partition). Categorical colours cycle so neighbouring ids differ; empty until a Regenerate.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "none",
+          "label": "None",
+          "description": "Ocean, or regions not computed (they are placed on Regenerate only).",
+          "colour": "#1a1e24"
+        },
+        {
+          "id": "region1",
+          "label": "Region 1",
+          "description": "Region id 1 (and id 64: ids past 63 cycle).",
+          "colour": "#e25a5a"
+        },
+        {
+          "id": "region2",
+          "label": "Region 2",
+          "description": "Region id 2.",
+          "colour": "#25d057"
+        },
+        {
+          "id": "region3",
+          "label": "Region 3",
+          "description": "Region id 3.",
+          "colour": "#c086ea"
+        },
+        {
+          "id": "region4",
+          "label": "Region 4",
+          "description": "Region id 4.",
+          "colour": "#d8ca64"
+        },
+        {
+          "id": "region5",
+          "label": "Region 5",
+          "description": "Region id 5.",
+          "colour": "#31abc4"
+        },
+        {
+          "id": "region6",
+          "label": "Region 6",
+          "description": "Region id 6.",
+          "colour": "#e28dbb"
+        },
+        {
+          "id": "region7",
+          "label": "Region 7",
+          "description": "Region id 7.",
+          "colour": "#83d369"
+        },
+        {
+          "id": "region8",
+          "label": "Region 8",
+          "description": "Region id 8.",
+          "colour": "#3d37be"
+        },
+        {
+          "id": "region9",
+          "label": "Region 9",
+          "description": "Region id 9.",
+          "colour": "#dfab90"
+        },
+        {
+          "id": "region10",
+          "label": "Region 10",
+          "description": "Region id 10.",
+          "colour": "#5ae2af"
+        },
+        {
+          "id": "region11",
+          "label": "Region 11",
+          "description": "Region id 11.",
+          "colour": "#c225d0"
+        },
+        {
+          "id": "region12",
+          "label": "Region 12",
+          "description": "Region id 12.",
+          "colour": "#d5ea86"
+        },
+        {
+          "id": "region13",
+          "label": "Region 13",
+          "description": "Region id 13.",
+          "colour": "#649ed8"
+        },
+        {
+          "id": "region14",
+          "label": "Region 14",
+          "description": "Region id 14.",
+          "colour": "#c4314f"
+        },
+        {
+          "id": "region15",
+          "label": "Region 15",
+          "description": "Region id 15.",
+          "colour": "#8de294"
+        },
+        {
+          "id": "region16",
+          "label": "Region 16",
+          "description": "Region id 16.",
+          "colour": "#9169d3"
+        },
+        {
+          "id": "region17",
+          "label": "Region 17",
+          "description": "Region id 17.",
+          "colour": "#be9137"
+        },
+        {
+          "id": "region18",
+          "label": "Region 18",
+          "description": "Region id 18.",
+          "colour": "#90dfdc"
+        },
+        {
+          "id": "region19",
+          "label": "Region 19",
+          "description": "Region id 19.",
+          "colour": "#e25ac0"
+        },
+        {
+          "id": "region20",
+          "label": "Region 20",
+          "description": "Region id 20.",
+          "colour": "#73d025"
+        },
+        {
+          "id": "region21",
+          "label": "Region 21",
+          "description": "Region id 21.",
+          "colour": "#8696ea"
+        },
+        {
+          "id": "region22",
+          "label": "Region 22",
+          "description": "Region id 22.",
+          "colour": "#d87364"
+        },
+        {
+          "id": "region23",
+          "label": "Region 23",
+          "description": "Region id 23.",
+          "colour": "#31c46f"
+        },
+        {
+          "id": "region24",
+          "label": "Region 24",
+          "description": "Region id 24.",
+          "colour": "#ca8de2"
+        },
+        {
+          "id": "region25",
+          "label": "Region 25",
+          "description": "Region id 25.",
+          "colour": "#d3d369"
+        },
+        {
+          "id": "region26",
+          "label": "Region 26",
+          "description": "Region id 26.",
+          "colour": "#3796be"
+        },
+        {
+          "id": "region27",
+          "label": "Region 27",
+          "description": "Region id 27.",
+          "colour": "#df90b1"
+        },
+        {
+          "id": "region28",
+          "label": "Region 28",
+          "description": "Region id 28.",
+          "colour": "#6be25a"
+        },
+        {
+          "id": "region29",
+          "label": "Region 29",
+          "description": "Region id 29.",
+          "colour": "#4225d0"
+        },
+        {
+          "id": "region30",
+          "label": "Region 30",
+          "description": "Region id 30.",
+          "colour": "#eab486"
+        },
+        {
+          "id": "region31",
+          "label": "Region 31",
+          "description": "Region id 31.",
+          "colour": "#64d8bc"
+        },
+        {
+          "id": "region32",
+          "label": "Region 32",
+          "description": "Region id 32.",
+          "colour": "#c431bd"
+        },
+        {
+          "id": "region33",
+          "label": "Region 33",
+          "description": "Region id 33.",
+          "colour": "#c6e28d"
+        },
+        {
+          "id": "region34",
+          "label": "Region 34",
+          "description": "Region id 34.",
+          "colour": "#6990d3"
+        },
+        {
+          "id": "region35",
+          "label": "Region 35",
+          "description": "Region id 35.",
+          "colour": "#be3742"
+        },
+        {
+          "id": "region36",
+          "label": "Region 36",
+          "description": "Region id 36.",
+          "colour": "#90dfa1"
+        },
+        {
+          "id": "region37",
+          "label": "Region 37",
+          "description": "Region id 37.",
+          "colour": "#9f5ae2"
+        },
+        {
+          "id": "region38",
+          "label": "Region 38",
+          "description": "Region id 38.",
+          "colour": "#d0ad25"
+        },
+        {
+          "id": "region39",
+          "label": "Region 39",
+          "description": "Region id 39.",
+          "colour": "#86e1ea"
+        },
+        {
+          "id": "region40",
+          "label": "Region 40",
+          "description": "Region id 40.",
+          "colour": "#d864ac"
+        },
+        {
+          "id": "region41",
+          "label": "Region 41",
+          "description": "Region id 41.",
+          "colour": "#61c431"
+        },
+        {
+          "id": "region42",
+          "label": "Region 42",
+          "description": "Region id 42.",
+          "colour": "#8d90e2"
+        },
+        {
+          "id": "region43",
+          "label": "Region 43",
+          "description": "Region id 43.",
+          "colour": "#d38469"
+        },
+        {
+          "id": "region44",
+          "label": "Region 44",
+          "description": "Region id 44.",
+          "colour": "#37be81"
+        },
+        {
+          "id": "region45",
+          "label": "Region 45",
+          "description": "Region id 45.",
+          "colour": "#d290df"
+        },
+        {
+          "id": "region46",
+          "label": "Region 46",
+          "description": "Region id 46.",
+          "colour": "#d0e25a"
+        },
+        {
+          "id": "region47",
+          "label": "Region 47",
+          "description": "Region id 47.",
+          "colour": "#2588d0"
+        },
+        {
+          "id": "region48",
+          "label": "Region 48",
+          "description": "Region id 48.",
+          "colour": "#ea86a2"
+        },
+        {
+          "id": "region49",
+          "label": "Region 49",
+          "description": "Region id 49.",
+          "colour": "#64d865"
+        },
+        {
+          "id": "region50",
+          "label": "Region 50",
+          "description": "Region id 50.",
+          "colour": "#5d31c4"
+        },
+        {
+          "id": "region51",
+          "label": "Region 51",
+          "description": "Region id 51.",
+          "colour": "#e2bf8d"
+        },
+        {
+          "id": "region52",
+          "label": "Region 52",
+          "description": "Region id 52.",
+          "colour": "#69d3c7"
+        },
+        {
+          "id": "region53",
+          "label": "Region 53",
+          "description": "Region id 53.",
+          "colour": "#be37a6"
+        },
+        {
+          "id": "region54",
+          "label": "Region 54",
+          "description": "Region id 54.",
+          "colour": "#badf90"
+        },
+        {
+          "id": "region55",
+          "label": "Region 55",
+          "description": "Region id 55.",
+          "colour": "#5a7be2"
+        },
+        {
+          "id": "region56",
+          "label": "Region 56",
+          "description": "Region id 56.",
+          "colour": "#d02d25"
+        },
+        {
+          "id": "region57",
+          "label": "Region 57",
+          "description": "Region id 57.",
+          "colour": "#86eaa8"
+        },
+        {
+          "id": "region58",
+          "label": "Region 58",
+          "description": "Region id 58.",
+          "colour": "#ae64d8"
+        },
+        {
+          "id": "region59",
+          "label": "Region 59",
+          "description": "Region id 59.",
+          "colour": "#c4b931"
+        },
+        {
+          "id": "region60",
+          "label": "Region 60",
+          "description": "Region id 60.",
+          "colour": "#8dd0e2"
+        },
+        {
+          "id": "region61",
+          "label": "Region 61",
+          "description": "Region id 61.",
+          "colour": "#d3699d"
+        },
+        {
+          "id": "region62",
+          "label": "Region 62",
+          "description": "Region id 62.",
+          "colour": "#52be37"
+        },
+        {
+          "id": "region63",
+          "label": "Region 63",
+          "description": "Region id 63.",
+          "colour": "#9890df"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "strata_set",
+      "kind": "field",
+      "label": "Stratum set",
+      "description": "An extra stratum set (strata.json set other than depth): the stratum number of each cell, 0 = none. One shared palette: stratum k has the same colour in every set.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "none",
+          "label": "None",
+          "description": "Ocean, or a cell the set does not assign.",
+          "colour": "#1a1e24"
+        },
+        {
+          "id": "stratum1",
+          "label": "Stratum 1",
+          "description": "The set's stratum number 1 (declaration order in strata.json).",
+          "colour": "#e25a5a"
+        },
+        {
+          "id": "stratum2",
+          "label": "Stratum 2",
+          "description": "The set's stratum number 2 (declaration order in strata.json).",
+          "colour": "#25d057"
+        },
+        {
+          "id": "stratum3",
+          "label": "Stratum 3",
+          "description": "The set's stratum number 3 (declaration order in strata.json).",
+          "colour": "#c086ea"
+        },
+        {
+          "id": "stratum4",
+          "label": "Stratum 4",
+          "description": "The set's stratum number 4 (declaration order in strata.json).",
+          "colour": "#d8ca64"
+        },
+        {
+          "id": "stratum5",
+          "label": "Stratum 5",
+          "description": "The set's stratum number 5 (declaration order in strata.json).",
+          "colour": "#31abc4"
+        },
+        {
+          "id": "stratum6",
+          "label": "Stratum 6",
+          "description": "The set's stratum number 6 (declaration order in strata.json).",
+          "colour": "#e08a3c"
+        },
+        {
+          "id": "stratum7",
+          "label": "Stratum 7",
+          "description": "The set's stratum number 7 (declaration order in strata.json).",
+          "colour": "#7a8cf0"
+        },
+        {
+          "id": "stratum8",
+          "label": "Stratum 8",
+          "description": "The set's stratum number 8 (declaration order in strata.json).",
+          "colour": "#a0d86a"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    }
+  ]
+}

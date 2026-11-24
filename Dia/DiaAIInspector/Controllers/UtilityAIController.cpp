@@ -11,7 +11,7 @@ void UtilityAIController::Init(Dia::Editor::WebUIBridge* bridge)
 
 void UtilityAIController::OnPayload(const Json::Value& payload)
 {
-    mBridge->NotifyUIDataChanged("ai_inspector.utility_ai", payload);
+    if (mBridge) mBridge->NotifyUIDataChanged("ai_inspector.utility_ai", payload);
 }
 
 } // namespace Dia::AIInspector

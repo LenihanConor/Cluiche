@@ -8,7 +8,7 @@ void PathResult::ToWorldPositions(float cellSize,
     outPositions.RemoveAll();
     for (unsigned int i = 0; i < cells.Size(); ++i)
     {
-        const CellCoord& c = cells[i];
+        const Dia::Geometry2D::CellCoord& c = cells[i];
         outPositions.Add(Dia::Maths::Vector2D(
             static_cast<float>(c.x) * cellSize,
             static_cast<float>(c.y) * cellSize));

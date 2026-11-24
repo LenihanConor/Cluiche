@@ -37,4 +37,11 @@ non_responsibilities:
   - Component type definition (DiaReflect)
 
 spec: docs/specs/systems/dia/DiaEntityTemplateEditor.md
+dependent_modules:
+  - dia.core.containers.arrays
+  - dia.core.crc
+  - dia.core.json.external.json
+  - dia.editor
+  - dia.entity
+  - dia.observation
 ---

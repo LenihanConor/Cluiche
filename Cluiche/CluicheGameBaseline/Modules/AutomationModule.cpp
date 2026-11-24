@@ -8,6 +8,7 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaValueSchema/DescribeSession.h>
 
 // Full instantiation lives here — header only forward-declares to avoid
 // pulling Application.h into every TU that includes AutomationModule.h.
@@ -37,11 +38,13 @@ Dia::ApplicationFlow::StartResult AutomationModule::DoStart()
         new Dia::Automation::AutomationService(*app));
 
     mService->RegisterCommands();
-    mService->EnableNavigationHold();
+    // Describe mode (`--describe-schema --stage X`) queues its own TransitionTo; a hold nobody releases would pin the app in Boot.
+    if (!Dia::ValueSchema::DescribeSession::IsActive())
+        mService->EnableNavigationHold();
 
     mAutomationServiceStream->Register(*mService);
 
-    DIA_LOG_INFO("Automation", "AutomationModule started — hold active, commands registered");
+    DIA_LOG_INFO("Automation", "AutomationModule started — commands registered");
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 

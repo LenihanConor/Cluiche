@@ -66,6 +66,5 @@ dependencies:
     - dia.core.crc
     - dia.core.json.external.json
     - dia.core.strings
-    - dia.core.type
   forbidden: []
 ---

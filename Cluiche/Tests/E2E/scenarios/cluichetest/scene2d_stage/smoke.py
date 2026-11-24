@@ -21,10 +21,10 @@ def test_scene2d_stage(dia_client):
     assert result["passed"], f"Layer resolution failed: {result['message']}"
 
     entity_count = dia_client.get_metric("cluichetest.scene2d.entity_count")
-    assert entity_count == 3, f"Expected 3 entities (1 disabled), got {entity_count}"
+    assert entity_count == 4, f"Expected 4 entities (entity_a-c + ConorPlayer; entity_d disabled), got {entity_count}"
 
     layer_count = dia_client.get_metric("cluichetest.scene2d.layer_count")
-    assert layer_count == 3, f"Expected 3 layers, got {layer_count}"
+    assert layer_count == 5, f"Expected 5 layers (4 in test_scene.diascene + 1 table-implicit), got {layer_count}"
 
     dia_client.navigate_to("Boot")
 

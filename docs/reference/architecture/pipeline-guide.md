@@ -189,7 +189,7 @@ The built output is then copied to `bin/` alongside the binary.
 ```toml
 [targets.cluichetest.deploy]
 files = [
-  { src = "External/SFML/Current-x64/bin/sfml-window-3.dll", dest = "$(OutDir)" },
+  { src = "Dia/DiaUIUltralight/Deploy/*",                      dest = "$(OutDir)" },
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame",   dest = "$(OutDir)assets/" },
 ]
 ```

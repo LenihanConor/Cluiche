@@ -28,7 +28,6 @@ non_responsibilities:
 
 dependent_modules:
   - dia.core.core
-  - dia.core.containers.arrays
 
 public_api:
   headers:
@@ -42,6 +41,5 @@ public_api:
 dependencies:
   required:
     - dia.core.core
-    - dia.core.type
   forbidden: []
 ---

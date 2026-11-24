@@ -12,6 +12,7 @@ from typing import Dict, List, Set, Tuple
 
 import click
 
+from dia_cli.utils.library_roots import iter_module_docs, strip_root
 from dia_cli.utils.repo_root import find_repo_root
 
 
@@ -26,6 +27,11 @@ _SANITIZER_OUTPUT_NAMES = {
 # ---------------------------------------------------------------------------
 # YAML frontmatter parser (no PyYAML dependency)
 # ---------------------------------------------------------------------------
+
+def _dep_item(raw: str) -> str:
+    """A YAML list item's value: drop a trailing ``# comment`` and surrounding quotes."""
+    return raw.split(" #", 1)[0].strip().strip('"').strip("'")
+
 
 def _parse_frontmatter(text: str) -> dict:
     """Extract key fields from dia.module.v1 YAML frontmatter."""
@@ -44,24 +50,43 @@ def _parse_frontmatter(text: str) -> dict:
     fm_lines = lines[1:end]
     result: dict = {"dependent_modules": []}
 
+    # Declared dependencies come from two spellings: the legacy top-level
+    # ``dependent_modules:`` list and ``dependencies: required/optional`` lists.
+    # Both feed ``dependent_modules``; ``forbidden`` is deliberately ignored.
     in_deps = False
+    in_dependencies = False
+    dep_list_active = False
     for line in fm_lines:
         if line.startswith("module_id:"):
             result["module_id"] = line.split(":", 1)[1].strip().strip('"').strip("'")
-            in_deps = False
+            in_deps = in_dependencies = dep_list_active = False
         elif line.startswith("path:"):
             result["path"] = line.split(":", 1)[1].strip().strip('"').strip("'")
-            in_deps = False
+            in_deps = in_dependencies = dep_list_active = False
+        elif line.startswith("parent_module_id:"):
+            result["parent_module_id"] = line.split(":", 1)[1].strip().strip('"').strip("'")
+            in_deps = in_dependencies = dep_list_active = False
         elif line.startswith("dependent_modules:"):
             rest = line.split(":", 1)[1].strip()
             if rest == "[]":
                 result["dependent_modules"] = []
             in_deps = True
+            in_dependencies = dep_list_active = False
+        elif line.startswith("dependencies:"):
+            in_dependencies = True
+            in_deps = dep_list_active = False
+        elif in_dependencies and re.match(r"  (required|optional|forbidden):", line):
+            key = re.match(r"  (required|optional|forbidden):", line).group(1)
+            dep_list_active = key in ("required", "optional")
+        elif in_dependencies and dep_list_active and re.match(r"    - ", line):
+            dep = _dep_item(line.strip()[2:])
+            if dep not in result["dependent_modules"]:
+                result["dependent_modules"].append(dep)
         elif in_deps and line.startswith("  - "):
-            dep = line[4:].strip().strip('"').strip("'")
+            dep = _dep_item(line[4:])
             result["dependent_modules"].append(dep)
-        elif not line.startswith("  ") and not line.startswith("\t"):
-            in_deps = False
+        elif not line.startswith("  ") and not line.startswith("	"):
+            in_deps = in_dependencies = dep_list_active = False
 
     return result
 
@@ -93,10 +118,7 @@ def _build_path_to_module_map(modules: List[dict]) -> Dict[str, str]:
     """Map directory prefixes (e.g. 'DiaCore/Containers/') to module_ids."""
     mapping: Dict[str, str] = {}
     for mod in modules:
-        path = mod.get("path", "")
-        if path.startswith("Dia/"):
-            path = path[4:]  # Strip leading "Dia/" to match include style
-        path = path.rstrip("/")
+        path = strip_root(mod.get("path", ""))  # strip Dia/ or Draoi/ to match include style
         if path:
             mapping[path] = mod["module_id"]
     return mapping
@@ -168,6 +190,7 @@ def _run_cppcheck(ctx) -> None:
         "--suppress=*:Cluiche/out/*",
         "--max-ctu-depth=4",
         str(repo_root / "Dia"),
+        str(repo_root / "Draoi"),
         str(repo_root / "Cluiche"),
     ]
 
@@ -307,7 +330,7 @@ def _cppcheck_xml_to_sarif(xml_text: str) -> dict:
     }
 
 
-def _run_sanitizer(config: str, ctx) -> None:
+def _run_sanitizer(config: str, ctx, filter_pattern: str | None = None) -> None:
     normalized = _CONFIG_ALIASES.get(config, config)
     if normalized not in _SANITIZER_OUTPUT_NAMES:
         click.echo(
@@ -343,32 +366,86 @@ def _run_sanitizer(config: str, ctx) -> None:
         ctx.exit(1); return
 
     click.echo(f"[dia check] Running {exe_path.name} under {normalized} ...")
+    exe_cmd = [str(exe_path)]
+    if filter_pattern:
+        click.echo(f"[dia check] Filter: {filter_pattern}")
+        exe_cmd.append(f"--gtest_filter={filter_pattern}")
+    from dia_cli.utils.asan_runtime import with_asan_runtime_on_path
     run_result = subprocess.run(
-        [str(exe_path)],
+        exe_cmd,
         cwd=str(exe_path.parent),
         capture_output=True,
         text=True,
+        env=with_asan_runtime_on_path(None, normalized),
     )
+    stdout = run_result.stdout or ""
+    stderr = run_result.stderr or ""
+    code = run_result.returncode
+    code_text = _describe_exit_code(code)
 
     out_dir = repo_root / "Cluiche" / "out" / "check"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / _SANITIZER_OUTPUT_NAMES[normalized]
-    out_file.write_text(run_result.stderr, encoding="utf-8")
+    out_file.write_text(
+        f"# exit code: {code_text}\n# ---- stdout ----\n{stdout}\n# ---- stderr ----\n{stderr}",
+        encoding="utf-8",
+    )
+    click.echo(f"[dia check] Output written to {out_file}")
+
+    combined = stdout + chr(10) + stderr
 
     findings = [
-        line for line in run_result.stderr.splitlines()
-        if "ERROR:" in line or "runtime error:" in line
+        line.strip() for line in combined.splitlines()
+        if "ERROR:" in line or "runtime error:" in line or "AddressSanitizer:" in line
     ]
     count = len(findings)
 
-    click.echo(f"[dia check] Output written to {out_file}")
-    if count == 0:
-        click.echo("[dia check] No sanitizer findings detected.")
-    else:
-        click.echo(f"[dia check] {count} sanitizer finding(s) detected.")
+    passed = re.findall(r"\[  PASSED  \] (\d+) tests?", combined)
+    failed_lines = [l.strip() for l in combined.splitlines() if l.startswith("[  FAILED  ]")]
+    tests_ran = int(passed[-1]) if passed else 0
+    if passed:
+        click.echo(f"[dia check] gtest: [  PASSED  ] {tests_ran} tests")
+    if failed_lines:
+        click.echo(f"[dia check] gtest: {failed_lines[-1]}")
 
-    if run_result.returncode != 0:
-        ctx.exit(run_result.returncode); return
+    if count:
+        click.echo(f"[dia check] {count} sanitizer finding(s) detected.")
+        distinct = list(dict.fromkeys(findings))[:5]
+        for line in distinct:
+            click.echo(f"  {line}")
+        ctx.exit(code if 0 < code < 256 else 1); return
+
+    if code != 0:
+        click.echo(
+            f"[dia check] Test run FAILED (exit {code_text}) - this is NOT a clean pass",
+            err=True,
+        )
+        ctx.exit(code if 0 < code < 256 else 1); return
+
+    if tests_ran < 1:
+        click.echo(
+            "[dia check] No gtest summary with passed tests found - this is NOT a clean pass",
+            err=True,
+        )
+        ctx.exit(1); return
+
+    click.echo("[dia check] No sanitizer findings detected.")
+
+
+_KNOWN_EXIT_CODES = {
+    0xC0000135: "STATUS_DLL_NOT_FOUND",
+    0xC0000005: "STATUS_ACCESS_VIOLATION",
+    0xC0000409: "STATUS_STACK_BUFFER_OVERRUN",
+}
+
+
+def _describe_exit_code(code: int) -> str:
+    unsigned = code & 0xFFFFFFFF
+    if 0 <= code < 256:
+        return str(code)
+    name = _KNOWN_EXIT_CODES.get(unsigned)
+    text = f"{code} / 0x{unsigned:08X}"
+    return f"{text} {name}" if name else text
 
 
 # ---------------------------------------------------------------------------
@@ -397,45 +474,71 @@ def cppcheck(ctx, accept_baseline: bool) -> None:
 @click.option("--config", default="Asan", metavar="CONFIG",
               type=click.Choice(["Asan", "Ubsan"], case_sensitive=True),
               help="Sanitizer config: Asan or Ubsan (default: Asan).")
+@click.option("--filter", "filter_pattern", default=None, metavar="PATTERN",
+              help="Run only tests matching PATTERN (passed to --gtest_filter). "
+                   "ASan aborts at the first error, so use this to isolate suites.")
 @click.pass_context
-def sanitizer(ctx, config: str) -> None:
+def sanitizer(ctx, config: str, filter_pattern: str | None) -> None:
     """Build and run googletest under ASan or UBSan sanitizer."""
-    _run_sanitizer(config, ctx)
+    _run_sanitizer(config, ctx, filter_pattern)
 
 
-@cli.command("deps")
-@click.option("--fix", is_flag=True, default=False,
-              help="Auto-add missing deps to module docs.")
-@click.option("--verbose", is_flag=True, default=False,
-              help="Show each module being checked.")
-@click.pass_context
-def deps(ctx, fix: bool, verbose: bool) -> None:
-    """Validate module dependency declarations against actual #includes."""
-    repo_root = find_repo_root(__file__)
+# Root grouping docs whose dependent_modules must list every direct child module.
+_STRICT_ROOTS = frozenset({"draoi.root"})
 
-    # 1. Find all module.md files (exclude worktrees)
-    module_files = [f for f in repo_root.glob("Dia/**/dia.*.architecture.module.md")
-                    if ".claude" not in str(f)]
-    if not module_files:
-        click.echo("No module files found.")
-        return
 
-    # 2. Parse all modules
+_PROJECT_REF_RE = re.compile(r'<ProjectReference\s+Include="([^"]+)"')
+
+
+def _project_referenced_dirs(mod_path: Path) -> Set[str]:
+    """Folder names of every project the module's own .vcxproj files reference.
+
+    A ProjectReference is a real build dependency even when no #include shows it
+    (link order, transitive static libs), so it counts as a legitimate declaration.
+    """
+    dirs: Set[str] = set()
+    for proj in mod_path.glob("*.vcxproj"):
+        try:
+            text = proj.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        for ref in _PROJECT_REF_RE.findall(text):
+            parent = Path(ref.replace("\\", "/")).parent.name
+            if parent:
+                dirs.add(parent)
+    return dirs
+
+
+def _collect_dependency_issues(repo_root: Path, on_module=None, on_start=None):
+    """Compare declared module dependencies with actual #includes under every library root.
+
+    Returns (modules, missing, stale); modules is None when no module docs exist.
+    Root grouping docs (path is just ``Dia`` or ``Draoi``) are skipped, and each
+    module's own scan excludes files owned by child modules.
+    """
     modules: List[dict] = []
-    for mf in module_files:
+    for mf in iter_module_docs(repo_root):
         fm = _parse_frontmatter(mf.read_text(encoding="utf-8", errors="ignore"))
         if fm.get("module_id") and fm.get("path"):
             fm["_file"] = mf
             modules.append(fm)
+    if not modules:
+        return None, [], []
 
-    click.echo(f"Checking {len(modules)} modules...\n")
-
-    # 3. Build path→module map (skip modules with very short paths like "Dia/")
-    modules = [m for m in modules if len(m.get("path", "").rstrip("/").split("/")) >= 3]
+    # Root grouping modules (path "Dia" / "Draoi") own no code of their own.
+    root_docs = [m for m in modules if not strip_root(m["path"])]
+    modules = [m for m in modules if strip_root(m["path"])]
+    if on_start:
+        on_start(len(modules))
 
     path_map = _build_path_to_module_map(modules)
+    dep_dir = {m["module_id"]: Path(m["path"]).name for m in modules}
+    child_ids: Dict[str, Set[str]] = {}
+    for m in modules:
+        if m.get("parent_module_id"):
+            child_ids.setdefault(m["parent_module_id"], set()).add(m["module_id"])
+    module_dirs = [repo_root / m["path"] for m in modules]
 
-    # 4. For each module, scan its sources
     missing: List[Tuple[str, str, str]] = []  # (module_id, included_module, include_path)
     stale: List[Tuple[str, str]] = []  # (module_id, declared_dep)
 
@@ -444,32 +547,98 @@ def deps(ctx, fix: bool, verbose: bool) -> None:
         mod_path = repo_root / mod["path"]
         declared_deps = set(mod.get("dependent_modules", []))
 
-        if verbose:
-            click.echo(f"  {module_id} ({mod_path})")
-
+        if on_module:
+            on_module(module_id, mod_path)
         if not mod_path.exists():
             continue
 
+        child_dirs = [d for d in module_dirs if d != mod_path and mod_path in d.parents]
         used_modules: Set[str] = set()
-        for ext in ("*.h", "*.cpp"):
+        for ext in ("*.h", "*.cpp", "*.inl"):
             for src in mod_path.rglob(ext):
+                if child_dirs and any(cd in src.parents for cd in child_dirs):
+                    continue
                 for inc in _scan_includes(src):
                     resolved = _resolve_include_to_module(inc, path_map)
                     if resolved and resolved != module_id:
                         if not resolved.startswith(module_id + ".") and not module_id.startswith(resolved + "."):
                             used_modules.add(resolved)
 
-        for used in used_modules:
-            if used not in declared_deps:
+        # A declared module covers its own submodules (declaring dia.core covers dia.core.crc).
+        for used in sorted(used_modules):
+            if not any(used == d or used.startswith(d + ".") for d in declared_deps):
                 missing.append((module_id, used, ""))
 
-        for declared in declared_deps:
-            if declared not in used_modules:
-                stale.append((module_id, declared))
+        linked_dirs = _project_referenced_dirs(mod_path)
+        for declared in sorted(declared_deps):
+            if any(u == declared or u.startswith(declared + ".") for u in used_modules):
+                continue
+            if declared in dep_dir and dep_dir[declared] in linked_dirs:
+                continue  # no #include, but the vcxproj references it: a real build dependency
+            if declared.startswith(module_id + ".") or declared in child_ids.get(module_id, ()):
+                continue  # a parent lists its own children (schema: dependent_modules = child modules)
+            stale.append((module_id, declared))
 
-    # 5. Report
+    # Strict roots list every direct child (a new Draoi package must be added to draoi.root).
+    # dia.root is not strict: its hand-written list predates the check.
+    for root_doc in root_docs:
+        if root_doc["module_id"] not in _STRICT_ROOTS:
+            continue
+        declared = set(root_doc.get("dependent_modules", []))
+        children = {m["module_id"] for m in modules if m.get("parent_module_id") == root_doc["module_id"]}
+        missing.extend((root_doc["module_id"], c, "") for c in sorted(children - declared))
+        stale.extend((root_doc["module_id"], d) for d in sorted(declared - children))
+    modules = modules + [m for m in root_docs if m["module_id"] in _STRICT_ROOTS]
+
+    return modules, missing, stale
+
+
+@cli.command("deps")
+@click.option("--fix", is_flag=True, default=False,
+              help="Auto-add missing deps to module docs.")
+@click.option("--verbose", is_flag=True, default=False,
+              help="Show each module being checked.")
+@click.option("--accept-baseline", "accept_baseline", is_flag=True, default=False,
+              help="Record current issues in docs/reference/registry/deps-baseline.json; only issues beyond it fail.")
+@click.pass_context
+def deps(ctx, fix: bool, verbose: bool, accept_baseline: bool) -> None:
+    """Validate module dependency declarations against actual #includes."""
+    repo_root = find_repo_root(__file__)
+
+    modules, missing, stale = _collect_dependency_issues(
+        repo_root, on_module=(lambda mid, path: click.echo(f"  {mid} ({path})")) if verbose else None,
+        on_start=lambda n: click.echo(f"Checking {n} modules...\n"),
+    )
+    if modules is None:
+        click.echo("No module files found.")
+        return
+
+    # 5. Report (issues already in the baseline are counted but do not fail the run)
+    baseline_path = repo_root / "docs" / "reference" / "registry" / "deps-baseline.json"
+    current = {f"missing|{m}|{d}" for m, d, _ in missing} | {f"stale|{m}|{d}" for m, d in stale}
+
+    if accept_baseline:
+        baseline_path.parent.mkdir(parents=True, exist_ok=True)
+        baseline_path.write_text(
+            json.dumps({"issues": sorted(current)}, indent=2) + "\n", encoding="utf-8")
+        click.echo(f"[dia check] Accepted {len(current)} dependency issue(s) as baseline -> {baseline_path}")
+        ctx.exit(0)
+        return
+
+    baseline: Set[str] = set()
+    if baseline_path.exists():
+        try:
+            baseline = set(json.loads(baseline_path.read_text(encoding="utf-8")).get("issues", []))
+        except (json.JSONDecodeError, OSError):
+            baseline = set()
+    missing = [x for x in missing if f"missing|{x[0]}|{x[1]}" not in baseline]
+    stale = [x for x in stale if f"stale|{x[0]}|{x[1]}" not in baseline]
+    baselined = len(current & baseline)
+    fixed = len(baseline - current)
+    note = f" ({baselined} baselined" + (f", {fixed} baseline entries now fixed" if fixed else "") + ")" if baseline else ""
+
     if not missing and not stale:
-        click.echo(f"All {len(modules)} modules OK — dependencies match includes.")
+        click.echo(f"All {len(modules)} modules OK — dependencies match includes{note}.")
         return
 
     if missing:
@@ -482,12 +651,13 @@ def deps(ctx, fix: bool, verbose: bool) -> None:
         for mod_id, dep_id in stale:
             click.echo(f"  {mod_id} → declares {dep_id} but no includes found")
 
-    click.echo(f"\nSummary: {len(missing) + len(stale)} issues ({len(missing)} missing, {len(stale)} stale)")
+    click.echo(f"\nSummary: {len(missing) + len(stale)} issues ({len(missing)} missing, {len(stale)} stale){note}")
 
     # 6. Auto-fix if requested
     if fix and missing:
         click.echo("\nApplying fixes...")
         fixes_by_module: Dict[str, List[str]] = {}
+        unfixable = 0
         for mod_id, dep_id, _ in missing:
             fixes_by_module.setdefault(mod_id, []).append(dep_id)
 
@@ -495,6 +665,15 @@ def deps(ctx, fix: bool, verbose: bool) -> None:
             if mod["module_id"] in fixes_by_module:
                 mf = mod["_file"]
                 text = mf.read_text(encoding="utf-8")
+                if "dependent_modules:" not in text:
+                    click.echo(
+                        f"  CANNOT FIX {mod['module_id']}: declares dependencies under "
+                        f"'dependencies:' (required/optional), which --fix does not edit. "
+                        f"Add by hand: {', '.join(fixes_by_module[mod['module_id']])}",
+                        err=True,
+                    )
+                    unfixable += 1
+                    continue
                 for dep_to_add in fixes_by_module[mod["module_id"]]:
                     if "dependent_modules: []" in text:
                         text = text.replace(
@@ -519,6 +698,8 @@ def deps(ctx, fix: bool, verbose: bool) -> None:
                         text = "".join(result)
                 mf.write_text(text, encoding="utf-8")
                 click.echo(f"  Fixed {mod['module_id']}")
+        if unfixable:
+            click.echo(f"{unfixable} module(s) could not be fixed automatically (see above).", err=True)
 
     ctx.exit(1 if (missing or stale) else 0)
 
@@ -528,8 +709,10 @@ def deps(ctx, fix: bool, verbose: bool) -> None:
               help="Limit scan to a specific module subtree (e.g. dia.core).")
 @click.option("--summary", "summary_only", is_flag=True, default=False,
               help="Print totals only, no per-file detail.")
+@click.option("--html", "html_path", default=None, type=click.Path(dir_okay=False, path_type=Path),
+              metavar="PATH", help="Also write the Module Tower, a visual HTML report, to PATH.")
 @click.pass_context
-def arch(ctx, module_filter: str | None, summary_only: bool) -> None:
+def arch(ctx, module_filter: str | None, summary_only: bool, html_path: Path | None) -> None:
     """Check architecture layer rules and forbidden dependencies."""
     from dia_cli.commands.check.arch_checker import run_arch_check, format_violations
 
@@ -540,6 +723,10 @@ def arch(ctx, module_filter: str | None, summary_only: bool) -> None:
     output = format_violations(violations, warnings, summary_only=summary_only)
     if output:
         click.echo(output)
+    if html_path is not None:
+        from dia_cli.commands.check.arch_tower import write_tower_html
+
+        click.echo(f"[dia check] Module Tower written to {write_tower_html(repo_root, violations, html_path)}")
     ctx.exit(exit_code)
 
 
@@ -619,7 +806,28 @@ def sln_sync(ctx, dry_run: bool) -> None:
 # spec-sync helpers
 # ---------------------------------------------------------------------------
 
-_PUBLIC_INTERFACES_RE = re.compile(r'^## Public Interfaces?\s*$', re.MULTILINE)
+# Matches "## Public Interfaces", "### Public Interface", and "### Public interfaces (sketch; ...)".
+# Does not match "## Public Interface Changes".
+_PUBLIC_INTERFACES_RE = re.compile(
+    r'^(#{2,4}) Public [Ii]nterfaces?(?:\s*\(.*\))?\s*$', re.MULTILINE)
+# App folder (under docs/specs/applications/) -> source dirs (relative to repo root) its symbols may live in.
+# Layer order is Application -> Draoi -> Dia: an application spec may name Draoi or Dia types,
+# a Draoi spec may name Draoi or Dia types, a Dia spec only Dia types.
+_APP_SOURCE_DIRS = {
+    "dia": ["Dia"],
+    "draoi": ["Draoi", "Dia"],
+    "cow": ["Cluiche/CoW", "Draoi", "Dia"],
+    "cluichetest": ["Cluiche/CluicheTest", "Draoi", "Dia"],
+    "cluicheeditor": ["Cluiche/CluicheEditor", "Draoi", "Dia"],
+    "cluichegamebaseline": ["Cluiche/CluicheGameBaseline", "Draoi", "Dia"],
+    "googletests": ["Cluiche/Tests", "Draoi", "Dia"],
+}
+_DEFAULT_SOURCE_DIRS = ["Dia", "Draoi", "Cluiche"]
+
+
+def _source_dirs_for(app: str) -> List[str]:
+    return _APP_SOURCE_DIRS.get(app, _DEFAULT_SOURCE_DIRS)
+_SKIP_DIRS = {"out", "bin", "obj", "External", "node_modules"}
 _CPP_BLOCK_RE = re.compile(r'```cpp\s*.*?```', re.DOTALL)
 _CLASS_STRUCT_RE = re.compile(r'\b(?:class|struct)\s+([A-Z][A-Za-z0-9_]+)')
 _SPEC_STATUS_RE = re.compile(r'\*\*Status:\*\*\s*`?(\w[\w ]*?)`?\s*$', re.MULTILINE)
@@ -632,7 +840,8 @@ def _extract_spec_symbols(spec_text: str) -> List[str]:
         return []
 
     start = m.end()
-    next_sec = re.search(r'^## ', spec_text[start:], re.MULTILINE)
+    level = len(m.group(1))
+    next_sec = re.search(r'^#{1,%d} ' % level, spec_text[start:], re.MULTILINE)
     section = spec_text[start: start + next_sec.start()] if next_sec else spec_text[start:]
 
     symbols: List[str] = []
@@ -644,11 +853,13 @@ def _extract_spec_symbols(spec_text: str) -> List[str]:
     return symbols
 
 
-def _build_header_index(dia_dir: Path) -> Set[str]:
-    """Scan all .h files under dia_dir and return every PascalCase word found."""
+def _build_header_index(root_dir: Path) -> Set[str]:
+    """Scan all .h files under root_dir (skipping build output) and return every PascalCase word found."""
     word_re = re.compile(r'\b([A-Z][A-Za-z0-9_]+)\b')
     found: Set[str] = set()
-    for header in dia_dir.rglob("*.h"):
+    for header in root_dir.rglob("*.h"):
+        if _SKIP_DIRS.intersection(header.relative_to(root_dir).parts):
+            continue
         try:
             text = header.read_text(encoding="utf-8", errors="ignore")
             found.update(word_re.findall(text))
@@ -673,6 +884,10 @@ def _spec_status(spec_text: str) -> str:
     return m.group(1).strip() if m else "Unknown"
 
 
+def _spec_app(spec_path: Path, specs_dir: Path) -> str:
+    return spec_path.relative_to(specs_dir).parts[0]
+
+
 def _render_sync_table(rows: list) -> str:
     lines = [
         "# Spec Sync Status",
@@ -680,17 +895,23 @@ def _render_sync_table(rows: list) -> str:
         "_Refresh by running `dia check spec-sync`. Commit the result to keep it visible in the site._",
         "",
         "Symbols are extracted from each spec's **Public Interfaces** section (class/struct names only).",
-        "A symbol is ✅ if it appears anywhere under `Dia/` headers; ⚠️ if absent.",
+        "A symbol is ✅ if it appears in a header under the spec's application source dir (or `Dia/`); ⚠️ if absent.",
+        "Limits: this checks class/struct names only. It cannot see prose drift (stale statuses, changed execution models).",
         "",
-        "| Spec | Spec Status | Sync | Symbols Found | Missing |",
-        "|------|-------------|------|---------------|---------|",
     ]
-    for row in rows:
-        lines.append(
-            f"| {row['spec']} | {row['spec_status']} | {row['sync']} "
-            f"| {row['found']} | {row['missing']} |"
-        )
-    lines.append("")
+    for app in sorted({r["app"] for r in rows}):
+        lines += [
+            f"## {app}",
+            "",
+            "| Spec | Spec Status | Sync | Symbols Found | Missing |",
+            "|------|-------------|------|---------------|---------|",
+        ]
+        for row in (r for r in rows if r["app"] == app):
+            lines.append(
+                f"| {row['spec']} | {row['spec_status']} | {row['sync']} "
+                f"| {row['found']} | {row['missing']} |"
+            )
+        lines.append("")
     return "\n".join(lines)
 
 
@@ -699,7 +920,7 @@ def _render_sync_table(rows: list) -> str:
               help="Print each spec being processed.")
 @click.pass_context
 def spec_sync(ctx, verbose: bool) -> None:
-    """Check if spec Public Interfaces symbols exist in Dia headers.
+    """Check if spec Public Interfaces symbols exist in the app's headers (Dia/ and Cluiche/<App>/).
 
     Reads every system spec under docs/specs/applications/, extracts class/struct
     names from the Public Interfaces section, then checks whether each name appears
@@ -710,7 +931,6 @@ def spec_sync(ctx, verbose: bool) -> None:
     """
     repo_root = find_repo_root(__file__)
     specs_dir = repo_root / "docs" / "specs" / "applications"
-    dia_dir = repo_root / "Dia"
     out_path = repo_root / "docs" / "reference" / "registry" / "spec-sync-status.md"
 
     if not specs_dir.exists():
@@ -718,9 +938,19 @@ def spec_sync(ctx, verbose: bool) -> None:
         ctx.exit(1)
         return
 
-    click.echo("[dia check] Indexing Dia/ headers...")
-    header_index = _build_header_index(dia_dir)
-    click.echo(f"[dia check] {len(header_index)} distinct PascalCase symbols indexed.")
+    click.echo("[dia check] Indexing headers...")
+    dir_indexes: Dict[str, Set[str]] = {}
+
+    def _index_for(app: str) -> Set[str]:
+        dirs = _source_dirs_for(app)
+        merged: Set[str] = set()
+        for d in dirs:
+            if d not in dir_indexes:
+                dir_indexes[d] = _build_header_index(repo_root / d) if (repo_root / d).exists() else set()
+            merged |= dir_indexes[d]
+        return merged
+
+    app_indexes: Dict[str, Set[str]] = {}
 
     specs = _collect_specs(specs_dir)
     click.echo(f"[dia check] Scanning {len(specs)} system specs...")
@@ -738,11 +968,16 @@ def spec_sync(ctx, verbose: bool) -> None:
         except OSError:
             continue
 
+        app = _spec_app(spec_path, specs_dir)
+        if app not in app_indexes:
+            app_indexes[app] = _index_for(app)
+        header_index = app_indexes[app]
         status = _spec_status(text)
         symbols = _extract_spec_symbols(text)
 
         if not symbols:
             rows.append({
+                "app": app,
                 "spec": spec_path.stem,
                 "spec_status": status,
                 "sync": "—",
@@ -764,6 +999,7 @@ def spec_sync(ctx, verbose: bool) -> None:
             sync_icon = "⚠️"
 
         rows.append({
+            "app": app,
             "spec": spec_path.stem,
             "spec_status": status,
             "sync": sync_icon,
@@ -1376,3 +1612,5 @@ def debugger_contract(ctx, verbose: bool) -> None:
     # Exit non-zero for any failure or pending check
     if fail_count > 0 or pending_count > 0:
         ctx.exit(1)
+from dia_cli.commands.check.stage_proves_cmd import stage_proves_cmd
+cli.add_command(stage_proves_cmd)

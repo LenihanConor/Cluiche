@@ -18,6 +18,7 @@ namespace Dia
 			constexpr TraceCategory kDiaAnimation       = 1u << 4;
 			constexpr TraceCategory kdiaentitytemplate          = 1u << 5;
 			constexpr TraceCategory kDiaScene           = 1u << 6;
+			constexpr TraceCategory kDiaDeferredStep   = 1u << 7;
 			constexpr TraceCategory kAll                = ~0u;
 		}
 	}

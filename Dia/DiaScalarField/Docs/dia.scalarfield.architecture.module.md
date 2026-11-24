@@ -70,8 +70,6 @@ dependencies:
     - dia.maths
     - dia.observation
   optional:
-    - dia.rules (RulesPropagationPolicy adaptor only)
-    - dia.visualdebugger (ScalarFieldOverlay adaptor only)
   forbidden:
     - dia.pathfinding
     - dia.flowfield

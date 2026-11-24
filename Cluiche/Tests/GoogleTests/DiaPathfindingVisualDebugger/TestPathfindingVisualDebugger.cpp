@@ -15,11 +15,11 @@
 #include <DiaPathfindingVisualDebugger/GridPassabilityDrawer.h>
 #include <DiaPathfinding/SquarePathGrid.h>
 #include <DiaPathfinding/PathResult.h>
-#include <DiaPathfinding/CellCoord.h>
+#include <DiaGeometry2D/Grid/CellCoord.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaMaths/Vector/Vector2D.h>
@@ -106,7 +106,7 @@ Dia::Pathfinding::PathResult MakeLinearPath(int numCells, float costPerStep = 1.
     r.success = (numCells >= 2);
     r.totalCost = static_cast<float>(numCells - 1) * costPerStep;
     for (int i = 0; i < numCells; ++i)
-        r.cells.Add(Dia::Pathfinding::CellCoord{ i, 0 });
+        r.cells.Add(Dia::Geometry2D::CellCoord{ i, 0 });
     return r;
 }
 
@@ -375,7 +375,7 @@ TEST(PathfindingVisualDebugger_GridPassability, CellsMatchGrid)
 TEST(PathfindingVisualDebugger_GridPassability, PassableImpassableColoursDiffer)
 {
     Dia::Pathfinding::SquarePathGrid grid(2, 1);
-    grid.SetPassable(Dia::Pathfinding::CellCoord{0, 0}, false); // impassable
+    grid.SetPassable(Dia::Geometry2D::CellCoord{0, 0}, false); // impassable
     // cell {1,0} stays passable
     Dia::Pathfinding::PathResult result;
     StubDebugContext ctx;

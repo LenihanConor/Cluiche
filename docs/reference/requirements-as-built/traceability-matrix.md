@@ -43,12 +43,12 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 | **DE-001** | ✅ | P0 | `Dia/DiaApplicationFlow/ApplicationProcessingUnit.h`<br>`Dia/DiaApplicationFlow/ApplicationPhase.h`<br>`Dia/DiaApplicationFlow/ApplicationModule.h`<br>No platform headers in Dia core modules |
 | **DE-002** | ✅ | P0 | `Dia/DiaCore/Containers/Arrays/DiaCoreArray.h`<br>`Dia/DiaCore/Containers/Arrays/DiaCoreDynamicArray.h`<br>`Dia/DiaCore/Containers/HashTables/DiaCoreHashTable.h`<br>`Dia/DiaCore/Containers/Graphs/DiaCoreGraph.h`<br>`Dia/DiaCore/Containers/LinkLists/DiaCoreLinkList.h`<br>`Dia/DiaCore/Containers/BitFlags/DiaCoreBitFlag.h` |
 | **DE-003** | ✅ | P0 | `Dia/DiaCore/CRC/DiaCoreCRC.h` (StringCRC)<br>`Dia/DiaCore/Type/DiaCoreTypeRegistry.h`<br>`Dia/DiaCore/Type/DiaCoreTypeDefinition.h` |
-| **DE-004** | ✅ | P0 | `Dia/DiaGraphics/Interface/ICanvas.h`<br>`Dia/DiaSFML/DiaSFMLRenderWindow.h` (SFML backend) |
+| **DE-004** | ✅ | P0 | `Dia/DiaGraphics/Interface/ICanvas.h`<br>`Dia/DiaBgfx/Canvas.h` (bgfx backend) |
 | **DE-005** | ✅ | P1 | `Dia/DiaMaths/Vector/DiaMathsVector2D.h`<br>`Dia/DiaMaths/Vector/DiaMathsVector3D.h`<br>`Dia/DiaMaths/Matrix/DiaMathsMatrix33.h`<br>`Dia/DiaMaths/Matrix/DiaMathsMatrix44.h`<br>`Dia/DiaMaths/Transform/DiaMathsTransform2D.h`<br>`Dia/DiaMaths/Shape/Circle.h`<br>`Dia/DiaMaths/Shape/AABB.h` |
 | **DE-006** | ⚠️ | P1 | `Dia/DiaMaths/Core/DiaMathsRandom.h` (fixed, thread-safe)<br>`Dia/DiaMaths/Transform/DiaMathsTransform2D.h` (⚠️ not thread-safe) |
-| **DE-007** | ✅ | P1 | `Dia/DiaInput/DiaInputEvent.h`<br>`Dia/DiaInput/DiaInputInputSourceManager.h`<br>`Dia/DiaInput/IInputSource.h`<br>`Dia/DiaSFML/DiaSFMLInputSource.h` (SFML backend) |
+| **DE-007** | ✅ | P1 | `Dia/DiaInput/DiaInputEvent.h`<br>`Dia/DiaInput/DiaInputInputSourceManager.h`<br>`Dia/DiaInput/IInputSource.h`<br>`Dia/DiaSDL/InputSource.h` (SDL3 backend) |
 | **DE-008** | ✅ | P1 | `Dia/DiaUI/Interface/IUISystem.h` |
-| **DE-009** | ✅ | P1 | `Dia/DiaWindow/Interface/IWindow.h`<br>`Dia/DiaSFML/DiaSFMLRenderWindow.h` (SFML backend) |
+| **DE-009** | ✅ | P1 | `Dia/DiaWindow/Interface/IWindow.h`<br>`Dia/DiaSDL/Window.h` (SDL3 backend) |
 | **DE-010** | ❌ | P2 | Not implemented (stub in `/docs/05-api/dia/physics-api.md`) |
 | **DE-011** | ❌ | P2 | Not implemented (stub in `/docs/05-api/dia/ai-api.md`) |
 
@@ -58,7 +58,7 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 
 | Req ID | Status | Priority | Implementation Files / Verification |
 |--------|--------|----------|-------------------------------------|
-| **NF-001** | ✅ | P0 | `Cluiche/ApplicationFlow/ProcessingUnits/RenderProcessingUnit.cpp`<br>`Dia/DiaSFML/DiaSFMLRenderWindow.cpp:SetVSync(true)`<br>Verified: 60 FPS in Debug and Release |
+| **NF-001** | ✅ | P0 | `Cluiche/ApplicationFlow/ProcessingUnits/RenderProcessingUnit.cpp`<br>`Dia/DiaBgfx/Canvas.h` (VSync via ICanvas::Settings)<br>Verified: 60 FPS in Debug and Release |
 | **NF-002** | 🚧 | P1 | `Cluiche/ApplicationFlow/ProcessingUnits/SimProcessingUnit.cpp`<br>Needs profiling and optimization |
 | **NF-003** | ✅ | P1 | All modules use RAII for resource management<br>Verified: No memory leaks detected |
 | **NF-004** | ✅ | P2 | Lazy initialization throughout<br>Verified: < 2s Debug, < 1s Release |
@@ -72,7 +72,7 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 | **NF-012** | ✅ | P1 | `/docs/reference/development/coding-standards.md`<br>Code follows documented standards |
 | **NF-013** | ✅ | P0 | `Cluiche/Cluiche.sln` - Visual Studio solution<br>External dependencies included in repository |
 | **NF-014** | ✅ | P1 | Windows support verified<br>No platform headers in Dia core<br>Backend abstraction in place |
-| **NF-015** | ✅ | P1 | `/docs/reference/architecture/external-dependencies.md`<br>SFML, JsonCpp documented |
+| **NF-015** | ✅ | P1 | `/docs/reference/architecture/external-dependencies.md`<br>SDL3, bgfx, JsonCpp documented |
 
 ---
 
@@ -125,7 +125,7 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 | **DR-020** | ✅ | P1 | `Dia/DiaInput/DiaInputInputSourceManager.h`<br>`Dia/DiaInput/IInputSource.h` |
 | **DR-021** | ⚠️ | P1 | `Dia/DiaUI/Interface/IUISystem.h` |
 | **DR-022** | ✅ | P0 | `Dia/DiaWindow/Interface/IWindow.h` |
-| **DR-023** | ✅ | P0 | `Dia/DiaSFML/DiaSFMLRenderWindow.h`<br>`Dia/DiaSFML/DiaSFMLInputSource.h`<br>`Dia/DiaSFML/DiaSFMLSoundManager.h` |
+| **DR-023** | ✅ | P0 | `Dia/DiaSDL/Window.h`<br>`Dia/DiaSDL/InputSource.h`<br>`Dia/DiaBgfx/Canvas.h` |
 | **DR-024** | ✅ | P1 | `Dia/DiaCore/FilePath/Path.h`<br>`Dia/DiaCore/FilePath/FilePath.h` |
 | **DR-025** | ✅ | P1 | `Dia/DiaCore/FilePath/IFileLoad.h`<br>`Dia/DiaCore/FilePath/FileLoad.h` |
 | **DR-026** | ❌ | P2 | Not implemented (stub in docs) |

@@ -1,5 +1,6 @@
 **Spec:** @docs/specs/applications/dia/systems/diamessagebus/diamessagebus.md
 **Status:** Done
+**Follow-on:** bus-traffic-recorder tracked in [bus-traffic-recorder.plan.md](bus-traffic-recorder.plan.md).
 
 > Declaration-first system. The through-line is the authoring loop (B): design messages in a `.diagamemessages` doc → `dia codegen messages` generates structs + registration wiring → build the system out by filling in handler slots. The last-tick ledger and the in-game visual debugger are in scope. Only the Inspector tier (cross-PU `ServiceStream` export + live CluicheEditor Inspector) is deferred (see bottom).
 >

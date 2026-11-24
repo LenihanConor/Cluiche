@@ -14,6 +14,7 @@ dependencies:
     - dia.condition
     - dia.core
     - dia.entity
+    - dia.observation
   forbidden: []
 ---
 

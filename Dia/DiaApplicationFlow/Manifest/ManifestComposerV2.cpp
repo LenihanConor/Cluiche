@@ -6,6 +6,8 @@
 
 #include <fstream>
 #include <memory>
+#include <string>
+#include <string.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -195,6 +197,197 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //-----------------------------------------------------------------------------
+    // ReadPresets (internal)
+    // Reads the optional "presets" array of a .diastage into the manifest's shared
+    // preset table. Malformed field or preset: logged and ignored, stage still loads.
+    //-----------------------------------------------------------------------------
+
+    static std::string CompactJson(const Json::Value& v)
+    {
+        Json::FastWriter writer;
+        std::string text = writer.write(v);
+        while (!text.empty() && (text.back() == '\n' || text.back() == '\r'))
+            text.pop_back();
+        return text;
+    }
+
+    static void ReadPresets(const Json::Value& stageRoot, const char* diastagePath, ApplicationManifestV3& manifest)
+    {
+        if (!stageRoot.isMember("presets"))
+            return;
+
+        const Json::Value& presetsJson = stageRoot["presets"];
+        if (!presetsJson.isArray())
+        {
+            DIA_LOG_WARNING("ApplicationFlow", "ManifestComposerV2: .diastage '%s' 'presets' is not an array - ignoring presets", diastagePath);
+            return;
+        }
+
+        if (!stageRoot.isMember("name") || !stageRoot["name"].isString())
+        {
+            DIA_LOG_WARNING("ApplicationFlow", "ManifestComposerV2: .diastage '%s' has presets but no 'name' - ignoring presets", diastagePath);
+            return;
+        }
+
+        const std::string stageNameText = stageRoot["name"].asString();
+        const Dia::Core::StringCRC stageName(stageNameText.c_str());
+        StageDeclaration* stage = nullptr;
+        for (unsigned int i = 0; i < manifest.stages.Size(); ++i)
+        {
+            if (manifest.stages[i].name == stageName)
+            {
+                stage = &manifest.stages[i];
+                break;
+            }
+        }
+        if (stage == nullptr)
+        {
+            DIA_LOG_WARNING("ApplicationFlow", "ManifestComposerV2: .diastage '%s' stage '%s' is not declared in the base manifest - ignoring presets",
+                diastagePath, stageNameText.c_str());
+            return;
+        }
+        if (stage->presetCount != 0)
+        {
+            DIA_LOG_WARNING("ApplicationFlow", "ManifestComposerV2: stage '%s' already has presets - ignoring presets from '%s'",
+                stageNameText.c_str(), diastagePath);
+            return;
+        }
+
+        stage->presetFirst = manifest.presets.Size();
+
+        for (unsigned int i = 0; i < presetsJson.size(); ++i)
+        {
+            const Json::Value& entry = presetsJson[i];
+
+            if (stage->presetCount >= kMaxPresetsPerStage)
+            {
+                DIA_LOG_WARNING("ApplicationFlow", "ManifestComposerV2: stage '%s' has more than %u presets - ignoring the rest (%s)",
+                    stageNameText.c_str(), kMaxPresetsPerStage, diastagePath);
+                break;
+            }
+
+            if (!entry.isObject() || !entry.isMember("name") || !entry["name"].isString())
+            {
+                DIA_LOG_WARNING("ApplicationFlow", "ManifestComposerV2: '%s' presets[%u] is not an object with a string 'name' - ignored", diastagePath, i);
+                continue;
+            }
+
+            const std::string name = entry["name"].asString();
+            if (name.empty() || name.size() > kMaxPresetNameLength)
+            {
+                DIA_LOG_WARNING("ApplicationFlow", "ManifestComposerV2: '%s' presets[%u] name '%s' is empty or longer than %u chars - ignored",
+                    diastagePath, i, name.c_str(), kMaxPresetNameLength);
+                continue;
+            }
+
+            std::string description;
+            if (entry.isMember("description"))
+            {
+                if (!entry["description"].isString())
+                {
+                    DIA_LOG_WARNING("ApplicationFlow", "ManifestComposerV2: '%s' preset '%s' description is not a string - preset ignored", diastagePath, name.c_str());
+                    continue;
+                }
+                description = entry["description"].asString();
+                if (description.size() > kMaxPresetDescLength)
+                {
+                    DIA_LOG_WARNING("ApplicationFlow", "ManifestComposerV2: '%s' preset '%s' description longer than %u chars - preset ignored",
+                        diastagePath, name.c_str(), kMaxPresetDescLength);
+                    continue;
+                }
+            }
+
+            const Dia::Core::StringCRC nameCrc(name.c_str());
+            bool duplicate = false;
+            for (unsigned int k = 0; k < stage->presetCount; ++k)
+            {
+                if (manifest.presets[stage->presetFirst + k].name == nameCrc)
+                {
+                    duplicate = true;
+                    break;
+                }
+            }
+            if (duplicate)
+            {
+                DIA_LOG_WARNING("ApplicationFlow", "ManifestComposerV2: '%s' duplicate preset name '%s' - later one ignored", diastagePath, name.c_str());
+                continue;
+            }
+
+            if (!entry.isMember("modules") || !entry["modules"].isObject())
+            {
+                DIA_LOG_WARNING("ApplicationFlow", "ManifestComposerV2: '%s' preset '%s' 'modules' is missing or not an object - preset ignored", diastagePath, name.c_str());
+                continue;
+            }
+            const Json::Value& modulesJson = entry["modules"];
+
+            if (modulesJson.size() > kMaxPresetModules)
+            {
+                DIA_LOG_WARNING("ApplicationFlow", "ManifestComposerV2: '%s' preset '%s' has %u modules (max %u) - preset ignored",
+                    diastagePath, name.c_str(), modulesJson.size(), kMaxPresetModules);
+                continue;
+            }
+
+            if (CompactJson(modulesJson).size() > kMaxPresetJsonBytes)
+            {
+                DIA_LOG_WARNING("ApplicationFlow", "ManifestComposerV2: '%s' preset '%s' JSON exceeds %u bytes - preset ignored",
+                    diastagePath, name.c_str(), kMaxPresetJsonBytes);
+                continue;
+            }
+
+            if (manifest.presets.Size() >= kMaxManifestPresets)
+            {
+                DIA_LOG_ERROR("ApplicationFlow", "ManifestComposerV2: manifest preset table full (%u) - preset '%s' in '%s' ignored",
+                    kMaxManifestPresets, name.c_str(), diastagePath);
+                continue;
+            }
+
+            // Validate module values and gather their compact text before touching the pool
+            PresetDeclaration preset;
+            std::string texts[kMaxPresetModules];
+            bool valid = true;
+            unsigned int needed = 0;
+            const Json::Value::Members keys = modulesJson.getMemberNames();
+            for (unsigned int k = 0; k < keys.size(); ++k)
+            {
+                const Json::Value& value = modulesJson[keys[k]];
+                if (!value.isObject())
+                {
+                    DIA_LOG_WARNING("ApplicationFlow", "ManifestComposerV2: '%s' preset '%s' module '%s' override is not an object - preset ignored",
+                        diastagePath, name.c_str(), keys[k].c_str());
+                    valid = false;
+                    break;
+                }
+                texts[k] = CompactJson(value);
+                needed += static_cast<unsigned int>(texts[k].size()) + 1;
+            }
+            if (!valid)
+                continue;
+
+            if (manifest.presetOverridePoolUsed + needed > kPresetOverridePoolBytes)
+            {
+                DIA_LOG_ERROR("ApplicationFlow", "ManifestComposerV2: preset override pool full (%u/%u bytes) - preset '%s' in '%s' ignored",
+                    manifest.presetOverridePoolUsed, kPresetOverridePoolBytes, name.c_str(), diastagePath);
+                continue;
+            }
+
+            preset.name = nameCrc;
+            memcpy(preset.description, description.c_str(), description.size() + 1);
+            preset.moduleCount = static_cast<unsigned int>(keys.size());
+            for (unsigned int k = 0; k < keys.size(); ++k)
+            {
+                preset.modules[k].instanceId = Dia::Core::StringCRC(keys[k].c_str());
+                preset.modules[k].offset = manifest.presetOverridePoolUsed;
+                preset.modules[k].length = static_cast<unsigned int>(texts[k].size());
+                memcpy(manifest.presetOverridePool + manifest.presetOverridePoolUsed, texts[k].c_str(), texts[k].size() + 1);
+                manifest.presetOverridePoolUsed += preset.modules[k].length + 1;
+            }
+
+            manifest.presets.Add(preset);
+            ++stage->presetCount;
+        }
+    }
+
+    //-----------------------------------------------------------------------------
     // ManifestComposerV2::MergeStage
     // Reads a .diastage file, resolves its referenced .diaapp, loads it into a
     // temporary ApplicationManifestV3, then appends each stage PU's modules to
@@ -280,6 +473,8 @@ namespace Dia { namespace ApplicationFlow {
                     stageManifestPath, stagePU.instanceId.AsChar());
             }
         }
+
+        ReadPresets(stageRoot, diastagePath, outManifest);
 
         return ComposeResult::kSuccess;
     }

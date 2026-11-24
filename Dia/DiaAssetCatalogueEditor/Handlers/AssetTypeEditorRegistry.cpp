@@ -37,7 +37,19 @@ namespace Dia
 				return true;
 			}
 
-			Dia::Core::StringCRC AssetTypeEditorRegistry::FindEditorForType(
+			bool AssetTypeEditorRegistry::UnregisterTypeEditor(
+					const Dia::Core::StringCRC& assetTypeId,
+					const Dia::Core::StringCRC& editorPluginTypeId)
+				{
+					const Dia::Core::StringCRC* found = mMap.TryGetItemConst(assetTypeId);
+					if (found == nullptr || !(*found == editorPluginTypeId))
+						return false;
+					mMap.Remove(assetTypeId);
+					--mCount;
+					return true;
+				}
+
+				Dia::Core::StringCRC AssetTypeEditorRegistry::FindEditorForType(
 				const Dia::Core::StringCRC& assetTypeId) const
 			{
 				const Dia::Core::StringCRC* found = mMap.TryGetItemConst(assetTypeId);

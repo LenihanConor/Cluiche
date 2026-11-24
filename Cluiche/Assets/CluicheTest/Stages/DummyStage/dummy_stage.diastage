@@ -1,6 +1,8 @@
 {
     "name": "DummyStage",
     "manifest": "Stages/DummyStage/misc/ApplicationFlow/dummy_stage.diaapp",
+    "tags": ["test", "e2e"],
+    "description": "Minimal end-to-end stage test",
     "config": {
         "path_aliases": {
             "stage_root": ".",

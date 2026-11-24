@@ -1,6 +1,8 @@
 {
     "name": "ArenaTestStage",
     "manifest": "Stages/ArenaTestStage/misc/ApplicationFlow/arena_test_stage.diaapp",
+    "tags": ["test", "ai"],
+    "description": "Multi-system E2E test with 6 AI systems",
     "config": {
         "path_aliases": { "stage_root": "." }
     }

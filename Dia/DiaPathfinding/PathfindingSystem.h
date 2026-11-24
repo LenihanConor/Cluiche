@@ -11,8 +11,8 @@ namespace Dia::Pathfinding {
 
     struct PathRequest {
         PathRequestId        id;
-        CellCoord            from;
-        CellCoord            to;
+        Dia::Geometry2D::CellCoord            from;
+        Dia::Geometry2D::CellCoord            to;
         IPathCostProvider*   costs;    // non-owning; must outlive the request
         IPathResultObserver* observer; // non-owning
     };

@@ -20,7 +20,7 @@ Manages WebSocket server lifecycle (start/stop/update) in the game process, acce
 - [x] Stop server cleanly on module shutdown
 - [x] Update server every frame (process messages)
 - [x] Handle multiple simultaneous editor connections
-- [x] Auto-start server in Debug builds, disabled in Release
+- [x] Auto-start server in Debug and Release builds (amended 2026-11-16, was "disabled in Release")
 - [x] Configuration via .diaapp manifest (editor.debug_server section)
 - [x] Logging for server lifecycle and connections
 
@@ -228,16 +228,9 @@ void DebugServerModule::HandleMessage(int connId, const Dia::WebSocket::Message&
 }
 ```
 
-### Release Build Exclusion
+### Release Builds (amended 2026-11-16)
 
-**Conditional Compilation:**
-```cpp
-#ifdef DIA_DEBUG
-    // Include DebugServerModule in Debug builds
-    pu->AddModule(new Dia::DebugServer::DebugServerModule(pu, "debug_server"));
-#endif
-// Release builds: module not included
-```
+The DebugServerModule is included in Release builds as well as Debug. There is no conditional compilation around it.
 
 ### GetConnectionCount
 
@@ -260,7 +253,7 @@ int DebugServerModule::GetConnectionCount() const {
 |--------|----|--------------------|------------|
 | Dia | AD-004 | ProcessingUnit/Phase/Module for apps | ✅ **Compliant** - DebugServerModule extends Module |
 | DiaDebugServer | DDS-001 | Generic system (not DiaApplicationFlow-specific) | ✅ **Compliant** - Can be used by any Dia app |
-| DiaDebugServer | DDS-004 | Always listen in Debug, disabled in Release | ✅ **Compliant** - Conditional compilation |
+| DiaDebugServer | DDS-004 | Always listen in Debug and Release (amended 2026-11-16) | ✅ **Compliant** - no conditional compilation |
 | DiaDebugServer | DDS-009 | Use DiaWebSocket::Server | ✅ **Compliant** - Uses WebSocket::Server |
 
 **All binding decisions: COMPLIANT ✅**

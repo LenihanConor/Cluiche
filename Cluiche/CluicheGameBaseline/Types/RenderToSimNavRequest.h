@@ -8,6 +8,7 @@ namespace Cluiche { namespace AppFlow {
 struct RenderToSimNavRequest
 {
     Dia::Core::StringCRC target;
+    Dia::Core::StringCRC preset;   // launch preset for the target stage; empty = none
 };
 
 } } // namespace Cluiche::AppFlow

@@ -1,0 +1,23 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "conf.events",
+  "entries": [
+    {
+      "key": "world.crisis",
+      "kind": "event",
+      "label": "Crisis",
+      "description": "A crisis began somewhere in the world.",
+      "type": "string",
+      "payload": [
+        { "name": "amount", "type": "float", "description": "Severity.", "unit": "kg" },
+        { "name": "who", "type": "string", "description": "Actor." }
+      ],
+      "vocabulary": [
+        { "id": "famine", "label": "Famine", "description": "Food ran out.", "unit": "x" },
+        { "id": "plague", "description": "Disease spread." }
+      ],
+      "ui": { "colour": "#ff0000", "glyph": "!" }
+    }
+  ]
+}

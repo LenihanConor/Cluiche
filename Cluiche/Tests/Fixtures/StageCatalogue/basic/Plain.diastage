@@ -1,0 +1,9 @@
+{
+    "name": "Plain",
+    "manifest": "Plain.stage.json",
+    "config": {
+        "path_aliases": {
+            "root": "."
+        }
+    }
+}

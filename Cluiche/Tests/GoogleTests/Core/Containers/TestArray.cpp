@@ -16,7 +16,7 @@ TEST(Array, ConstructionFromPointer_CopiesData)
 {
 	int cArray1[3] = {1, 2, 3};
 
-	EXPECT_DEATH(Array<int>(nullptr, 3), "");
+	DIA_EXPECT_DEATH(Array<int>(nullptr, 3), "");
 
 	Array<int> array1(&cArray1[0], 3);
 
@@ -61,9 +61,9 @@ TEST(Array, ConstructionWithRange_ExtractsSubarray)
 	int cArray[5] = {1, 2, 3, 4, 5};
 	Array<int> tempArray(cArray, 5);
 
-	EXPECT_DEATH(Array<int>(tempArray, 2, 0), "");
-	EXPECT_DEATH(Array<int>(tempArray, 5, 2), "");
-	EXPECT_DEATH(Array<int>(tempArray, 2, 10), "");
+	DIA_EXPECT_DEATH(Array<int>(tempArray, 2, 0), "");
+	DIA_EXPECT_DEATH(Array<int>(tempArray, 5, 2), "");
+	DIA_EXPECT_DEATH(Array<int>(tempArray, 2, 10), "");
 
 	Array<int> array1(tempArray, 1, 3);
 
@@ -151,8 +151,8 @@ TEST(Array, AssignFromPointer_OverwritesData)
 {
 	int cArray1[3] = {1, 2, 3};
 
-	EXPECT_DEATH({ Array<int> array0(3); array0.Assign(nullptr, 3); }, "");
-	EXPECT_DEATH({ Array<int> array1(3); array1.Assign(&cArray1[0], 10); }, "");
+	DIA_EXPECT_DEATH({ Array<int> array0(3); array0.Assign(nullptr, 3); }, "");
+	DIA_EXPECT_DEATH({ Array<int> array1(3); array1.Assign(&cArray1[0], 10); }, "");
 
 	Array<int> array1(3);
 	array1.Assign(&cArray1[0], 3);
@@ -213,9 +213,9 @@ TEST(Array, AssignWithRange_CopiesSubarray)
 	int cArray[5] = {1, 2, 3, 4, 5};
 	Array<int> tempArray(cArray, 5);
 
-	EXPECT_DEATH({ Array<int> array1(3); array1.Assign(tempArray, 2, 0); }, "");
-	EXPECT_DEATH({ Array<int> array1(3); array1.Assign(tempArray, 5, 2); }, "");
-	EXPECT_DEATH({ Array<int> array1(3); array1.Assign(tempArray, 2, 10); }, "");
+	DIA_EXPECT_DEATH({ Array<int> array1(3); array1.Assign(tempArray, 2, 0); }, "");
+	DIA_EXPECT_DEATH({ Array<int> array1(3); array1.Assign(tempArray, 5, 2); }, "");
+	DIA_EXPECT_DEATH({ Array<int> array1(3); array1.Assign(tempArray, 2, 10); }, "");
 
 	Array<int> array1;
 	array1.Reserve(3);
@@ -345,10 +345,10 @@ TEST(Array, ElementAccess_WorksCorrectlyWithBoundsChecking)
 
 	Array<int> array1(cArray1, 5);
 
-	EXPECT_DEATH({ [[maybe_unused]] int temp = array1[-1]; }, "");
-	EXPECT_DEATH({ [[maybe_unused]] int temp = array1[6]; }, "");
-	EXPECT_DEATH({ [[maybe_unused]] int temp = array1.At(-1); }, "");
-	EXPECT_DEATH({ [[maybe_unused]] int temp = array1.At(6); }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] int temp = array1[-1]; }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] int temp = array1[6]; }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] int temp = array1.At(-1); }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] int temp = array1.At(6); }, "");
 
 	EXPECT_EQ(array1[0], array1.At(0));
 	EXPECT_EQ(array1[1], array1.At(1));
@@ -547,9 +547,9 @@ TEST(Array, FindOperations_LocateElements)
 
 	OneLess oneLess;
 
-	EXPECT_DEATH(array1.FindBetweenIndex(5, -2, 3), "");
-	EXPECT_DEATH(array1.FindBetweenIndex(5, 3, 1), "");
-	EXPECT_DEATH(array1.FindBetweenIndex(5, 0, 17), "");
+	DIA_EXPECT_DEATH(array1.FindBetweenIndex(5, -2, 3), "");
+	DIA_EXPECT_DEATH(array1.FindBetweenIndex(5, 3, 1), "");
+	DIA_EXPECT_DEATH(array1.FindBetweenIndex(5, 0, 17), "");
 
 	EXPECT_EQ(array1.FindIndex(5), 4);
 	EXPECT_EQ(array1.FindIndex(7), 9);
@@ -585,9 +585,9 @@ TEST(Array, FindLastOperations_LocateLastOccurrence)
 
 	OneLess oneLess;
 
-	EXPECT_DEATH(array1.FindLastBetweenIndex(5, -2, 3), "");
-	EXPECT_DEATH(array1.FindLastBetweenIndex(5, 3, 1), "");
-	EXPECT_DEATH(array1.FindLastBetweenIndex(5, 0, 17), "");
+	DIA_EXPECT_DEATH(array1.FindLastBetweenIndex(5, -2, 3), "");
+	DIA_EXPECT_DEATH(array1.FindLastBetweenIndex(5, 3, 1), "");
+	DIA_EXPECT_DEATH(array1.FindLastBetweenIndex(5, 0, 17), "");
 
 	EXPECT_EQ(array1.FindLastIndex(5), 8);
 	EXPECT_EQ(array1.FindLastIndex(3), 6);

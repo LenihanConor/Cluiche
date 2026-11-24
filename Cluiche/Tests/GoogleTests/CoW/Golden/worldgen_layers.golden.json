@@ -1,0 +1,3823 @@
+{
+  "cases" : 
+  {
+    "archipelago/small/seed1" : 
+    {
+      "worldgen.air_moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC44B6C24E892C740",
+        "max" : 1,
+        "mean" : 0.83502428100468229,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.barrier_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xBE7C366482D7C87C",
+        "max" : 0.99860000610351562,
+        "mean" : 0.046787098824203788,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.basin_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC7B0119A39B15509",
+        "max" : 0.065544486045837402,
+        "mean" : 0.00075360642904671068,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_index" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7C0D4B129F1545B3",
+        "max" : 9,
+        "mean" : 1.123015873015873,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_pin" : 
+      {
+        "count" : 2772,
+        "hash" : "0xB8C2A68E31D8ACDA",
+        "max" : 4,
+        "mean" : 3.1421356421356421,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_score" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFF4B1E38FE2C0006",
+        "max" : 0,
+        "mean" : -0.15527595217241591,
+        "min" : -9.9564933776855469,
+        "nanCount" : 0
+      },
+      "worldgen.coast_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCDC378A0600897FA",
+        "max" : 18,
+        "mean" : 5.0205627705627709,
+        "min" : 1,
+        "nanCount" : 0
+      },
+      "worldgen.stratum" : 
+      {
+        "count" : 2772,
+        "hash" : "0x331A5D6922924113",
+        "max" : 3,
+        "mean" : 0.4494949494949495,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0xEB560548975FEC94",
+        "max" : 0.74913221597671509,
+        "mean" : 0.045958494643907867,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation_raw" : 
+      {
+        "count" : 2772,
+        "hash" : "0xBE6B17BB14FAE359",
+        "max" : 0.74913221597671509,
+        "mean" : 0.045442387936058926,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.filled_elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x0B4A7ADC5EE99E3F",
+        "max" : 0.74913221597671509,
+        "mean" : 0.046201640529044692,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.fixup_changes" : 
+      {
+        "count" : 2772,
+        "hash" : "0x20ACEB6DA1EC226A",
+        "max" : 2,
+        "mean" : 0.026334776334776336,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_accumulation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x24AC5F37E0BA8F74",
+        "max" : 273.60964965820312,
+        "mean" : 3.1777680351104571,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_direction" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE971BCE441F76B73",
+        "max" : 6,
+        "mean" : 4.770923520923521,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.island_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF82426684AD25DE7",
+        "max" : 1,
+        "mean" : 0.031818979703330717,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.lake_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x6329381768730623",
+        "max" : 1,
+        "mean" : 0.02813852813852814,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.land_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0xD62151A3030FC6AE",
+        "max" : 0.96405583620071411,
+        "mean" : -1e+9999,
+        "min" : -1e+9999,
+        "nanCount" : 0
+      },
+      "worldgen.landmass" : 
+      {
+        "count" : 2772,
+        "hash" : "0x5400AB55B4C1A48A",
+        "max" : 7,
+        "mean" : 0.79906204906204903,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.latitude" : 
+      {
+        "count" : 2772,
+        "hash" : "0xEC24F265D11D2C78",
+        "max" : 0.4444444477558136,
+        "mean" : 0.27777777017936822,
+        "min" : 0.1111111119389534,
+        "nanCount" : 0
+      },
+      "worldgen.moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x8422C5C6377C7E22",
+        "max" : 1,
+        "mean" : 0.89525444505663665,
+        "min" : 0.27491572499275208,
+        "nanCount" : 0
+      },
+      "worldgen.ocean_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE380E63684D71E78",
+        "max" : 1,
+        "mean" : 0.49068061711769256,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.pass_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCFE3CC8B5A1EF813",
+        "max" : 1,
+        "mean" : 0.01948051948051948,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.rain_out" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCE7D10F2887D4D34",
+        "max" : 1,
+        "mean" : 0.017075506095502079,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.regions" : 
+      {
+        "count" : 2772,
+        "hash" : "0x44310E26C4B04262",
+        "max" : 19,
+        "mean" : 3.0526695526695526,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.relief" : 
+      {
+        "count" : 2772,
+        "hash" : "0xEB560548975FEC94",
+        "max" : 0.74913221597671509,
+        "mean" : 0.045958494643907867,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.ridge_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xBFD936164152849D",
+        "max" : 0.97672080993652344,
+        "mean" : 0.01669240752060348,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.river_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA9FB156209449D5A",
+        "max" : 1,
+        "mean" : 0.016955266955266956,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.slope" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCAC7961C6AAE9D22",
+        "max" : 0.35480690002441406,
+        "mean" : 0.02579444098927371,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.temperature" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF7164A6E350E25ED",
+        "max" : 0.90555554628372192,
+        "mean" : 0.73631378701883998,
+        "min" : 0.33756589889526367,
+        "nanCount" : 0
+      },
+      "worldgen.terrain_type" : 
+      {
+        "count" : 2772,
+        "hash" : "0x73B2A31789FA3FC3",
+        "max" : 11,
+        "mean" : 1.7633477633477634,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.valley_carve" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCA9BAB2B23AC63E3",
+        "max" : 0.036000002175569534,
+        "mean" : 0.00024923380809697667,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.volcanic" : 
+      {
+        "count" : 2772,
+        "hash" : "0x43FF9A8BDB11835A",
+        "max" : 1,
+        "mean" : 0.00036075036075036075,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x813BF380EEAEFFBA",
+        "max" : 5,
+        "mean" : 0.51262626262626265,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_source" : 
+      {
+        "count" : 2772,
+        "hash" : "0xDA06EF79218C5563",
+        "max" : 3,
+        "mean" : 0.76370851370851367,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.zone_cost" : 
+      {
+        "count" : 2772,
+        "hash" : "0x5CD9D35864311292",
+        "max" : 28.132564544677734,
+        "mean" : 1.519601075680225,
+        "min" : 0,
+        "nanCount" : 0
+      }
+    },
+    "archipelago/small/seed2" : 
+    {
+      "worldgen.air_moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x1555EEBDF0055141",
+        "max" : 1,
+        "mean" : 0.82234949857785822,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.barrier_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x638F6FDFE867240D",
+        "max" : 0.99312049150466919,
+        "mean" : 0.045062498612837357,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.basin_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0x85993F7360EC28DA",
+        "max" : 0.057299584150314331,
+        "mean" : 0.00038980206402091234,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_index" : 
+      {
+        "count" : 2772,
+        "hash" : "0x0F824069A7B251A0",
+        "max" : 9,
+        "mean" : 1.1378066378066378,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_pin" : 
+      {
+        "count" : 2772,
+        "hash" : "0x8A1570A40A76105A",
+        "max" : 4,
+        "mean" : 3.0721500721500723,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_score" : 
+      {
+        "count" : 2772,
+        "hash" : "0x26E40F984E5E6514",
+        "max" : 0,
+        "mean" : -0.26234700975665476,
+        "min" : -21.682586669921875,
+        "nanCount" : 0
+      },
+      "worldgen.coast_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x2542B0F7E69E176A",
+        "max" : 23,
+        "mean" : 5.4650072150072146,
+        "min" : 1,
+        "nanCount" : 0
+      },
+      "worldgen.stratum" : 
+      {
+        "count" : 2772,
+        "hash" : "0x28C39F4B7673696A",
+        "max" : 3,
+        "mean" : 0.44444444444444442,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC93E8723053F34E3",
+        "max" : 0.75017678737640381,
+        "mean" : 0.043174806837809596,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation_raw" : 
+      {
+        "count" : 2772,
+        "hash" : "0x9197F397E289C69A",
+        "max" : 0.75017678737640381,
+        "mean" : 0.043584409082499248,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.filled_elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x78BA55D5F0B0A430",
+        "max" : 0.75017678737640381,
+        "mean" : 0.043975374334818358,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.fixup_changes" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCF50862C16525EA3",
+        "max" : 2,
+        "mean" : 0.027417027417027416,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_accumulation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x25D9BB62B602A90C",
+        "max" : 130.41287231445312,
+        "mean" : 1.961217260721958,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_direction" : 
+      {
+        "count" : 2772,
+        "hash" : "0xEF9E435EC0E8AD4A",
+        "max" : 6,
+        "mean" : 4.762626262626263,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.island_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4B7849EC8DBC4A7D",
+        "max" : 1,
+        "mean" : 0.028273415771913734,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.lake_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x44B1A2054543C75A",
+        "max" : 2,
+        "mean" : 0.016955266955266956,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.land_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0x779B3A56F416D4DA",
+        "max" : 0.97949278354644775,
+        "mean" : -1e+9999,
+        "min" : -1e+9999,
+        "nanCount" : 0
+      },
+      "worldgen.landmass" : 
+      {
+        "count" : 2772,
+        "hash" : "0x73B1A750A9EDC6EA",
+        "max" : 7,
+        "mean" : 0.54689754689754688,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.latitude" : 
+      {
+        "count" : 2772,
+        "hash" : "0xEC24F265D11D2C78",
+        "max" : 0.4444444477558136,
+        "mean" : 0.27777777017936822,
+        "min" : 0.1111111119389534,
+        "nanCount" : 0
+      },
+      "worldgen.moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE2303090CEE17D2D",
+        "max" : 1,
+        "mean" : 0.88105127904537262,
+        "min" : 0.21410457789897919,
+        "nanCount" : 0
+      },
+      "worldgen.ocean_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA488296B2715C91B",
+        "max" : 1,
+        "mean" : 0.48575036234691371,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.pass_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xDC29094DFE37B61A",
+        "max" : 1,
+        "mean" : 0.012626262626262626,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.rain_out" : 
+      {
+        "count" : 2772,
+        "hash" : "0x5BDAF567CE41E12B",
+        "max" : 1,
+        "mean" : 0.013123284172134054,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.regions" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7E93752C5A221DAD",
+        "max" : 16,
+        "mean" : 2.145743145743146,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.relief" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC93E8723053F34E3",
+        "max" : 0.75017678737640381,
+        "mean" : 0.043174806837809596,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.ridge_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x71F57849E88C9026",
+        "max" : 0.90813899040222168,
+        "mean" : 0.013083547955811625,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.river_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE9D8B99B6F150CCA",
+        "max" : 1,
+        "mean" : 0.01911976911976912,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.slope" : 
+      {
+        "count" : 2772,
+        "hash" : "0x828304459C8516C8",
+        "max" : 0.45592039823532104,
+        "mean" : 0.025141685775079338,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.temperature" : 
+      {
+        "count" : 2772,
+        "hash" : "0x513F81E0248A2003",
+        "max" : 0.90555554628372192,
+        "mean" : 0.73798399918523183,
+        "min" : 0.27452576160430908,
+        "nanCount" : 0
+      },
+      "worldgen.terrain_type" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3A09280323358F20",
+        "max" : 11,
+        "mean" : 1.7521645021645023,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.valley_carve" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC109785033850F32",
+        "max" : 0.036000002175569534,
+        "mean" : 0.00081824668164702313,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.volcanic" : 
+      {
+        "count" : 2772,
+        "hash" : "0x41E2D3C94BE4D53A",
+        "max" : 1,
+        "mean" : 0.00036075036075036075,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x40558CD0E005DA63",
+        "max" : 5,
+        "mean" : 0.58982683982683981,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_source" : 
+      {
+        "count" : 2772,
+        "hash" : "0x5DA3238ECE4C2563",
+        "max" : 3,
+        "mean" : 0.76695526695526695,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.zone_cost" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCB72CFC72268924D",
+        "max" : 24.851892471313477,
+        "mean" : 1.4339588563163559,
+        "min" : 0,
+        "nanCount" : 0
+      }
+    },
+    "archipelago/small/seed3" : 
+    {
+      "worldgen.air_moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0xEF7BDB4FF6C4B5FD",
+        "max" : 1,
+        "mean" : 0.83521267354225803,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.barrier_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x9B9049B00C7BD937",
+        "max" : 0.9994538426399231,
+        "mean" : 0.044516176028341098,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.basin_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4FD5E2F6752685B6",
+        "max" : 0.080939114093780518,
+        "mean" : 0.00071165677896481742,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_index" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3DC844C42A9C803A",
+        "max" : 9,
+        "mean" : 1.1255411255411256,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_pin" : 
+      {
+        "count" : 2772,
+        "hash" : "0xDFB7DE9F340CE153",
+        "max" : 4,
+        "mean" : 3.1212121212121211,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_score" : 
+      {
+        "count" : 2772,
+        "hash" : "0x28D251C24830BF11",
+        "max" : 0,
+        "mean" : -0.18481287450973877,
+        "min" : -11.112087249755859,
+        "nanCount" : 0
+      },
+      "worldgen.coast_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x14819364D10D7542",
+        "max" : 20,
+        "mean" : 5.3358585858585856,
+        "min" : 1,
+        "nanCount" : 0
+      },
+      "worldgen.stratum" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3F2AB50356E00643",
+        "max" : 3,
+        "mean" : 0.4411976911976912,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7A4561960229C43F",
+        "max" : 0.80955880880355835,
+        "mean" : 0.043124511221781223,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation_raw" : 
+      {
+        "count" : 2772,
+        "hash" : "0xDCD1906E4A6BEE78",
+        "max" : 0.80955880880355835,
+        "mean" : 0.042807072852597092,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.filled_elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x903270ED729FE072",
+        "max" : 0.80955880880355835,
+        "mean" : 0.043520069822217476,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.fixup_changes" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE1A506EB4C4D600A",
+        "max" : 2,
+        "mean" : 0.033549783549783552,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_accumulation" : 
+      {
+        "count" : 2772,
+        "hash" : "0xABDF771A03ABE17D",
+        "max" : 157.81588745117188,
+        "mean" : 1.8380779940500576,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_direction" : 
+      {
+        "count" : 2772,
+        "hash" : "0x9FD89EBC0926DB0A",
+        "max" : 6,
+        "mean" : 4.7871572871572869,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.island_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0xEE75A87E56412A24",
+        "max" : 1,
+        "mean" : 0.035166051308658047,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.lake_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3E34EDCD28E84A6A",
+        "max" : 2,
+        "mean" : 0.031385281385281384,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.land_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4F5E86636DE10C72",
+        "max" : 0.98678469657897949,
+        "mean" : -1e+9999,
+        "min" : -1e+9999,
+        "nanCount" : 0
+      },
+      "worldgen.landmass" : 
+      {
+        "count" : 2772,
+        "hash" : "0x8083E43182F6FB23",
+        "max" : 6,
+        "mean" : 0.48088023088023091,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.latitude" : 
+      {
+        "count" : 2772,
+        "hash" : "0xEC24F265D11D2C78",
+        "max" : 0.4444444477558136,
+        "mean" : 0.27777777017936822,
+        "min" : 0.1111111119389534,
+        "nanCount" : 0
+      },
+      "worldgen.moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7B1B4F769AB69C88",
+        "max" : 1,
+        "mean" : 0.89400057791373433,
+        "min" : 0.24261227250099182,
+        "nanCount" : 0
+      },
+      "worldgen.ocean_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0x0FD1ADCA8EC8B37C",
+        "max" : 1,
+        "mean" : 0.50030062662660646,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.pass_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xDEF4E830B9CE2223",
+        "max" : 1,
+        "mean" : 0.012987012987012988,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.rain_out" : 
+      {
+        "count" : 2772,
+        "hash" : "0x052A99C6189BA01B",
+        "max" : 0.9299999475479126,
+        "mean" : 0.015987869796077435,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.regions" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3478C797C61B5E7A",
+        "max" : 17,
+        "mean" : 2.6417748917748916,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.relief" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7A4561960229C43F",
+        "max" : 0.80955880880355835,
+        "mean" : 0.043124511221781223,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.ridge_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF0D48612B754B566",
+        "max" : 0.96020621061325073,
+        "mean" : 0.01413921345546734,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.river_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xEFC7E75CAE48F8CA",
+        "max" : 1,
+        "mean" : 0.01406926406926407,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.slope" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4B1861578C638E36",
+        "max" : 0.40583735704421997,
+        "mean" : 0.025021165103381458,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.temperature" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF12DE6F67222A63B",
+        "max" : 0.90555554628372192,
+        "mean" : 0.73801417620839149,
+        "min" : 0.27303314208984375,
+        "nanCount" : 0
+      },
+      "worldgen.terrain_type" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFDD90D8B33E81F30",
+        "max" : 11,
+        "mean" : 1.7243867243867244,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.valley_carve" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA0FF2A43F16B7B79",
+        "max" : 0.036000002175569534,
+        "mean" : 0.00042751207201866616,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.volcanic" : 
+      {
+        "count" : 2772,
+        "hash" : "0x477806F878F15FCA",
+        "max" : 1,
+        "mean" : 0.00036075036075036075,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x71FD1E473638D193",
+        "max" : 4,
+        "mean" : 0.52633477633477632,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_source" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE4AD8B783938C463",
+        "max" : 3,
+        "mean" : 0.76370851370851367,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.zone_cost" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7000877B9A813744",
+        "max" : 22.884616851806641,
+        "mean" : 1.4172009831727153,
+        "min" : 0,
+        "nanCount" : 0
+      }
+    },
+    "continental/small/seed1" : 
+    {
+      "worldgen.air_moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFD9071DF3AE6A237",
+        "max" : 1,
+        "mean" : 0.70624026457914046,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.barrier_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3E11B14637AE9F7B",
+        "max" : 0.99817276000976562,
+        "mean" : 0.076902534775059636,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.basin_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0xD044AC2CC88D52BC",
+        "max" : 0.037261754274368286,
+        "mean" : 0.00031552471295751705,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_index" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4E771FC48597FA6D",
+        "max" : 9,
+        "mean" : 1.5328282828282829,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_pin" : 
+      {
+        "count" : 2772,
+        "hash" : "0x0074C4B1DF6BF6FA",
+        "max" : 4,
+        "mean" : 2.6497113997113999,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_score" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF7A6DEA8AF9F1E47",
+        "max" : 0,
+        "mean" : -0.63674301476480955,
+        "min" : -54.254768371582031,
+        "nanCount" : 0
+      },
+      "worldgen.coast_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x907E350EA447E090",
+        "max" : 20,
+        "mean" : 5.6818181818181817,
+        "min" : 1,
+        "nanCount" : 0
+      },
+      "worldgen.stratum" : 
+      {
+        "count" : 2772,
+        "hash" : "0xEF4043491BE810AA",
+        "max" : 3,
+        "mean" : 0.68362193362193358,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFBD126D1F9C196B2",
+        "max" : 0.62547385692596436,
+        "mean" : 0.07361571416245373,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation_raw" : 
+      {
+        "count" : 2772,
+        "hash" : "0x179560F856F94302",
+        "max" : 0.62547385692596436,
+        "mean" : 0.074043106329378716,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.filled_elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7A6E9A35A0F5FA8D",
+        "max" : 0.62547385692596436,
+        "mean" : 0.074360271067792638,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.fixup_changes" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA322373F45E036CA",
+        "max" : 2,
+        "mean" : 0.0090187590187590181,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_accumulation" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA15CBBBE0C75B42F",
+        "max" : 238.62890625,
+        "mean" : 4.4425014533951854,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_direction" : 
+      {
+        "count" : 2772,
+        "hash" : "0x5CBA71999DE644DA",
+        "max" : 6,
+        "mean" : 4.3773448773448775,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.island_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF65BB943A956D575",
+        "max" : 1,
+        "mean" : 0.0273669557094918,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.lake_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x8BBEA1B0C98FBADA",
+        "max" : 4,
+        "mean" : 0.03968253968253968,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.land_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC62D9B0AA7821A8C",
+        "max" : 0.96405583620071411,
+        "mean" : -1e+9999,
+        "min" : -1e+9999,
+        "nanCount" : 0
+      },
+      "worldgen.landmass" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA76879BB5852E7E3",
+        "max" : 5,
+        "mean" : 0.48340548340548339,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.latitude" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFEA17C1CC54E16F8",
+        "max" : 0.66666668653488159,
+        "mean" : 0.44444443267725764,
+        "min" : 0.2222222238779068,
+        "nanCount" : 0
+      },
+      "worldgen.moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x9361A73C9FEB1977",
+        "max" : 1,
+        "mean" : 0.79512053946890526,
+        "min" : 0.16674481332302094,
+        "nanCount" : 0
+      },
+      "worldgen.ocean_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0x823D575AF75C74DF",
+        "max" : 1,
+        "mean" : 0.40115440247142298,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.pass_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x0BBF8763318FFE9A",
+        "max" : 1,
+        "mean" : 0.00974025974025974,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.rain_out" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCDFDB36267E6DDB6",
+        "max" : 0.60295188426971436,
+        "mean" : 0.013768314534949999,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.regions" : 
+      {
+        "count" : 2772,
+        "hash" : "0x023D6F4568FE48D8",
+        "max" : 20,
+        "mean" : 4.1266233766233764,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.relief" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFBD126D1F9C196B2",
+        "max" : 0.62547385692596436,
+        "mean" : 0.07361571416245373,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.ridge_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xB3A4C98999C51FE8",
+        "max" : 0.98293620347976685,
+        "mean" : 0.016722253616496083,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.river_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x29FA2108B4050F2A",
+        "max" : 1,
+        "mean" : 0.015512265512265512,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.slope" : 
+      {
+        "count" : 2772,
+        "hash" : "0x47B1B4EE3F56F6E0",
+        "max" : 0.32203364372253418,
+        "mean" : 0.027720788546164572,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.temperature" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3F36FF2C72DE4DF3",
+        "max" : 0.81111109256744385,
+        "mean" : 0.57805279099407991,
+        "min" : 0.27010971307754517,
+        "nanCount" : 0
+      },
+      "worldgen.terrain_type" : 
+      {
+        "count" : 2772,
+        "hash" : "0x23BA852BEBAF8C23",
+        "max" : 11,
+        "mean" : 2.2196969696969697,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.valley_carve" : 
+      {
+        "count" : 2772,
+        "hash" : "0xD62A73ECA8B7C696",
+        "max" : 0.036328472197055817,
+        "mean" : 0.00082020636283070881,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.volcanic" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC80A8E9C370C9AFA",
+        "max" : 1,
+        "mean" : 0.00036075036075036075,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4604A273776962DA",
+        "max" : 7,
+        "mean" : 1.0281385281385282,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_source" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE20B2792EC60DBF3",
+        "max" : 3,
+        "mean" : 0.65800865800865804,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.zone_cost" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF87D03653CBC712A",
+        "max" : 29.394086837768555,
+        "mean" : 3.0366369138376363,
+        "min" : 0,
+        "nanCount" : 0
+      }
+    },
+    "continental/small/seed2" : 
+    {
+      "worldgen.air_moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x75AA0A9B00472EE2",
+        "max" : 1,
+        "mean" : 0.73108532771239154,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.barrier_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x2F7C60E91C5B7546",
+        "max" : 0.99564743041992188,
+        "mean" : 0.063667671935038819,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.basin_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0xB33E5DCC2A2E4468",
+        "max" : 0.050957530736923218,
+        "mean" : 0.00085784690011115304,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_index" : 
+      {
+        "count" : 2772,
+        "hash" : "0x5CF87ECC06971543",
+        "max" : 9,
+        "mean" : 1.3903318903318904,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_pin" : 
+      {
+        "count" : 2772,
+        "hash" : "0xDA78B8A1724CBD5A",
+        "max" : 4,
+        "mean" : 2.7355699855699855,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_score" : 
+      {
+        "count" : 2772,
+        "hash" : "0x2252E34A8A7FC426",
+        "max" : 0,
+        "mean" : -0.18129691771301473,
+        "min" : -16.159236907958984,
+        "nanCount" : 0
+      },
+      "worldgen.coast_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x0795D84845864872",
+        "max" : 22,
+        "mean" : 5.6771284271284275,
+        "min" : 1,
+        "nanCount" : 0
+      },
+      "worldgen.stratum" : 
+      {
+        "count" : 2772,
+        "hash" : "0x82374DD943951D83",
+        "max" : 3,
+        "mean" : 0.64826839826839822,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7143F715DB5F2097",
+        "max" : 0.66783571243286133,
+        "mean" : 0.071362053695931751,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation_raw" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF287F4ADF1182194",
+        "max" : 0.66783571243286133,
+        "mean" : 0.070845561698724177,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.filled_elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x061E5AD5679808CF",
+        "max" : 0.66783571243286133,
+        "mean" : 0.071706403275309361,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.fixup_changes" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4786698E213CED1A",
+        "max" : 2,
+        "mean" : 0.010461760461760462,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_accumulation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x32A8E8093A7F06B7",
+        "max" : 375.02529907226562,
+        "mean" : 4.6127818382921673,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_direction" : 
+      {
+        "count" : 2772,
+        "hash" : "0x339FEDFA50236BCA",
+        "max" : 6,
+        "mean" : 4.3282828282828278,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.island_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0x899F4CBA12833EB2",
+        "max" : 1,
+        "mean" : 0.027470779711377912,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.lake_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA9202649F6C71B6A",
+        "max" : 2,
+        "mean" : 0.073232323232323232,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.land_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCB493A21E4A4388B",
+        "max" : 0.97949278354644775,
+        "mean" : -1e+9999,
+        "min" : -1e+9999,
+        "nanCount" : 0
+      },
+      "worldgen.landmass" : 
+      {
+        "count" : 2772,
+        "hash" : "0x37676F00D76719C3",
+        "max" : 6,
+        "mean" : 1.972943722943723,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.latitude" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFEA17C1CC54E16F8",
+        "max" : 0.66666668653488159,
+        "mean" : 0.44444443267725764,
+        "min" : 0.2222222238779068,
+        "nanCount" : 0
+      },
+      "worldgen.moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x125E2A8BD80EDEC8",
+        "max" : 1,
+        "mean" : 0.81357464309873173,
+        "min" : 0.18894661962985992,
+        "nanCount" : 0
+      },
+      "worldgen.ocean_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0x350B1C8089925664",
+        "max" : 1,
+        "mean" : 0.39682539812091627,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.pass_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x92F352FDDE616983",
+        "max" : 1,
+        "mean" : 0.010101010101010102,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.rain_out" : 
+      {
+        "count" : 2772,
+        "hash" : "0x2A8C160FB1FBDDAE",
+        "max" : 0.96686744689941406,
+        "mean" : 0.014647513244094225,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.regions" : 
+      {
+        "count" : 2772,
+        "hash" : "0x51BAF7A39B859718",
+        "max" : 18,
+        "mean" : 4.2702020202020199,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.relief" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7143F715DB5F2097",
+        "max" : 0.66783571243286133,
+        "mean" : 0.071362053695931751,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.ridge_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x78573B8A708CAFE0",
+        "max" : 0.9971764087677002,
+        "mean" : 0.017948536511408476,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.river_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x8E213C87B794A53A",
+        "max" : 1,
+        "mean" : 0.010461760461760462,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.slope" : 
+      {
+        "count" : 2772,
+        "hash" : "0x5DD5EC975EB439F4",
+        "max" : 0.35482266545295715,
+        "mean" : 0.026707544144710681,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.temperature" : 
+      {
+        "count" : 2772,
+        "hash" : "0x85944707B162EF58",
+        "max" : 0.81111109256744385,
+        "mean" : 0.57940498791086725,
+        "min" : 0.15319409966468811,
+        "nanCount" : 0
+      },
+      "worldgen.terrain_type" : 
+      {
+        "count" : 2772,
+        "hash" : "0xD2894A57E62577DD",
+        "max" : 11,
+        "mean" : 2.1396103896103895,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.valley_carve" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3574A53FFF5E8655",
+        "max" : 0.042589776217937469,
+        "mean" : 0.00038355604938969211,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.volcanic" : 
+      {
+        "count" : 2772,
+        "hash" : "0x345F20973D9734CA",
+        "max" : 1,
+        "mean" : 0.00036075036075036075,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x47269A01C9262ED3",
+        "max" : 6,
+        "mean" : 0.95634920634920639,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_source" : 
+      {
+        "count" : 2772,
+        "hash" : "0x01F2B84BFFD41F33",
+        "max" : 3,
+        "mean" : 0.68181818181818177,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.zone_cost" : 
+      {
+        "count" : 2772,
+        "hash" : "0x8B725DE18CB370DF",
+        "max" : 31.587928771972656,
+        "mean" : 2.8520967017692578,
+        "min" : 0,
+        "nanCount" : 0
+      }
+    },
+    "continental/small/seed3" : 
+    {
+      "worldgen.air_moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA77EF269228267FC",
+        "max" : 1,
+        "mean" : 0.70753200254582804,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.barrier_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xB2E28541FEAD74BD",
+        "max" : 0.99589473009109497,
+        "mean" : 0.070198488506403839,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.basin_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE891C316E414525F",
+        "max" : 0.039353519678115845,
+        "mean" : 0.00030358945265476837,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_index" : 
+      {
+        "count" : 2772,
+        "hash" : "0x9CF71E3E1D211903",
+        "max" : 9,
+        "mean" : 1.5133477633477634,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_pin" : 
+      {
+        "count" : 2772,
+        "hash" : "0x99A3D6B0B392006A",
+        "max" : 4,
+        "mean" : 2.6352813852813854,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_score" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3C254F31E65A06AC",
+        "max" : 0,
+        "mean" : -0.55352272692167204,
+        "min" : -53.870635986328125,
+        "nanCount" : 0
+      },
+      "worldgen.coast_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF3172AA1854EDE30",
+        "max" : 16,
+        "mean" : 4.9765512265512264,
+        "min" : 1,
+        "nanCount" : 0
+      },
+      "worldgen.stratum" : 
+      {
+        "count" : 2772,
+        "hash" : "0x89DB2D9620696413",
+        "max" : 3,
+        "mean" : 0.67243867243867239,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFCE2FBFBA5030C01",
+        "max" : 0.65752673149108887,
+        "mean" : 0.070510346095062917,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation_raw" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCC8525D5FFBF36A1",
+        "max" : 0.65752673149108887,
+        "mean" : 0.070791249202421899,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.filled_elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0xD193D91C3824F501",
+        "max" : 0.65752673149108887,
+        "mean" : 0.071095866335268321,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.fixup_changes" : 
+      {
+        "count" : 2772,
+        "hash" : "0xBBAE0A26B26E4F63",
+        "max" : 2,
+        "mean" : 0.0064935064935064939,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_accumulation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x75C69A09F1ECE928",
+        "max" : 251.43576049804688,
+        "mean" : 3.9312133245051855,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_direction" : 
+      {
+        "count" : 2772,
+        "hash" : "0x06B14983BAD2E5EA",
+        "max" : 6,
+        "mean" : 4.3398268398268396,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.island_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0x545EBD944D953754",
+        "max" : 1,
+        "mean" : 0.021341430719452676,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.lake_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCA2336511B4B02E3",
+        "max" : 4,
+        "mean" : 0.042929292929292928,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.land_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE136B715593C7813",
+        "max" : 0.98678469657897949,
+        "mean" : -1e+9999,
+        "min" : -1e+9999,
+        "nanCount" : 0
+      },
+      "worldgen.landmass" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE503781E3F5C54B3",
+        "max" : 5,
+        "mean" : 0.53066378066378062,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.latitude" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFEA17C1CC54E16F8",
+        "max" : 0.66666668653488159,
+        "mean" : 0.44444443267725764,
+        "min" : 0.2222222238779068,
+        "nanCount" : 0
+      },
+      "worldgen.moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x85D28F7B460A79FB",
+        "max" : 1,
+        "mean" : 0.79418523677908326,
+        "min" : 0.18894661962985992,
+        "nanCount" : 0
+      },
+      "worldgen.ocean_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0x56E054CC3FBBE0F4",
+        "max" : 1,
+        "mean" : 0.37512025160749923,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.pass_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x550BD1C372129A0A",
+        "max" : 1,
+        "mean" : 0.010461760461760462,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.rain_out" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC86DECF2EB0E631C",
+        "max" : 0.87650603055953979,
+        "mean" : 0.012714284515063358,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.regions" : 
+      {
+        "count" : 2772,
+        "hash" : "0xB345489B428D32BB",
+        "max" : 17,
+        "mean" : 3.6663059163059164,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.relief" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFCE2FBFBA5030C01",
+        "max" : 0.65752673149108887,
+        "mean" : 0.070510346095062917,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.ridge_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xD867B8A67631B8C6",
+        "max" : 0.99766933917999268,
+        "mean" : 0.016187034799982115,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.river_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3B2945E568707803",
+        "max" : 1,
+        "mean" : 0.011544011544011544,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.slope" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4A7261B7596D5859",
+        "max" : 0.25,
+        "mean" : 0.027151080750165476,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.temperature" : 
+      {
+        "count" : 2772,
+        "hash" : "0xDA6DA6C4ABADA55C",
+        "max" : 0.81111109256744385,
+        "mean" : 0.57991601109590707,
+        "min" : 0.20722424983978271,
+        "nanCount" : 0
+      },
+      "worldgen.terrain_type" : 
+      {
+        "count" : 2772,
+        "hash" : "0x309416569C80D933",
+        "max" : 11,
+        "mean" : 2.2308802308802309,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.valley_carve" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE999FBAD0AE4B675",
+        "max" : 0.037052512168884277,
+        "mean" : 0.0006234659766307985,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.volcanic" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA40D2B838704294A",
+        "max" : 1,
+        "mean" : 0.00036075036075036075,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC41B89A1FF4A4B13",
+        "max" : 6,
+        "mean" : 1.0425685425685425,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_source" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA666FE4BCF767883",
+        "max" : 3,
+        "mean" : 0.64502164502164505,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.zone_cost" : 
+      {
+        "count" : 2772,
+        "hash" : "0xDAB20B4B45A0DA93",
+        "max" : 29.700319290161133,
+        "mean" : 2.8202253414954974,
+        "min" : 0,
+        "nanCount" : 0
+      }
+    },
+    "default/small/seed1" : 
+    {
+      "worldgen.air_moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFD9071DF3AE6A237",
+        "max" : 1,
+        "mean" : 0.70624026457914046,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.barrier_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3E11B14637AE9F7B",
+        "max" : 0.99817276000976562,
+        "mean" : 0.076902534775059636,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.basin_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0xD044AC2CC88D52BC",
+        "max" : 0.037261754274368286,
+        "mean" : 0.00031552471295751705,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_index" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4E771FC48597FA6D",
+        "max" : 9,
+        "mean" : 1.5328282828282829,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_pin" : 
+      {
+        "count" : 2772,
+        "hash" : "0x0074C4B1DF6BF6FA",
+        "max" : 4,
+        "mean" : 2.6497113997113999,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_score" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF7A6DEA8AF9F1E47",
+        "max" : 0,
+        "mean" : -0.63674301476480955,
+        "min" : -54.254768371582031,
+        "nanCount" : 0
+      },
+      "worldgen.coast_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x907E350EA447E090",
+        "max" : 20,
+        "mean" : 5.6818181818181817,
+        "min" : 1,
+        "nanCount" : 0
+      },
+      "worldgen.stratum" : 
+      {
+        "count" : 2772,
+        "hash" : "0xEF4043491BE810AA",
+        "max" : 3,
+        "mean" : 0.68362193362193358,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFBD126D1F9C196B2",
+        "max" : 0.62547385692596436,
+        "mean" : 0.07361571416245373,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation_raw" : 
+      {
+        "count" : 2772,
+        "hash" : "0x179560F856F94302",
+        "max" : 0.62547385692596436,
+        "mean" : 0.074043106329378716,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.filled_elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7A6E9A35A0F5FA8D",
+        "max" : 0.62547385692596436,
+        "mean" : 0.074360271067792638,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.fixup_changes" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA322373F45E036CA",
+        "max" : 2,
+        "mean" : 0.0090187590187590181,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_accumulation" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA15CBBBE0C75B42F",
+        "max" : 238.62890625,
+        "mean" : 4.4425014533951854,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_direction" : 
+      {
+        "count" : 2772,
+        "hash" : "0x5CBA71999DE644DA",
+        "max" : 6,
+        "mean" : 4.3773448773448775,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.island_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF65BB943A956D575",
+        "max" : 1,
+        "mean" : 0.0273669557094918,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.lake_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x8BBEA1B0C98FBADA",
+        "max" : 4,
+        "mean" : 0.03968253968253968,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.land_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC62D9B0AA7821A8C",
+        "max" : 0.96405583620071411,
+        "mean" : -1e+9999,
+        "min" : -1e+9999,
+        "nanCount" : 0
+      },
+      "worldgen.landmass" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA76879BB5852E7E3",
+        "max" : 5,
+        "mean" : 0.48340548340548339,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.latitude" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFEA17C1CC54E16F8",
+        "max" : 0.66666668653488159,
+        "mean" : 0.44444443267725764,
+        "min" : 0.2222222238779068,
+        "nanCount" : 0
+      },
+      "worldgen.moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x9361A73C9FEB1977",
+        "max" : 1,
+        "mean" : 0.79512053946890526,
+        "min" : 0.16674481332302094,
+        "nanCount" : 0
+      },
+      "worldgen.ocean_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0x823D575AF75C74DF",
+        "max" : 1,
+        "mean" : 0.40115440247142298,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.pass_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x0BBF8763318FFE9A",
+        "max" : 1,
+        "mean" : 0.00974025974025974,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.rain_out" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCDFDB36267E6DDB6",
+        "max" : 0.60295188426971436,
+        "mean" : 0.013768314534949999,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.regions" : 
+      {
+        "count" : 2772,
+        "hash" : "0x023D6F4568FE48D8",
+        "max" : 20,
+        "mean" : 4.1266233766233764,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.relief" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFBD126D1F9C196B2",
+        "max" : 0.62547385692596436,
+        "mean" : 0.07361571416245373,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.ridge_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xB3A4C98999C51FE8",
+        "max" : 0.98293620347976685,
+        "mean" : 0.016722253616496083,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.river_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x29FA2108B4050F2A",
+        "max" : 1,
+        "mean" : 0.015512265512265512,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.slope" : 
+      {
+        "count" : 2772,
+        "hash" : "0x47B1B4EE3F56F6E0",
+        "max" : 0.32203364372253418,
+        "mean" : 0.027720788546164572,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.temperature" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3F36FF2C72DE4DF3",
+        "max" : 0.81111109256744385,
+        "mean" : 0.57805279099407991,
+        "min" : 0.27010971307754517,
+        "nanCount" : 0
+      },
+      "worldgen.terrain_type" : 
+      {
+        "count" : 2772,
+        "hash" : "0x23BA852BEBAF8C23",
+        "max" : 11,
+        "mean" : 2.2196969696969697,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.valley_carve" : 
+      {
+        "count" : 2772,
+        "hash" : "0xD62A73ECA8B7C696",
+        "max" : 0.036328472197055817,
+        "mean" : 0.00082020636283070881,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.volcanic" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC80A8E9C370C9AFA",
+        "max" : 1,
+        "mean" : 0.00036075036075036075,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4604A273776962DA",
+        "max" : 7,
+        "mean" : 1.0281385281385282,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_source" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE20B2792EC60DBF3",
+        "max" : 3,
+        "mean" : 0.65800865800865804,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.zone_cost" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF87D03653CBC712A",
+        "max" : 29.394086837768555,
+        "mean" : 3.0366369138376363,
+        "min" : 0,
+        "nanCount" : 0
+      }
+    },
+    "default/small/seed2" : 
+    {
+      "worldgen.air_moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x75AA0A9B00472EE2",
+        "max" : 1,
+        "mean" : 0.73108532771239154,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.barrier_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x2F7C60E91C5B7546",
+        "max" : 0.99564743041992188,
+        "mean" : 0.063667671935038819,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.basin_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0xB33E5DCC2A2E4468",
+        "max" : 0.050957530736923218,
+        "mean" : 0.00085784690011115304,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_index" : 
+      {
+        "count" : 2772,
+        "hash" : "0x5CF87ECC06971543",
+        "max" : 9,
+        "mean" : 1.3903318903318904,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_pin" : 
+      {
+        "count" : 2772,
+        "hash" : "0xDA78B8A1724CBD5A",
+        "max" : 4,
+        "mean" : 2.7355699855699855,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_score" : 
+      {
+        "count" : 2772,
+        "hash" : "0x2252E34A8A7FC426",
+        "max" : 0,
+        "mean" : -0.18129691771301473,
+        "min" : -16.159236907958984,
+        "nanCount" : 0
+      },
+      "worldgen.coast_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x0795D84845864872",
+        "max" : 22,
+        "mean" : 5.6771284271284275,
+        "min" : 1,
+        "nanCount" : 0
+      },
+      "worldgen.stratum" : 
+      {
+        "count" : 2772,
+        "hash" : "0x82374DD943951D83",
+        "max" : 3,
+        "mean" : 0.64826839826839822,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7143F715DB5F2097",
+        "max" : 0.66783571243286133,
+        "mean" : 0.071362053695931751,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation_raw" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF287F4ADF1182194",
+        "max" : 0.66783571243286133,
+        "mean" : 0.070845561698724177,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.filled_elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x061E5AD5679808CF",
+        "max" : 0.66783571243286133,
+        "mean" : 0.071706403275309361,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.fixup_changes" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4786698E213CED1A",
+        "max" : 2,
+        "mean" : 0.010461760461760462,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_accumulation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x32A8E8093A7F06B7",
+        "max" : 375.02529907226562,
+        "mean" : 4.6127818382921673,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_direction" : 
+      {
+        "count" : 2772,
+        "hash" : "0x339FEDFA50236BCA",
+        "max" : 6,
+        "mean" : 4.3282828282828278,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.island_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0x899F4CBA12833EB2",
+        "max" : 1,
+        "mean" : 0.027470779711377912,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.lake_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA9202649F6C71B6A",
+        "max" : 2,
+        "mean" : 0.073232323232323232,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.land_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCB493A21E4A4388B",
+        "max" : 0.97949278354644775,
+        "mean" : -1e+9999,
+        "min" : -1e+9999,
+        "nanCount" : 0
+      },
+      "worldgen.landmass" : 
+      {
+        "count" : 2772,
+        "hash" : "0x37676F00D76719C3",
+        "max" : 6,
+        "mean" : 1.972943722943723,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.latitude" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFEA17C1CC54E16F8",
+        "max" : 0.66666668653488159,
+        "mean" : 0.44444443267725764,
+        "min" : 0.2222222238779068,
+        "nanCount" : 0
+      },
+      "worldgen.moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x125E2A8BD80EDEC8",
+        "max" : 1,
+        "mean" : 0.81357464309873173,
+        "min" : 0.18894661962985992,
+        "nanCount" : 0
+      },
+      "worldgen.ocean_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0x350B1C8089925664",
+        "max" : 1,
+        "mean" : 0.39682539812091627,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.pass_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x92F352FDDE616983",
+        "max" : 1,
+        "mean" : 0.010101010101010102,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.rain_out" : 
+      {
+        "count" : 2772,
+        "hash" : "0x2A8C160FB1FBDDAE",
+        "max" : 0.96686744689941406,
+        "mean" : 0.014647513244094225,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.regions" : 
+      {
+        "count" : 2772,
+        "hash" : "0x51BAF7A39B859718",
+        "max" : 18,
+        "mean" : 4.2702020202020199,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.relief" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7143F715DB5F2097",
+        "max" : 0.66783571243286133,
+        "mean" : 0.071362053695931751,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.ridge_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x78573B8A708CAFE0",
+        "max" : 0.9971764087677002,
+        "mean" : 0.017948536511408476,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.river_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x8E213C87B794A53A",
+        "max" : 1,
+        "mean" : 0.010461760461760462,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.slope" : 
+      {
+        "count" : 2772,
+        "hash" : "0x5DD5EC975EB439F4",
+        "max" : 0.35482266545295715,
+        "mean" : 0.026707544144710681,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.temperature" : 
+      {
+        "count" : 2772,
+        "hash" : "0x85944707B162EF58",
+        "max" : 0.81111109256744385,
+        "mean" : 0.57940498791086725,
+        "min" : 0.15319409966468811,
+        "nanCount" : 0
+      },
+      "worldgen.terrain_type" : 
+      {
+        "count" : 2772,
+        "hash" : "0xD2894A57E62577DD",
+        "max" : 11,
+        "mean" : 2.1396103896103895,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.valley_carve" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3574A53FFF5E8655",
+        "max" : 0.042589776217937469,
+        "mean" : 0.00038355604938969211,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.volcanic" : 
+      {
+        "count" : 2772,
+        "hash" : "0x345F20973D9734CA",
+        "max" : 1,
+        "mean" : 0.00036075036075036075,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x47269A01C9262ED3",
+        "max" : 6,
+        "mean" : 0.95634920634920639,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_source" : 
+      {
+        "count" : 2772,
+        "hash" : "0x01F2B84BFFD41F33",
+        "max" : 3,
+        "mean" : 0.68181818181818177,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.zone_cost" : 
+      {
+        "count" : 2772,
+        "hash" : "0x8B725DE18CB370DF",
+        "max" : 31.587928771972656,
+        "mean" : 2.8520967017692578,
+        "min" : 0,
+        "nanCount" : 0
+      }
+    },
+    "default/small/seed3" : 
+    {
+      "worldgen.air_moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA77EF269228267FC",
+        "max" : 1,
+        "mean" : 0.70753200254582804,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.barrier_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xB2E28541FEAD74BD",
+        "max" : 0.99589473009109497,
+        "mean" : 0.070198488506403839,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.basin_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE891C316E414525F",
+        "max" : 0.039353519678115845,
+        "mean" : 0.00030358945265476837,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_index" : 
+      {
+        "count" : 2772,
+        "hash" : "0x9CF71E3E1D211903",
+        "max" : 9,
+        "mean" : 1.5133477633477634,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_pin" : 
+      {
+        "count" : 2772,
+        "hash" : "0x99A3D6B0B392006A",
+        "max" : 4,
+        "mean" : 2.6352813852813854,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_score" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3C254F31E65A06AC",
+        "max" : 0,
+        "mean" : -0.55352272692167204,
+        "min" : -53.870635986328125,
+        "nanCount" : 0
+      },
+      "worldgen.coast_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF3172AA1854EDE30",
+        "max" : 16,
+        "mean" : 4.9765512265512264,
+        "min" : 1,
+        "nanCount" : 0
+      },
+      "worldgen.stratum" : 
+      {
+        "count" : 2772,
+        "hash" : "0x89DB2D9620696413",
+        "max" : 3,
+        "mean" : 0.67243867243867239,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFCE2FBFBA5030C01",
+        "max" : 0.65752673149108887,
+        "mean" : 0.070510346095062917,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation_raw" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCC8525D5FFBF36A1",
+        "max" : 0.65752673149108887,
+        "mean" : 0.070791249202421899,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.filled_elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0xD193D91C3824F501",
+        "max" : 0.65752673149108887,
+        "mean" : 0.071095866335268321,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.fixup_changes" : 
+      {
+        "count" : 2772,
+        "hash" : "0xBBAE0A26B26E4F63",
+        "max" : 2,
+        "mean" : 0.0064935064935064939,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_accumulation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x75C69A09F1ECE928",
+        "max" : 251.43576049804688,
+        "mean" : 3.9312133245051855,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_direction" : 
+      {
+        "count" : 2772,
+        "hash" : "0x06B14983BAD2E5EA",
+        "max" : 6,
+        "mean" : 4.3398268398268396,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.island_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0x545EBD944D953754",
+        "max" : 1,
+        "mean" : 0.021341430719452676,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.lake_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCA2336511B4B02E3",
+        "max" : 4,
+        "mean" : 0.042929292929292928,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.land_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE136B715593C7813",
+        "max" : 0.98678469657897949,
+        "mean" : -1e+9999,
+        "min" : -1e+9999,
+        "nanCount" : 0
+      },
+      "worldgen.landmass" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE503781E3F5C54B3",
+        "max" : 5,
+        "mean" : 0.53066378066378062,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.latitude" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFEA17C1CC54E16F8",
+        "max" : 0.66666668653488159,
+        "mean" : 0.44444443267725764,
+        "min" : 0.2222222238779068,
+        "nanCount" : 0
+      },
+      "worldgen.moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x85D28F7B460A79FB",
+        "max" : 1,
+        "mean" : 0.79418523677908326,
+        "min" : 0.18894661962985992,
+        "nanCount" : 0
+      },
+      "worldgen.ocean_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0x56E054CC3FBBE0F4",
+        "max" : 1,
+        "mean" : 0.37512025160749923,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.pass_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x550BD1C372129A0A",
+        "max" : 1,
+        "mean" : 0.010461760461760462,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.rain_out" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC86DECF2EB0E631C",
+        "max" : 0.87650603055953979,
+        "mean" : 0.012714284515063358,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.regions" : 
+      {
+        "count" : 2772,
+        "hash" : "0xB345489B428D32BB",
+        "max" : 17,
+        "mean" : 3.6663059163059164,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.relief" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFCE2FBFBA5030C01",
+        "max" : 0.65752673149108887,
+        "mean" : 0.070510346095062917,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.ridge_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xD867B8A67631B8C6",
+        "max" : 0.99766933917999268,
+        "mean" : 0.016187034799982115,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.river_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3B2945E568707803",
+        "max" : 1,
+        "mean" : 0.011544011544011544,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.slope" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4A7261B7596D5859",
+        "max" : 0.25,
+        "mean" : 0.027151080750165476,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.temperature" : 
+      {
+        "count" : 2772,
+        "hash" : "0xDA6DA6C4ABADA55C",
+        "max" : 0.81111109256744385,
+        "mean" : 0.57991601109590707,
+        "min" : 0.20722424983978271,
+        "nanCount" : 0
+      },
+      "worldgen.terrain_type" : 
+      {
+        "count" : 2772,
+        "hash" : "0x309416569C80D933",
+        "max" : 11,
+        "mean" : 2.2308802308802309,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.valley_carve" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE999FBAD0AE4B675",
+        "max" : 0.037052512168884277,
+        "mean" : 0.0006234659766307985,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.volcanic" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA40D2B838704294A",
+        "max" : 1,
+        "mean" : 0.00036075036075036075,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC41B89A1FF4A4B13",
+        "max" : 6,
+        "mean" : 1.0425685425685425,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_source" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA666FE4BCF767883",
+        "max" : 3,
+        "mean" : 0.64502164502164505,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.zone_cost" : 
+      {
+        "count" : 2772,
+        "hash" : "0xDAB20B4B45A0DA93",
+        "max" : 29.700319290161133,
+        "mean" : 2.8202253414954974,
+        "min" : 0,
+        "nanCount" : 0
+      }
+    },
+    "highlands/small/seed1" : 
+    {
+      "worldgen.air_moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE5CD1A616AEEC0FA",
+        "max" : 1,
+        "mean" : 0.63385052437041767,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.barrier_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7838F2B36BBB4168",
+        "max" : 0.99939030408859253,
+        "mean" : 0.096061505753584589,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.basin_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0x671D047AF4D576A3",
+        "max" : 0.21106161177158356,
+        "mean" : 0.0033013574795160458,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_index" : 
+      {
+        "count" : 2772,
+        "hash" : "0x1A059F0300D9C023",
+        "max" : 9,
+        "mean" : 1.7622655122655122,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_pin" : 
+      {
+        "count" : 2772,
+        "hash" : "0x48C832E03F712303",
+        "max" : 4,
+        "mean" : 2.5194805194805197,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_score" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7911F4009951A7AC",
+        "max" : 0,
+        "mean" : -0.22644226314825827,
+        "min" : -15.337499618530273,
+        "nanCount" : 0
+      },
+      "worldgen.coast_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x8DDAE5AA5E370C13",
+        "max" : 17,
+        "mean" : 5.5869408369408369,
+        "min" : 1,
+        "nanCount" : 0
+      },
+      "worldgen.stratum" : 
+      {
+        "count" : 2772,
+        "hash" : "0x90DE3C2D1039A183",
+        "max" : 3,
+        "mean" : 0.89574314574314573,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x60B28DE69A658C97",
+        "max" : 0.91841644048690796,
+        "mean" : 0.13219403121405393,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation_raw" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3149E86F7A0997A2",
+        "max" : 0.91841644048690796,
+        "mean" : 0.12976626875779415,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.filled_elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x40CBED0B557BD2A7",
+        "max" : 0.91841644048690796,
+        "mean" : 0.13307912049957513,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.fixup_changes" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC7B3E983ED3225FA",
+        "max" : 2,
+        "mean" : 0.0090187590187590181,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_accumulation" : 
+      {
+        "count" : 2772,
+        "hash" : "0xAE82834817EB2A80",
+        "max" : 741.8121337890625,
+        "mean" : 9.3105177421762484,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_direction" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA41C2E80741AED43",
+        "max" : 6,
+        "mean" : 3.7373737373737375,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.island_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4A742ECCE5032208",
+        "max" : 1,
+        "mean" : 0.011567105785076753,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.lake_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3C6542C2970A2203",
+        "max" : 4,
+        "mean" : 0.11544011544011544,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.land_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0x6F483ACB7B509E91",
+        "max" : 0.96741902828216553,
+        "mean" : -1e+9999,
+        "min" : -1e+9999,
+        "nanCount" : 0
+      },
+      "worldgen.landmass" : 
+      {
+        "count" : 2772,
+        "hash" : "0x2DC8A873ED46481A",
+        "max" : 3,
+        "mean" : 1.6363636363636365,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.latitude" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE96A088925CE2767",
+        "max" : 0.72222220897674561,
+        "mean" : 0.55555554798671181,
+        "min" : 0.3888888955116272,
+        "nanCount" : 0
+      },
+      "worldgen.moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x372AD34C38695FFF",
+        "max" : 1,
+        "mean" : 0.74553423985559364,
+        "min" : 0.16674481332302094,
+        "nanCount" : 0
+      },
+      "worldgen.ocean_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0x9F9D2FD0C4AE180D",
+        "max" : 1,
+        "mean" : 0.28180615805508769,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.pass_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x94FC8747B93F4F53",
+        "max" : 1,
+        "mean" : 0.013708513708513708,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.rain_out" : 
+      {
+        "count" : 2772,
+        "hash" : "0x75D2EF74093DE555",
+        "max" : 0.79228842258453369,
+        "mean" : 0.017555190946564613,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.regions" : 
+      {
+        "count" : 2772,
+        "hash" : "0xBF0BCBFF5583E30D",
+        "max" : 17,
+        "mean" : 5.2763347763347763,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.relief" : 
+      {
+        "count" : 2772,
+        "hash" : "0x60B28DE69A658C97",
+        "max" : 0.91841644048690796,
+        "mean" : 0.13219403121405393,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.ridge_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF1C64F81C21D4340",
+        "max" : 0.99359250068664551,
+        "mean" : 0.059381182814852843,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.river_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7E2945582D7A15D3",
+        "max" : 1,
+        "mean" : 0.025974025974025976,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.slope" : 
+      {
+        "count" : 2772,
+        "hash" : "0x8AA822D1F956034E",
+        "max" : 0.47697907686233521,
+        "mean" : 0.047914311885134911,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.temperature" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3B954B57E5B932CB",
+        "max" : 0.66944444179534912,
+        "mean" : 0.44847094191810788,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.terrain_type" : 
+      {
+        "count" : 2772,
+        "hash" : "0x6549A04F16F35A0D",
+        "max" : 11,
+        "mean" : 2.8878066378066376,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.valley_carve" : 
+      {
+        "count" : 2772,
+        "hash" : "0x516BF6586419129B",
+        "max" : 0.08999999612569809,
+        "mean" : 0.00093640953377641817,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.volcanic" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCE0878436ACF034A",
+        "max" : 1,
+        "mean" : 0.00036075036075036075,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7900261BCB83FC63",
+        "max" : 7,
+        "mean" : 1.2911255411255411,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_source" : 
+      {
+        "count" : 2772,
+        "hash" : "0xD530ED75A8B2CC4A",
+        "max" : 3,
+        "mean" : 0.661976911976912,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.zone_cost" : 
+      {
+        "count" : 2772,
+        "hash" : "0x5A7B3A86B54B6B1B",
+        "max" : 37.393814086914062,
+        "mean" : 5.7114848239081244,
+        "min" : 0,
+        "nanCount" : 0
+      }
+    },
+    "highlands/small/seed2" : 
+    {
+      "worldgen.air_moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x32209A6A2F1AD09F",
+        "max" : 1,
+        "mean" : 0.63154501040756283,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.barrier_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF1E67E755DC4217C",
+        "max" : 0.99564743041992188,
+        "mean" : 0.090216117202805576,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.basin_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0x096013C997E77763",
+        "max" : 0.133207768201828,
+        "mean" : 0.0046353458559938842,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_index" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7F237A5E171378E0",
+        "max" : 9,
+        "mean" : 1.7601010101010102,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_pin" : 
+      {
+        "count" : 2772,
+        "hash" : "0x05DCBAA85044B9BA",
+        "max" : 4,
+        "mean" : 2.4985569985569986,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_score" : 
+      {
+        "count" : 2772,
+        "hash" : "0x03C04191559C9739",
+        "max" : 0,
+        "mean" : -0.18137954758752078,
+        "min" : -10.827971458435059,
+        "nanCount" : 0
+      },
+      "worldgen.coast_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0xB47B7C2B230DEBF2",
+        "max" : 17,
+        "mean" : 5.1706349206349209,
+        "min" : 1,
+        "nanCount" : 0
+      },
+      "worldgen.stratum" : 
+      {
+        "count" : 2772,
+        "hash" : "0x60DDB1CB4E9757DA",
+        "max" : 3,
+        "mean" : 0.89357864357864358,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x18AB6F054406DFC1",
+        "max" : 0.85096991062164307,
+        "mean" : 0.12744937524935943,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation_raw" : 
+      {
+        "count" : 2772,
+        "hash" : "0x983B8CBDA9C2DAE1",
+        "max" : 0.85096991062164307,
+        "mean" : 0.1239428340025988,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.filled_elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x9AF35713DD2495E9",
+        "max" : 0.85096991062164307,
+        "mean" : 0.128587355232471,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.fixup_changes" : 
+      {
+        "count" : 2772,
+        "hash" : "0x60A67700DBAA298A",
+        "max" : 1,
+        "mean" : 0.006854256854256854,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_accumulation" : 
+      {
+        "count" : 2772,
+        "hash" : "0xABF8AE6980D42578",
+        "max" : 684.9725341796875,
+        "mean" : 8.852737172470464,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_direction" : 
+      {
+        "count" : 2772,
+        "hash" : "0x84A60ED7702F5FC3",
+        "max" : 6,
+        "mean" : 3.9935064935064934,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.island_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4ECF495DBB0A9CF6",
+        "max" : 1,
+        "mean" : 0.025423283077249625,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.lake_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x5D875CDA95F16423",
+        "max" : 5,
+        "mean" : 0.10028860028860029,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.land_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0xD052D4EA2F27952B",
+        "max" : 0.98012447357177734,
+        "mean" : -1e+9999,
+        "min" : -1e+9999,
+        "nanCount" : 0
+      },
+      "worldgen.landmass" : 
+      {
+        "count" : 2772,
+        "hash" : "0x69FDB0E9EF220DA3",
+        "max" : 6,
+        "mean" : 2.7052669552669553,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.latitude" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE96A088925CE2767",
+        "max" : 0.72222220897674561,
+        "mean" : 0.55555554798671181,
+        "min" : 0.3888888955116272,
+        "nanCount" : 0
+      },
+      "worldgen.moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x68468EA7B0339E49",
+        "max" : 1,
+        "mean" : 0.74426598929696608,
+        "min" : 0.16674481332302094,
+        "nanCount" : 0
+      },
+      "worldgen.ocean_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA099F41E52247065",
+        "max" : 1,
+        "mean" : 0.25992063630753953,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.pass_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x1F152005F8B564FA",
+        "max" : 1,
+        "mean" : 0.01479076479076479,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.rain_out" : 
+      {
+        "count" : 2772,
+        "hash" : "0x467FD79322DABB89",
+        "max" : 0.90171921253204346,
+        "mean" : 0.01851333412671869,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.regions" : 
+      {
+        "count" : 2772,
+        "hash" : "0x23EFB95F0A0E5793",
+        "max" : 19,
+        "mean" : 6.3643578643578644,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.relief" : 
+      {
+        "count" : 2772,
+        "hash" : "0x18AB6F054406DFC1",
+        "max" : 0.85096991062164307,
+        "mean" : 0.12744937524935943,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.ridge_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x052628F999DF723D",
+        "max" : 0.99576658010482788,
+        "mean" : 0.054853191188016494,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.river_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x54F0DABCB8C1D543",
+        "max" : 1,
+        "mean" : 0.015151515151515152,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.slope" : 
+      {
+        "count" : 2772,
+        "hash" : "0xD5FE599B55CD93EF",
+        "max" : 0.43652373552322388,
+        "mean" : 0.047169004419138509,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.temperature" : 
+      {
+        "count" : 2772,
+        "hash" : "0x0192FA88ECB62869",
+        "max" : 0.66944444179534912,
+        "mean" : 0.45132568739838413,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.terrain_type" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3304D10FB936188D",
+        "max" : 11,
+        "mean" : 2.91017316017316,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.valley_carve" : 
+      {
+        "count" : 2772,
+        "hash" : "0x56BC34877296F9F3",
+        "max" : 0.08999999612569809,
+        "mean" : 0.001128784908333855,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.volcanic" : 
+      {
+        "count" : 2772,
+        "hash" : "0xD5C1BFEECD6AA3FA",
+        "max" : 1,
+        "mean" : 0.00036075036075036075,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x33B65C0590089633",
+        "max" : 7,
+        "mean" : 1.3048340548340549,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_source" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFE6D366D3D3CF83A",
+        "max" : 3,
+        "mean" : 0.65043290043290047,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.zone_cost" : 
+      {
+        "count" : 2772,
+        "hash" : "0xBD8320E07DE22540",
+        "max" : 35.726390838623047,
+        "mean" : 5.4074176073418379,
+        "min" : 0,
+        "nanCount" : 0
+      }
+    },
+    "highlands/small/seed3" : 
+    {
+      "worldgen.air_moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF8A06CE8DBEB46C8",
+        "max" : 1,
+        "mean" : 0.63510196882967074,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.barrier_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x6BD1C3987C37BE00",
+        "max" : 0.99646186828613281,
+        "mean" : 0.095294685010270122,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.basin_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCE3916F1A573DAAC",
+        "max" : 0.21480345726013184,
+        "mean" : 0.0049475354383045119,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_index" : 
+      {
+        "count" : 2772,
+        "hash" : "0x2A6CF07CCF77FC40",
+        "max" : 9,
+        "mean" : 1.6843434343434343,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_pin" : 
+      {
+        "count" : 2772,
+        "hash" : "0x501B1F33C55B562A",
+        "max" : 4,
+        "mean" : 2.5494227994227994,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.biome_score" : 
+      {
+        "count" : 2772,
+        "hash" : "0xB03F854CA1895D57",
+        "max" : 0,
+        "mean" : -0.22182722366134111,
+        "min" : -16.034976959228516,
+        "nanCount" : 0
+      },
+      "worldgen.coast_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0x1C648DFF59F98752",
+        "max" : 18,
+        "mean" : 5.8694083694083696,
+        "min" : 1,
+        "nanCount" : 0
+      },
+      "worldgen.stratum" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE51CA686295606FA",
+        "max" : 3,
+        "mean" : 0.87878787878787878,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x20D215B98D3F4D5C",
+        "max" : 0.87408572435379028,
+        "mean" : 0.13392111184250183,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.elevation_raw" : 
+      {
+        "count" : 2772,
+        "hash" : "0x6BEA2AF3B417CE4C",
+        "max" : 0.87408572435379028,
+        "mean" : 0.12964993481716466,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.filled_elevation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x61C7BB56F7021246",
+        "max" : 0.87408572435379028,
+        "mean" : 0.13461446455675802,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.fixup_changes" : 
+      {
+        "count" : 2772,
+        "hash" : "0x5E33C8C8EE92A27A",
+        "max" : 2,
+        "mean" : 0.0183982683982684,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_accumulation" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC2DBEF8502911786",
+        "max" : 791.92279052734375,
+        "mean" : 9.7146401281050618,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.flow_direction" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF7ACDCC0EB4F3C2A",
+        "max" : 6,
+        "mean" : 3.9357864357864356,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.island_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0x80B8BA834EF9A7CD",
+        "max" : 1,
+        "mean" : 0.0080063878672807596,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.lake_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x741527B7C2F13113",
+        "max" : 4,
+        "mean" : 0.113997113997114,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.land_potential" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA4681E127B692AF1",
+        "max" : 0.97330808639526367,
+        "mean" : -1e+9999,
+        "min" : -1e+9999,
+        "nanCount" : 0
+      },
+      "worldgen.landmass" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA6EE926AAA33D0B3",
+        "max" : 2,
+        "mean" : 0.56060606060606055,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.latitude" : 
+      {
+        "count" : 2772,
+        "hash" : "0xE96A088925CE2767",
+        "max" : 0.72222220897674561,
+        "mean" : 0.55555554798671181,
+        "min" : 0.3888888955116272,
+        "nanCount" : 0
+      },
+      "worldgen.moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x26D6CA7D82A43F81",
+        "max" : 1,
+        "mean" : 0.74659300458981703,
+        "min" : 0.16674481332302094,
+        "nanCount" : 0
+      },
+      "worldgen.ocean_depth" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA23446EFDE2F6159",
+        "max" : 1,
+        "mean" : 0.2974386735567971,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.pass_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0xAB9ED5D7529AC7CA",
+        "max" : 1,
+        "mean" : 0.01406926406926407,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.rain_out" : 
+      {
+        "count" : 2772,
+        "hash" : "0xA54B3903825BC082",
+        "max" : 0.87999999523162842,
+        "mean" : 0.016923757304468452,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.regions" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC55946159CE97D33",
+        "max" : 15,
+        "mean" : 4.0450937950937949,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.relief" : 
+      {
+        "count" : 2772,
+        "hash" : "0x20D215B98D3F4D5C",
+        "max" : 0.87408572435379028,
+        "mean" : 0.13392111184250183,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.ridge_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x0088AA34CD9AFB79",
+        "max" : 0.99935328960418701,
+        "mean" : 0.056841909140885993,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.river_mask" : 
+      {
+        "count" : 2772,
+        "hash" : "0x9CBF30DD7FA85AF3",
+        "max" : 1,
+        "mean" : 0.01948051948051948,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.slope" : 
+      {
+        "count" : 2772,
+        "hash" : "0xB9C41475EFBF6904",
+        "max" : 0.39374691247940063,
+        "mean" : 0.046034659238862782,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.temperature" : 
+      {
+        "count" : 2772,
+        "hash" : "0xB87CB4B736CDD85B",
+        "max" : 0.66944444179534912,
+        "mean" : 0.44743805974291861,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.terrain_type" : 
+      {
+        "count" : 2772,
+        "hash" : "0x0537CF77F877E5E0",
+        "max" : 11,
+        "mean" : 2.8535353535353534,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.valley_carve" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4D2E10256C18B243",
+        "max" : 0.08999999612569809,
+        "mean" : 0.00075324672082113841,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.volcanic" : 
+      {
+        "count" : 2772,
+        "hash" : "0x477806F878F15FCA",
+        "max" : 1,
+        "mean" : 0.00036075036075036075,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_distance" : 
+      {
+        "count" : 2772,
+        "hash" : "0xB474DB931AF23053",
+        "max" : 7,
+        "mean" : 1.2601010101010102,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.water_source" : 
+      {
+        "count" : 2772,
+        "hash" : "0xDB9E1B96C551AC6A",
+        "max" : 3,
+        "mean" : 0.67604617604617601,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "worldgen.zone_cost" : 
+      {
+        "count" : 2772,
+        "hash" : "0xF921355393093776",
+        "max" : 36.24334716796875,
+        "mean" : 5.7842514422032743,
+        "min" : 0,
+        "nanCount" : 0
+      }
+    }
+  },
+  "format" : "dia.cell_layer_golden",
+  "version" : 1
+}

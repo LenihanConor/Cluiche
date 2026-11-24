@@ -10,7 +10,7 @@ Step 1 — Interview the user:
 7. Any known open questions or blockers?
 
 Step 2 — Write the spec:
-- Create docs/specs/features/<app>/<s>/<feature-name>.md
+- Create docs/specs/features/<app>/<s>/<feature-name>.md (`<app>` may be `draoi` for Draoi-layer features; scaffold with `dia docs spec-scaffold feature <name> --app draoi`)
 - Add a `Parent:` line linking to the parent system spec
 - Set status to Draft
 - Register the feature in the parent system spec's features table

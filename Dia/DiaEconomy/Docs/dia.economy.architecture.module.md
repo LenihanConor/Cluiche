@@ -61,7 +61,6 @@ dependencies:
     - dia.core
     - dia.observation
   optional:
-    - dia.condition
     - dia.messagebus
   forbidden:
     - dia.statemachine

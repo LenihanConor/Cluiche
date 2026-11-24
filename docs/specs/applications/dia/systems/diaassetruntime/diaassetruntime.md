@@ -299,7 +299,7 @@ runtime.RequestStageUnload(StringCRC("stage.gameplay"));
 
 **No dependency on DiaAssetCatalogue.** DiaAssetRuntime owns its own manifest format (`assets.runtime.json`), its own data types (`RuntimeAssetEntry`, `RuntimeStageEntry`), and its own deserializer (`RuntimeManifestLoader`). The two manifest formats are independent — the pipeline (Python) transforms one into the other.
 
-No dependency on DiaApplicationFlow, DiaGraphics, DiaSFML, DiaInput, or any rendering/windowing module.
+No dependency on DiaApplicationFlow, DiaGraphics, DiaSDL, DiaInput, or any rendering/windowing module.
 
 ## Features
 

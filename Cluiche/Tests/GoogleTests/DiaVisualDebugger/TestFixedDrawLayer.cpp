@@ -108,7 +108,7 @@ TEST(FixedDrawLayer_Registration, Duplicate_Asserts)
     int source = 0;
 
     registry.Register(Dia::Core::StringCRC("dup.layer"), &source, &renderer, 16, 0);
-    EXPECT_DEATH(
+    DIA_EXPECT_DEATH(
         registry.Register(Dia::Core::StringCRC("dup.layer"), &source, &renderer, 16, 0),
         "");
 }
@@ -120,7 +120,7 @@ TEST(FixedDrawLayer_Registration, LockThenRegister_Asserts)
     int source = 0;
 
     manager.LockRegistration();
-    EXPECT_DEATH(
+    DIA_EXPECT_DEATH(
         manager.RegisterFixed(Dia::Core::StringCRC("locked.layer"), &source, &renderer, 16, 0),
         "");
 }
@@ -412,7 +412,7 @@ TEST(FixedDrawLayer_CrossType, DynamicDuplicateOfFixed_Asserts)
     manager.RegisterFixed(Dia::Core::StringCRC("clash.name"), &source, &renderer, 8, 0);
 
     StubDynLayer dyn("clash.name");
-    EXPECT_DEATH(manager.Register(&dyn, 0), "");
+    DIA_EXPECT_DEATH(manager.Register(&dyn, 0), "");
 }
 
 TEST(FixedDrawLayer_CrossType, FixedDuplicateOfDynamic_Asserts)
@@ -423,7 +423,7 @@ TEST(FixedDrawLayer_CrossType, FixedDuplicateOfDynamic_Asserts)
 
     LineRenderer renderer(1);
     int source = 0;
-    EXPECT_DEATH(
+    DIA_EXPECT_DEATH(
         manager.RegisterFixed(Dia::Core::StringCRC("clash.dyn"), &source, &renderer, 8, 0),
         "");
 }

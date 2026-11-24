@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Perf Inspector - CluicheEditor mockup (DiaObservation profiling amendment)</title>
+<!--
+  MOCKUP ONLY. Inspector tier (CluicheEditor connected to the running game over DiaDebugServer): the view costs the game nothing.
+  Synthetic data, modelled on the S-1 card investigation of 2026-11-09 (numbers are the measured ones).
+  Interactive:
+    - click a frame on any lane to select it (breakdown + cross-thread chain update)
+    - flip module switches (A/B): the timeline re-simulates without that module
+    - "Replay trip" scrubs to the first trip; hover event flags
+  Layout: left = units/modules + A/B switches, centre = timeline lanes + selected frame, right = trips, latency, telemetry self-cost.
+-->
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Segoe UI',sans-serif; background:#1e1e1e; color:#d4d4d4; height:100vh; display:flex; flex-direction:column; overflow:hidden; font-size:12px; user-select:none; }
+.toolbar { display:flex; align-items:center; gap:10px; padding:5px 10px; background:#2d2d2d; border-bottom:1px solid #3c3c3c; flex-shrink:0; }
+.toolbar .conn { color:#7fd18b; } .toolbar .dim { color:#808080; } .toolbar .sp { flex:1; }
+button { background:#3a3a3a; border:1px solid #4a4a4a; color:#d4d4d4; font:inherit; padding:2px 9px; cursor:pointer; } button:hover { background:#444; } button.on { background:#264f78; border-color:#3a74a8; }
+select { background:#252526; color:#d4d4d4; border:1px solid #3c3c3c; font:inherit; padding:1px 4px; }
+.layout { display:flex; flex:1; overflow:hidden; }
+.panel { display:flex; flex-direction:column; border-right:1px solid #3c3c3c; overflow:hidden; }
+.ptitle { padding:5px 10px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:#9cdcfe; background:#252526; border-bottom:1px solid #3c3c3c; flex-shrink:0; display:flex; gap:8px; align-items:center; }
+.ptitle .r { margin-left:auto; color:#808080; text-transform:none; font-weight:400; letter-spacing:0; }
+.pbody { flex:1; overflow:auto; padding:8px; }
+#left { width:300px; } #center { flex:1; } #right { width:310px; border-right:none; }
+/* modules */
+.unit { margin-bottom:10px; } .unit h4 { font-size:11px; color:#c8c8c8; display:flex; gap:6px; align-items:center; margin-bottom:3px; } .unit h4 .m { margin-left:auto; color:#808080; font-weight:400; }
+.mod { display:grid; grid-template-columns:14px 1fr 44px 44px; gap:4px; align-items:center; padding:1px 0; }
+.mod i { display:inline-block; width:9px; height:9px; border-radius:2px; }
+.mod .n { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .mod .v { text-align:right; color:#9cdcfe; font-variant-numeric:tabular-nums; } .mod .v.hot { color:#f48771; }
+.mod.off .n { color:#666; text-decoration:line-through; } .mod.off .v { color:#555; }
+.sw { width:26px; height:13px; border-radius:7px; background:#555; position:relative; cursor:pointer; } .sw::after { content:''; position:absolute; top:2px; left:2px; width:9px; height:9px; border-radius:50%; background:#ddd; transition:left .1s; } .sw.on { background:#2d7d46; } .sw.on::after { left:15px; }
+.mod.sub { margin-left:14px; } .mod.sub .n { color:#a0a0a0; }
+.hdrrow { display:grid; grid-template-columns:14px 1fr 44px 44px; gap:4px; color:#707070; font-size:10px; margin-bottom:2px; } .hdrrow span:nth-child(3),.hdrrow span:nth-child(4){ text-align:right; }
+/* timeline */
+#tl { flex:none; padding:6px 8px 2px; border-bottom:1px solid #3c3c3c; }
+.lane { display:grid; grid-template-columns:64px 1fr; align-items:center; margin-bottom:2px; } .lane .ln { color:#9cdcfe; font-weight:600; } .lane .ln small { display:block; color:#808080; font-weight:400; }
+svg text { fill:#a0a0a0; font:10px 'Segoe UI'; }
+.legend { display:flex; gap:10px; flex-wrap:wrap; color:#a0a0a0; margin:4px 0 4px 64px; font-size:11px; } .legend i { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:4px; }
+#detail { flex:1; overflow:auto; padding:8px; display:grid; grid-template-columns:1fr 1fr; gap:14px; align-content:start; }
+.card h5 { font-size:11px; color:#9cdcfe; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; display:flex; } .card h5 span { margin-left:auto; color:#808080; text-transform:none; letter-spacing:0; font-weight:400; }
+.bar { display:grid; grid-template-columns:160px 1fr 52px; gap:6px; align-items:center; margin:2px 0; } .bar .t { background:#2a2a2a; height:9px; } .bar .t b { display:block; height:100%; } .bar .ms { text-align:right; color:#9cdcfe; font-variant-numeric:tabular-nums; } .bar.sub .n { padding-left:12px; color:#a0a0a0; }
+.chain { border:1px solid #3c3c3c; background:#232323; padding:8px; } .chain .step { display:grid; grid-template-columns:42px 1fr 52px; gap:6px; padding:2px 0; } .chain .th { color:#808080; } .chain .edge { color:#d7ba7d; padding:2px 0 2px 48px; font-size:11px; }
+.chain .tot { border-top:1px solid #3c3c3c; margin-top:5px; padding-top:5px; display:flex; } .chain .tot b { margin-left:auto; } .hot { color:#f48771; }
+/* right */
+.item { padding:5px 6px; border:1px solid #333; background:#232323; margin-bottom:5px; } .item.sel { border-color:#3a74a8; background:#1f2d3a; } .item .t1 { display:flex; gap:6px; } .item .t1 b { margin-left:auto; font-weight:400; } .item .t2 { color:#a0a0a0; margin-top:2px; font-size:11px; }
+.pill { font-size:10px; padding:0 6px; border-radius:8px; } .pill.bad { background:#5a1d1d; color:#f48771; } .pill.ok { background:#1d4a2a; color:#7fd18b; } .pill.warn { background:#4a3d1d; color:#d7ba7d; }
+.meter { height:6px; background:#2a2a2a; margin-top:4px; position:relative; } .meter b { display:block; height:100%; background:#4ec9b0; } .meter u { position:absolute; top:-2px; bottom:-2px; width:1px; background:#d7ba7d; }
+.note { color:#707070; font-size:11px; margin-top:4px; }
+#tip { position:fixed; background:#111; border:1px solid #444; padding:3px 6px; pointer-events:none; display:none; z-index:9; font-size:11px; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="conn">&#9679; Connected</span><span>CoW</span><span class="dim">Debug|x64 &middot; S1WorldGenerationTestbedStage &middot; ws://localhost:9229</span>
+  <span class="sp"></span>
+  <span class="dim">Window</span><select id="win"><option>10 s</option><option>30 s</option><option>60 s</option></select>
+  <span class="dim">Trip when</span><select><option>unit &gt; 33.3 ms for 10 frames</option><option>unit &gt; 2&times; budget</option><option>module &gt; 40% of frame</option></select>
+  <button id="pause">Pause</button><button id="replay">Replay trip</button><button>Export Perfetto&hellip;</button>
+</div>
+
+<div class="layout">
+  <div class="panel" id="left">
+    <div class="ptitle">Units &amp; modules <span class="r">A/B switches</span></div>
+    <div class="pbody" id="mods"></div>
+  </div>
+
+  <div class="panel" id="center">
+    <div class="ptitle">Timeline <span class="r" id="winlabel">last 10 s &middot; 300 frames per lane &middot; budget 33.3 ms</span></div>
+    <div id="tl"></div>
+    <div class="ptitle" id="dtitle">Selected frame</div>
+    <div id="detail"></div>
+  </div>
+
+  <div class="panel" id="right">
+    <div class="ptitle">Trips <span class="r" id="tripc"></span></div>
+    <div style="padding:8px;border-bottom:1px solid #3c3c3c;max-height:34%;overflow:auto" id="trips"></div>
+    <div class="ptitle">Latency (end to end)</div>
+    <div style="padding:8px;border-bottom:1px solid #3c3c3c" id="lat"></div>
+    <div class="ptitle">Telemetry self-cost</div>
+    <div style="padding:8px" id="self"></div>
+  </div>
+</div>
+<div id="tip"></div>
+
+<script>
+// ---------- model (numbers from the 2026-11-09 S-1 investigation, Debug|x64) ----------
+const BUDGET = 33.3, N = 300, DT = 1000/30;
+const COL = { ui:'#569cd6', panel:'#c586c0', logs:'#f48771', input:'#808080', bridge:'#d7ba7d', kernel:'#6a9955',
+              gen:'#4ec9b0', pack:'#ce9178', relay:'#dcdcaa', host:'#9cdcfe', stage:'#b5cea8', render:'#4fc1ff', ui3:'#c8c8c8' };
+// module: id, unit, name, base ms, colour, deps (off if dep off), tag
+const M = [
+ {id:'ui',     u:'Main',  n:'UIModule (Ultralight)',          ms:4.0, c:COL.ui},
+ {id:'panel',  u:'Main',  n:'DebugPanelPageModule',           ms:6.0, c:COL.panel, kids:[
+     {id:'poll', n:'PollDomainSnapshot (parse)', ms:5.2, card:true},
+     {id:'push', n:'PushDomainStatesToPanel',    ms:8.3, card:true},
+     {id:'logs', n:'PushLogLines',               ms:7.4, loop:true}]},
+ {id:'bridge', u:'Main',  n:'DomainStateBridgeModule',        ms:0.3, c:COL.bridge},
+ {id:'input',  u:'Main',  n:'InputStreamModule',              ms:0.5, c:COL.input},
+ {id:'kernel', u:'Main',  n:'KernelModule',                   ms:2.0, c:COL.kernel},
+ {id:'gen',    u:'Sim',   n:'WorldGenerationModule',          ms:1.2, c:COL.gen, spike:true},
+ {id:'vd',     u:'Sim',   n:'VisualDebuggerModule',           ms:3.0, c:COL.pack, kids:[
+     {id:'pack', n:'pack all domains', ms:7.0, card:true}]},
+ {id:'relay',  u:'Sim',   n:'DomainStateRelayModule',         ms:0.4, c:COL.relay, kids:[
+     {id:'gjs',  n:'WorldGenDebugDomain.GetJSONState', ms:6.5, card:true}]},
+ {id:'host',   u:'Sim',   n:'SimQueryHostModule',             ms:0.6, c:COL.host},
+ {id:'stage',  u:'Sim',   n:'S1WorldGenerationTestbedStage',  ms:0.3, c:COL.stage},
+ {id:'rend',   u:'Render',n:'CellField / UI composite',       ms:6.0, c:COL.render},
+ {id:'ui3',    u:'Render',n:'Overlay 3D',                     ms:1.5, c:COL.ui3},
+];
+const ON = {}; M.forEach(m=>ON[m.id]=true); ON.card=true;
+// events on the 300 frame axis
+const EV = [ {f:6,l:'stage entered',c:'#4ec9b0'}, {f:60,l:'slider drag start',c:'#d7ba7d'}, {f:96,l:'drag end',c:'#d7ba7d'}, {f:150,l:'preset loaded',c:'#c586c0'}, {f:151,l:'regenerate',c:'#4ec9b0'}, {f:230,l:'size: Standard',c:'#569cd6'}, {f:231,l:'regenerate',c:'#4ec9b0'} ];
+function rnd(i,s){ const x=Math.sin(i*12.9898+s*78.233)*43758.5453; return x-Math.floor(x); }
+function cardOn(){ return ON.card && ON.relay && ON.vd; }
+function cost(m,f,fs){ // returns {total, parts:[{id,n,ms,c,sub?}]}
+  const jitter = 0.85+rnd(f,m.id.length)*0.3; const parts=[];
+  if(!ON[m.id]) return {total:0,parts:[]};
+  let t=m.ms*jitter; if(m.spike && ((f>=151&&f<=153)||(f>=231&&f<=236))) t+= (f>=231?18:9)*(1+rnd(f,3)*.2);
+  parts.push({id:m.id,n:m.n,ms:t,c:m.c});
+  (m.kids||[]).forEach(k=>{
+    let on = true; if(k.card) on = cardOn() && !(m.id==='panel' && !ON.card); if(k.loop) on = loopOn(f, fs);
+    if(!on) return; let kt=k.ms*(0.9+rnd(f,k.id.length+2)*0.2); if(k.card && f>=60&&f<=96) kt*=1.15; if(k.id==='push' && ((f>=151&&f<=154)||(f>=231&&f<=236))) kt+=12; parts.push({id:k.id,n:k.n,ms:kt,c:m.c,sub:true}); t+=kt; });
+  return {total:t, parts};
+}
+// log feedback loop: bistable. Starts when Main (without logs) exceeds budget; self-sustains while on.
+function mainBase(f){ let t=0; M.filter(m=>m.u==='Main').forEach(m=>{ const c=cost(m,f,{noLoop:true}); t+=c.total; }); return t; }
+let loopState = {};
+function loopOn(f,fs){ if(fs&&fs.noLoop) return false; const b=mainBase(f); if(!loopState.hasOwnProperty(f)){ const prev = f>0? loopOn2(f-1):false; loopState[f] = prev ? (b+7.4>22) : (b>BUDGET); } return ON.panel && loopState[f]; }
+function loopOn2(f){ return loopState[f]; }
+function frames(){ loopState={}; const out={Main:[],Sim:[],Render:[]}; for(let f=0;f<N;f++){ ['Main','Sim','Render'].forEach(u=>{ const ps=[]; let tot=0; M.filter(m=>m.u===u).forEach(m=>{ const c=cost(m,f); tot+=c.total; ps.push(...c.parts); }); out.Main; out[u].push({f,tot,ps}); }); } return out; }
+let F = frames(), sel = {u:'Main', f:200};
+const W = 760, H = 74, MAXY = 100, X = f=>f*(W/N), Y = v=>H - Math.min(v,MAXY)/MAXY*H;
+function lanes(){
+  const tl = document.getElementById('tl'); let h='';
+  ['Main','Sim','Render'].forEach(u=>{
+    const arr=F[u]; let bars='';
+    arr.forEach(fr=>{ let acc=0; fr.ps.forEach(p=>{ const y1=Y(acc+p.ms), y0=Y(acc); bars+=`<rect x="${X(fr.f).toFixed(1)}" y="${y1.toFixed(1)}" width="${(W/N-0.4).toFixed(1)}" height="${Math.max(0,y0-y1).toFixed(1)}" fill="${p.c}" opacity="${p.sub?0.7:1}"/>`; acc+=p.ms; }); });
+    const trips = tripsFor(u).map(t=>`<rect x="${X(t.f0)}" y="0" width="${X(t.f1)-X(t.f0)}" height="${H}" fill="#f48771" opacity="0.10"/><line x1="${X(t.f0)}" x2="${X(t.f0)}" y1="0" y2="${H}" stroke="#f48771"/>`).join('');
+    const sx = X(sel.f), selr = sel.u===u ? `<rect x="${sx-1}" y="0" width="${W/N+2}" height="${H}" fill="none" stroke="#fff"/>`:'';
+    const evs = EV.map(e=>`<line x1="${X(e.f)}" x2="${X(e.f)}" y1="0" y2="${H}" stroke="${e.c}" stroke-dasharray="2 3" opacity=".8"/>`).join('');
+    h+=`<div class="lane"><div class="ln">${u}<small>${u==='Main'?'30 Hz':u==='Sim'?'30 Hz':'60 Hz'}</small></div>
+      <svg data-u="${u}" width="${W}" height="${H+2}" style="background:#1a1a1a;cursor:crosshair">
+        <line x1="0" x2="${W}" y1="${Y(BUDGET)}" y2="${Y(BUDGET)}" stroke="#d7ba7d" stroke-dasharray="4 3"/><text x="${W-90}" y="${Y(BUDGET)-3}">budget 33.3 ms</text>
+        ${trips}${bars}${evs}${selr}</svg></div>`;
+  });
+  // event flags row
+  let fl=''; EV.forEach((e,i)=>{ fl+=`<g data-ev="${i}"><line x1="${X(e.f)}" x2="${X(e.f)}" y1="0" y2="16" stroke="${e.c}"/><text x="${X(e.f)+3}" y="${10+(i%2)*10}" style="fill:${e.c}">${e.l}</text></g>`; });
+  h+=`<div class="lane"><div class="ln"><small>events</small></div><svg width="${W}" height="30">${fl}</svg></div>`;
+  h+=`<div class="legend">${M.filter(m=>ON[m.id]).map(m=>`<span><i style="background:${m.c}"></i>${m.n.split(' ')[0]}</span>`).join('')}</div>`;
+  tl.innerHTML=h;
+  tl.querySelectorAll('svg[data-u]').forEach(s=>s.addEventListener('click',e=>{ const r=s.getBoundingClientRect(); sel={u:s.dataset.u,f:Math.max(0,Math.min(N-1,Math.floor((e.clientX-r.left)/(W/N))))}; render(); }));
+}
+function tripsFor(u){ const a=F[u], res=[]; let run=0, s=0; for(let i=0;i<N;i++){ if(a[i].tot>BUDGET){ if(!run) s=i; run++; } else { if(run>=10) res.push({u,f0:s,f1:i}); run=0; } } if(run>=10) res.push({u,f0:s,f1:N}); return res; }
+function pct(arr,p){ const s=[...arr].sort((a,b)=>a-b); return s[Math.floor(p*(s.length-1))]; }
+function mods(){
+  const el=document.getElementById('mods'); let h='<div class="hdrrow"><span></span><span></span><span>p50</span><span>p95</span></div>';
+  [['Main','MainPU'],['Sim','SimPU'],['Render','RenderPU']].forEach(([u,label])=>{
+    const tots=F[u].map(x=>x.tot); const p50=pct(tots,.5),p95=pct(tots,.95);
+    h+=`<div class="unit"><h4>${label}<span class="pill ${p95>BUDGET?'bad':'ok'}">${p95>BUDGET?'over budget':'ok'}</span><span class="m">${p50.toFixed(1)} / ${p95.toFixed(1)} ms</span></h4>`;
+    M.filter(m=>m.u===u).forEach(m=>{
+      const vals=F[u].map(fr=>fr.ps.filter(p=>p.id===m.id).reduce((a,p)=>a+p.ms,0)); const a=pct(vals,.5), b=pct(vals,.95);
+      h+=`<div class="mod ${ON[m.id]?'':'off'}"><i style="background:${m.c}"></i><span class="n" title="${m.n}">${m.n}</span><span class="v">${ON[m.id]?a.toFixed(1):'-'}</span><span class="v ${b>12?'hot':''}">${ON[m.id]?b.toFixed(1):'-'}</span></div>
+        <div class="mod ${ON[m.id]?'':'off'}" style="grid-template-columns:14px 1fr 40px"><span></span><span style="color:#707070;font-size:10px">${(m.kids||[]).length?'sections: '+(m.kids.map(k=>k.id).join(', ')):'&nbsp;'}</span><span class="sw ${ON[m.id]?'on':''}" data-m="${m.id}" title="Pause this module (A/B). The game keeps running."></span></div>`;
+    });
+    h+='</div>';
+  });
+  h+=`<div class="unit"><h4>Cards / domains</h4><div class="mod" style="grid-template-columns:14px 1fr 40px"><span></span><span class="n">World Generation card (snapshot to panel)</span><span class="sw ${ON.card?'on':''}" data-m="card"></span></div></div>`;
+  h+='<div class="note">Switches pause a module in the running game for A/B; the timeline re-simulates here. Each switch sends one debug-server command and is undone on disconnect.</div>';
+  el.innerHTML=h; el.querySelectorAll('.sw').forEach(s=>s.addEventListener('click',()=>{ ON[s.dataset.m]=!ON[s.dataset.m]; F=frames(); render(); }));
+}
+function detail(){
+  const fr=F[sel.u][sel.f]; document.getElementById('dtitle').innerHTML=`Selected frame <span class="r">${sel.u}PU &middot; frame ${sel.f} &middot; ${fr.tot.toFixed(1)} ms ${fr.tot>BUDGET?'<span class="pill bad">over</span>':'<span class="pill ok">ok</span>'}</span>`;
+  const top=Math.max(...fr.ps.map(p=>p.ms),1); let b='';
+  fr.ps.forEach(p=>{ b+=`<div class="bar ${p.sub?'sub':''}"><span class="n">${p.n}</span><span class="t"><b style="width:${p.ms/top*100}%;background:${p.c}"></b></span><span class="ms ${p.ms>8?'hot':''}">${p.ms.toFixed(1)}</span></div>`; });
+  // cross-thread chain for the card
+  const g=F.Sim[sel.f], mn=F.Main[sel.f]; const get=(fr2,id)=>(fr2.ps.find(p=>p.id===id)||{ms:0}).ms;
+  const steps=[['Sim','WorldGenDebugDomain.GetJSONState',get(g,'gjs')],['Sim','pack all domains',get(g,'pack')],['Main','PollDomainSnapshot (parse)',get(mn,'poll')],['Main','PushDomainStatesToPanel',get(mn,'push')]];
+  const tot=steps.reduce((a,s)=>a+s[2],0);
+  let chain=''; if(!cardOn()){ chain='<div class="note">Card switched off: no chain.</div>'; } else {
+    chain=`<div class="chain">`;
+    steps.forEach((s,i)=>{ chain+=`<div class="step"><span class="th">${s[0]}</span><span>${s[1]}</span><span class="ms hot" style="text-align:right">${s[2].toFixed(1)}</span></div>`;
+      if(i===1) chain+=`<div class="edge">&#8595; stream DomainStateSnapshot1 &middot; 6.5 KB &middot; 30/s &middot; write 0.2 ms &middot; data age 12 ms &#8595;</div>`; });
+    chain+=`<div class="tot"><span>chain: "World Generation card state"</span><b>${tot.toFixed(1)} ms &middot; ${(tot/BUDGET*100).toFixed(0)}% of one frame budget</b></div></div>
+    <div class="note">One trace id follows the state from the Sim write to the Main push, so cost on two threads reads as one chain. Hot step: <b class="hot">${steps.slice().sort((a,b)=>b[2]-a[2])[0][1]}</b>.</div>`; }
+  document.getElementById('detail').innerHTML=`<div class="card"><h5>Modules &amp; sections<span>sorted by schedule</span></h5>${b}</div><div class="card"><h5>Cross-thread chain<span>trace-linked</span></h5>${chain}</div>`;
+}
+function right(){
+  const all=[...tripsFor('Main'),...tripsFor('Sim'),...tripsFor('Render')];
+  document.getElementById('tripc').textContent=all.length+' in window';
+  document.getElementById('trips').innerHTML= all.length? all.map(t=>{ const seg=F[t.u].slice(t.f0,t.f1); const mx=Math.max(...seg.map(x=>x.tot)); const agg={}; seg.forEach(fr=>fr.ps.forEach(p=>agg[p.n]=(agg[p.n]||0)+p.ms)); const top=Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([n,v])=>`${n.split('(')[0].trim()} ${(v/seg.length).toFixed(1)}`).join(' &middot; ');
+    return `<div class="item ${sel.u===t.u&&sel.f>=t.f0&&sel.f<t.f1?'sel':''}" data-u="${t.u}" data-f="${t.f0}"><div class="t1"><span class="pill bad">${t.u}PU</span>frames ${t.f0}&ndash;${t.f1}<b>peak ${mx.toFixed(0)} ms</b></div><div class="t2">${top}</div></div>`; }).join('') : '<div class="note">No trips in this window.</div>';
+  document.querySelectorAll('#trips .item').forEach(i=>i.addEventListener('click',()=>{ sel={u:i.dataset.u,f:+i.dataset.f+3}; render(); }));
+  const lat=[['slider drag &rarr; value applied (Sim)',cardOn()?26:14,100],['slider drag &rarr; card shows it (Main)',cardOn()?118:61,100],['regenerate &rarr; revision visible',cardOn()?84:52,250],['stage change &rarr; first frame',640,1000]];
+  document.getElementById('lat').innerHTML=lat.map(l=>`<div style="margin-bottom:7px"><div class="t1" style="display:flex"><span>${l[0]}</span><b style="margin-left:auto;font-weight:400" class="${l[1]>l[2]?'hot':''}">${l[1]} ms</b></div><div class="meter"><b style="width:${Math.min(100,l[1]/l[2]*50)}%;${l[1]>l[2]?'background:#f48771':''}"></b><u style="left:50%"></u></div><div class="note" style="margin:1px 0 0">target ${l[2]} ms &middot; p95 over 40 actions</div></div>`).join('');
+  document.getElementById('self').innerHTML=`<div class="t1" style="display:flex"><span>scope capture + ring write</span><b style="margin-left:auto;font-weight:400">0.18 ms / frame</b></div><div class="meter"><b style="width:18%"></b><u style="left:50%"></u></div><div class="note" style="margin:2px 0 6px">budget 1% of a frame (0.33 ms)</div>
+   <div class="t1" style="display:flex"><span>log lines dropped by rate limit</span><b style="margin-left:auto;font-weight:400">${loopState[sel.f]?'12,834':'0'}</b></div><div class="note">Rule: telemetry never writes per-frame; trips are summarised once per 5 s.</div>`;
+}
+function render(){ lanes(); mods(); detail(); right(); }
+document.getElementById('replay').onclick=()=>{ const all=[...tripsFor('Main'),...tripsFor('Sim')]; if(all.length){ sel={u:all[0].u,f:all[0].f0+3}; render(); } };
+document.getElementById('pause').onclick=e=>{ e.target.classList.toggle('on'); e.target.textContent=e.target.classList.contains('on')?'Resume':'Pause'; };
+const tip=document.getElementById('tip');
+document.addEventListener('mousemove',e=>{ const g=e.target.closest&&e.target.closest('g[data-ev]'); if(g){ const ev=EV[+g.dataset.ev]; tip.style.display='block'; tip.style.left=e.clientX+10+'px'; tip.style.top=e.clientY+10+'px'; tip.textContent=ev.l+' (frame '+ev.f+')'; } else tip.style.display='none'; });
+render();
+</script>
+</body>
+</html>

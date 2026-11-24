@@ -1,0 +1,74 @@
+{
+  "description": "An unresolved ref names the value and offers the closest id.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.species",
+      "entries": [
+        {
+          "key": "species[].id",
+          "kind": "parameter",
+          "label": "species[].id",
+          "description": "d",
+          "type": "string"
+        },
+        {
+          "key": "species[].home_biome",
+          "kind": "parameter",
+          "label": "species[].home_biome",
+          "description": "d",
+          "type": "ref",
+          "ref": "cow.biomes/biomes[].id"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Biomes/biomes.json",
+      "pack": false,
+      "content": {
+        "format": "cow.biomes",
+        "version": 1,
+        "biomes": [
+          {
+            "id": "TemperateForest"
+          },
+          {
+            "id": "Desert"
+          },
+          {
+            "id": "Tundra"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Global/Species/species.json",
+      "pack": false,
+      "content": {
+        "format": "cow.species",
+        "version": 1,
+        "species": [
+          {
+            "id": "wolf",
+            "home_biome": "TemperateForset"
+          }
+        ]
+      }
+    }
+  ],
+  "expected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.unresolved-ref",
+      "file": "Global/Species/species.json",
+      "key": "species[].home_biome",
+      "path": "species[0].home_biome",
+      "record": "wolf",
+      "messageContains": "TemperateForset",
+      "suggestion": "TemperateForest"
+    }
+  ]
+}

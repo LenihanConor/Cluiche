@@ -59,6 +59,5 @@ dependencies:
   required:
     - dia.core.memory
     - dia.core.strings
-    - dia.core.type
   forbidden: []
 ---

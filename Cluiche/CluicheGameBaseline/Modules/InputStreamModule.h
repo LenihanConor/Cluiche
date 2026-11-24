@@ -28,6 +28,9 @@ public:
     int GetMouseX() const { return mMouseX; }
     int GetMouseY() const { return mMouseY; }
 
+    // Wheel ticks accumulated during the most recent DoUpdate (positive = up); 0 on frames with no wheel event.
+    float GetMouseWheelDelta() const { return mWheelDelta; }
+
 protected:
     Dia::ApplicationFlow::StartResult DoStart()                              override;
     void                              DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
@@ -46,6 +49,7 @@ private:
     bool mPreviousMouse[kMaxMouseButtons];
     int  mMouseX = 0;
     int  mMouseY = 0;
+    float mWheelDelta = 0.0f;
 };
 
 } } // namespace Cluiche::AppFlow

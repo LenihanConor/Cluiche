@@ -66,6 +66,7 @@ private:
     bool mResolved = false;
     bool mStarted = false;
     bool mNavigationReleased = false;
+    unsigned int mResolvedFrames = 0;   // sim frames since resolve (automation release linger)
 
     // Deferred capture: set by ReportPassed/Failed, fired once render confirms the frame.
     bool mAwaitingCapture = false;

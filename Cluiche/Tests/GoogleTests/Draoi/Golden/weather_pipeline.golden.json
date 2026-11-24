@@ -1,0 +1,193 @@
+{
+  "cases" : 
+  {
+    "pipeline/small/52w" : 
+    {
+      "weather.cloud_cover" : 
+      {
+        "count" : 2772,
+        "hash" : "0x70E0E309B3A09A47",
+        "max" : 0.6664433479309082,
+        "mean" : 0.029657946070119175,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "weather.moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x8065792042EEC3C5",
+        "max" : 1,
+        "mean" : 0.095861196580628083,
+        "min" : 8.4254011648218174e-27,
+        "nanCount" : 0
+      },
+      "weather.precipitation" : 
+      {
+        "count" : 2772,
+        "hash" : "0x2A23BBDE7F2F6996",
+        "max" : 0.29962301254272461,
+        "mean" : 0.0057407647275474873,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "weather.pressure" : 
+      {
+        "count" : 2772,
+        "hash" : "0x976407E28074E181",
+        "max" : 0.79326856136322021,
+        "mean" : 0.60422100623448693,
+        "min" : 0.30656501650810242,
+        "nanCount" : 0
+      },
+      "weather.pressure_anomaly" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFE983CD3AB9FFF43",
+        "max" : 0,
+        "mean" : 0,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "weather.snow_pack" : 
+      {
+        "count" : 2772,
+        "hash" : "0x200ECD361E5CCAE5",
+        "max" : 1,
+        "mean" : 0.10757492643447644,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "weather.temperature" : 
+      {
+        "count" : 2772,
+        "hash" : "0x932A45F3F9BB41D9",
+        "max" : 0.83244812488555908,
+        "mean" : 0.28322697796457019,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "weather.water_to_ground" : 
+      {
+        "count" : 2772,
+        "hash" : "0x60DC80ECF3ACAA82",
+        "max" : 0.29454854130744934,
+        "mean" : 0.0016864566154439699,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "weather.wind_direction" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3819F02BFB71AE43",
+        "max" : 6.283177375793457,
+        "mean" : 3.1895501187716131,
+        "min" : 1.38854629767593e-05,
+        "nanCount" : 0
+      },
+      "weather.wind_speed" : 
+      {
+        "count" : 2772,
+        "hash" : "0x4673D1F9A9ED9B3D",
+        "max" : 0.64057356119155884,
+        "mean" : 0.60006728804902765,
+        "min" : 0.55844974517822266,
+        "nanCount" : 0
+      }
+    },
+    "pipeline/small/52w-forced" : 
+    {
+      "weather.cloud_cover" : 
+      {
+        "count" : 2772,
+        "hash" : "0xEF0FE7B7FD3CCB45",
+        "max" : 0.62846207618713379,
+        "mean" : 0.026759135776251729,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "weather.moisture" : 
+      {
+        "count" : 2772,
+        "hash" : "0x323CEC0EBE946BD5",
+        "max" : 1,
+        "mean" : 0.085599475134140846,
+        "min" : 2.7914132791109139e-26,
+        "nanCount" : 0
+      },
+      "weather.precipitation" : 
+      {
+        "count" : 2772,
+        "hash" : "0xC578A1176C5BEC3E",
+        "max" : 0.31049671769142151,
+        "mean" : 0.0054182256768579122,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "weather.pressure" : 
+      {
+        "count" : 2772,
+        "hash" : "0x7447AF7819F3CC8A",
+        "max" : 0.89999997615814209,
+        "mean" : 0.64530406655773287,
+        "min" : 0.30985814332962036,
+        "nanCount" : 0
+      },
+      "weather.pressure_anomaly" : 
+      {
+        "count" : 2772,
+        "hash" : "0xFE983CD3AB9FFF43",
+        "max" : 0,
+        "mean" : 0,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "weather.snow_pack" : 
+      {
+        "count" : 2772,
+        "hash" : "0xCE4D92DA9DC27585",
+        "max" : 1,
+        "mean" : 0.10432374996182775,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "weather.temperature" : 
+      {
+        "count" : 2772,
+        "hash" : "0xDD85491B2826DFBA",
+        "max" : 0.88674116134643555,
+        "mean" : 0.28246976177827665,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "weather.water_to_ground" : 
+      {
+        "count" : 2772,
+        "hash" : "0x3E7056BD0D61AE41",
+        "max" : 0.30228608846664429,
+        "mean" : 0.0012603932462466035,
+        "min" : 0,
+        "nanCount" : 0
+      },
+      "weather.wind_direction" : 
+      {
+        "count" : 2772,
+        "hash" : "0xAD540F62FAF86ACB",
+        "max" : 6.2831034660339355,
+        "mean" : 3.1286282407208961,
+        "min" : 3.4539516491349787e-05,
+        "nanCount" : 0
+      },
+      "weather.wind_speed" : 
+      {
+        "count" : 2772,
+        "hash" : "0x65BF406A1A2A8962",
+        "max" : 0.69999998807907104,
+        "mean" : 0.60013320390538216,
+        "min" : 0.55392724275588989,
+        "nanCount" : 0
+      }
+    }
+  },
+  "format" : "dia.cell_layer_golden",
+  "version" : 1
+}

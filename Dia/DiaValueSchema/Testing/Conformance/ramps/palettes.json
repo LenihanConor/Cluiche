@@ -1,0 +1,86 @@
+{
+  "format": "dia.ramps.conformance.palettes", "version": 1,
+  "comment": "Enum palette assignment: a given colour wins; a colour-less value i gets categorical[i % 12] (by value order); expectedWrapped when colour-less values exceed 12.",
+  "categorical": ["#e9ea86", "#c826d4", "#6bc4e9", "#41ebc4", "#7a8d69", "#271e74", "#6f291f", "#263042", "#dc6c26", "#a5eb1e", "#b25792", "#211eeb"],
+  "cases": [
+    { "name": "all-given",
+      "values": [
+        {"id": "v0", "label": "Value 0", "colour": "#102030"},
+        {"id": "v1", "label": "Value 1", "colour": "#a0b0c0"},
+        {"id": "v2", "label": "Value 2", "colour": "#ffffff"}
+      ],
+      "expectedColours": ["#102030", "#a0b0c0", "#ffffff"], "expectedWrapped": false },
+    { "name": "none-given-3",
+      "values": [
+        {"id": "v0", "label": "Value 0"},
+        {"id": "v1", "label": "Value 1"},
+        {"id": "v2", "label": "Value 2"}
+      ],
+      "expectedColours": ["#e9ea86", "#c826d4", "#6bc4e9"], "expectedWrapped": false },
+    { "name": "mixed",
+      "values": [
+        {"id": "v0", "label": "Value 0", "colour": "#112233"},
+        {"id": "v1", "label": "Value 1"},
+        {"id": "v2", "label": "Value 2", "colour": "#445566"},
+        {"id": "v3", "label": "Value 3"},
+        {"id": "v4", "label": "Value 4"}
+      ],
+      "expectedColours": ["#112233", "#c826d4", "#445566", "#41ebc4", "#7a8d69"], "expectedWrapped": false },
+    { "name": "twelve-colourless",
+      "values": [
+        {"id": "v0", "label": "Value 0"},
+        {"id": "v1", "label": "Value 1"},
+        {"id": "v2", "label": "Value 2"},
+        {"id": "v3", "label": "Value 3"},
+        {"id": "v4", "label": "Value 4"},
+        {"id": "v5", "label": "Value 5"},
+        {"id": "v6", "label": "Value 6"},
+        {"id": "v7", "label": "Value 7"},
+        {"id": "v8", "label": "Value 8"},
+        {"id": "v9", "label": "Value 9"},
+        {"id": "v10", "label": "Value 10"},
+        {"id": "v11", "label": "Value 11"}
+      ],
+      "expectedColours": ["#e9ea86", "#c826d4", "#6bc4e9", "#41ebc4", "#7a8d69", "#271e74", "#6f291f", "#263042", "#dc6c26", "#a5eb1e", "#b25792", "#211eeb"], "expectedWrapped": false },
+    { "name": "thirteen-colourless-wraps",
+      "values": [
+        {"id": "v0", "label": "Value 0"},
+        {"id": "v1", "label": "Value 1"},
+        {"id": "v2", "label": "Value 2"},
+        {"id": "v3", "label": "Value 3"},
+        {"id": "v4", "label": "Value 4"},
+        {"id": "v5", "label": "Value 5"},
+        {"id": "v6", "label": "Value 6"},
+        {"id": "v7", "label": "Value 7"},
+        {"id": "v8", "label": "Value 8"},
+        {"id": "v9", "label": "Value 9"},
+        {"id": "v10", "label": "Value 10"},
+        {"id": "v11", "label": "Value 11"},
+        {"id": "v12", "label": "Value 12"}
+      ],
+      "expectedColours": ["#e9ea86", "#c826d4", "#6bc4e9", "#41ebc4", "#7a8d69", "#271e74", "#6f291f", "#263042", "#dc6c26", "#a5eb1e", "#b25792", "#211eeb", "#e9ea86"], "expectedWrapped": true },
+    { "name": "given-keeps-wrap-off",
+      "values": [
+        {"id": "v0", "label": "Value 0", "colour": "#010203"},
+        {"id": "v1", "label": "Value 1", "colour": "#040506"},
+        {"id": "v2", "label": "Value 2"},
+        {"id": "v3", "label": "Value 3"},
+        {"id": "v4", "label": "Value 4"},
+        {"id": "v5", "label": "Value 5"},
+        {"id": "v6", "label": "Value 6"},
+        {"id": "v7", "label": "Value 7"},
+        {"id": "v8", "label": "Value 8"},
+        {"id": "v9", "label": "Value 9"},
+        {"id": "v10", "label": "Value 10"},
+        {"id": "v11", "label": "Value 11"},
+        {"id": "v12", "label": "Value 12"},
+        {"id": "v13", "label": "Value 13"}
+      ],
+      "expectedColours": ["#010203", "#040506", "#6bc4e9", "#41ebc4", "#7a8d69", "#271e74", "#6f291f", "#263042", "#dc6c26", "#a5eb1e", "#b25792", "#211eeb", "#e9ea86", "#c826d4"], "expectedWrapped": false },
+    { "name": "single",
+      "values": [
+        {"id": "v0", "label": "Value 0"}
+      ],
+      "expectedColours": ["#e9ea86"], "expectedWrapped": false }
+  ]
+}

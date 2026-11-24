@@ -183,11 +183,20 @@ C:\GitHub\Cluiche\
 - `Dia/DiaUI/`
   - `DiaUIIUISystem.h` - UI interface
 
-### SFML Backend
-- `Dia/DiaSFML/`
-  - `DiaSFMLRenderWindow.h` - SFML window + canvas
-  - `DiaSFMLInputSource.h` - SFML input
-  - `DiaSFMLSoundManager.h` - SFML audio
+### SDL3 Window/Input Backend
+- `Dia/DiaSDL/`
+  - `Window.h` - SDL3 window (IWindow + IInputSource)
+  - `WindowFactory.h` - Window creation/destruction
+  - `InputSource.h` - SDL input translation
+  - `DisplayInfo.h` - Display queries
+
+### bgfx Rendering Backends
+- `Dia/DiaBgfx/`
+  - `Canvas.h` - 2D ICanvas implementation
+  - `Renderers/` - Sprite, debug, UI overlay, CellField renderers
+  - `Shaders/` - bgfx shader sources
+- `Dia/DiaBgfx3D/`
+  - `Canvas3D.h` - 3D canvas extending `Dia::Bgfx::Canvas`
 
 ### File I/O
 - `Dia/DiaIO/`
@@ -205,11 +214,11 @@ C:\GitHub\Cluiche\
 
 ## External/ - Third-Party
 
-### SFML
-- `External/SFML-2.5.1/`
-  - `include/` - SFML headers
-  - `lib/` - SFML libraries
-  - `bin/` - SFML DLLs
+### SDL3
+- `External/SDL3/` - SDL3 sources; static libs staged to `External/SDL3/lib/` by `dia env setup`
+
+### bgfx
+- `External/bgfx/`, `External/bx/`, `External/bimg/` - rendering library and its base libraries
 
 ### JsonCpp
 - `External/jsoncpp-master/`
@@ -217,7 +226,6 @@ C:\GitHub\Cluiche\
   - `src/` - JSON source
 
 ### Web UI Components
-- `External/Webix/` - Web UI library
 - `External/VisJS/` - Graph visualization
 
 ---
@@ -390,7 +398,8 @@ C:\GitHub\Cluiche\
 | **Phase base** | `Dia/DiaApplicationFlow/ApplicationPhase.h` |
 | **StringCRC** | `Dia/DiaCore/CRC/CRC.h` |
 | **TimeServer** | `Dia/DiaCore/Time/TimeServer.h` |
-| **SFML headers** | `External/SFML-2.5.1/include/` |
+| **SDL3 sources** | `External/SDL3/` |
+| **bgfx sources** | `External/bgfx/` |
 | **Tools** | `Tools/dia_modules.py` |
 | **Tests** | `Cluiche/Levels/UnitTestLevel/` |
 

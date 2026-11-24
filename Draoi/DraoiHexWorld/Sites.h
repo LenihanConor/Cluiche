@@ -1,0 +1,113 @@
+// S-1 Regions, Nodes and Site Hook: Site records, kind info and SiteSet.
+// Kind ids are stored as the StringCRC value (uint32_t) so Site / SiteKindInfo stay trivially
+// copyable (StringCRC holds a 64-byte string and has user-provided copies). StringCRC is used at
+// the API edges only. Sites are ordered by (kindCrc, cell): CRC order, not name order.
+#pragma once
+
+#include <DraoiHexWorld/CellVocabulary.h>
+
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/CRC/StringCRC.h>
+
+#include <cstdint>
+#include <span>
+#include <string>
+#include <vector>
+
+namespace Draoi {
+namespace HexWorld {
+
+// StringCRC -> storable kind id.
+inline uint32_t SiteKindId(const Dia::Core::StringCRC& kind) { return kind.Value(); }
+
+struct Site
+{
+    uint32_t kindCrc = 0;
+    uint32_t cell    = 0;
+    RegionId region  = kNoRegion;
+    uint16_t variant = 0;
+    uint16_t flags   = 0;
+
+    bool operator==(const Site&) const = default;
+};
+
+enum class SiteShape : uint8_t { Dot, Diamond, Square, Triangle, Star, Ring };
+
+// "Dot", "Diamond", ... (JSON and view listings).
+const char* SiteShapeName(SiteShape shape);
+
+struct SiteKindInfo
+{
+    uint32_t  kindCrc         = 0;
+    char      id[64]          = {};      // the kind id string (hashes to kindCrc)
+    char      displayName[32] = {};
+    uint32_t  debugColour     = 0xFFFFFF; // 0xRRGGBB
+    SiteShape debugShape      = SiteShape::Dot;
+    char      variantLabel[24] = {};
+
+    Dia::Core::StringCRC Kind() const { return Dia::Core::StringCRC(id); }
+};
+
+// Fills a SiteKindInfo (strings truncated to fit).
+SiteKindInfo MakeSiteKindInfo(const Dia::Core::StringCRC& kind, const char* displayName, uint32_t debugColour,
+                              SiteShape shape, const char* variantLabel = "");
+
+// The ids of the four built-in node kinds the generator places (corridor, river, hunting, resource). The ids are saved
+// in world files, so the host injects its own (the defaults are neutral); the same ids always give the same worlds.
+struct NodeKindIds
+{
+    Dia::Core::StringCRC corridor = Dia::Core::StringCRC("HexWorld.Node.Corridor");
+    Dia::Core::StringCRC river    = Dia::Core::StringCRC("HexWorld.Node.River");
+    Dia::Core::StringCRC hunting  = Dia::Core::StringCRC("HexWorld.Node.Hunting");
+    Dia::Core::StringCRC resource = Dia::Core::StringCRC("HexWorld.Node.Resource");
+
+    bool IsBuiltin(uint32_t kindCrc) const
+    {
+        return kindCrc == corridor.Value() || kindCrc == river.Value() || kindCrc == hunting.Value() || kindCrc == resource.Value();
+    }
+};
+
+// Display info for the four built-in kinds; for any other kind returns an info with the
+// right kindCrc/id and an empty displayName.
+SiteKindInfo BuiltinNodeKindInfo(const NodeKindIds& ids, const Dia::Core::StringCRC& kind);
+
+// Sites at one cell (a cell can hold several kinds).
+using SitesAtCell = Dia::Core::Containers::DynamicArrayC<Site, 8>;
+
+// Flat storage sorted by (kindCrc, cell). At most one site per (kind, cell).
+// Heap-backed (site counts are unbounded for registered kinds); the public API returns spans.
+class SiteSet
+{
+public:
+    // False (set unchanged) if a site of that kind already exists at the cell.
+    bool Add(const Site& site);
+
+    std::span<const Site> All() const { return { mSites.data(), mSites.size() }; }
+    std::span<const Site> Of(const Dia::Core::StringCRC& kind) const { return Of(SiteKindId(kind)); }
+    std::span<const Site> Of(uint32_t kindCrc) const;
+
+    int  Count() const { return static_cast<int>(mSites.size()); }
+    int  Count(const Dia::Core::StringCRC& kind) const { return static_cast<int>(Of(kind).size()); }
+
+    bool Has(uint32_t cell) const;                               // any kind
+    SitesAtCell At(uint32_t cell) const;                         // truncated at 8 kinds per cell
+    const Site* Find(const Dia::Core::StringCRC& kind, uint32_t cell) const;
+
+    void Clear() { mSites.clear(); mKindNames.clear(); }
+
+    // Kind id text for kinds nobody registered (filled by world import so an unknown kind re-exports under its
+    // original name). Not part of the world's identity: operator== and sites ignore it. A name is stored only if
+    // it hashes to kindCrc; empty names are ignored. Returns false when the name was not stored.
+    bool        RememberKindName(uint32_t kindCrc, const std::string& name);
+    // nullptr when no name was remembered for the kind.
+    const char* KindName(uint32_t kindCrc) const;
+
+    bool operator==(const SiteSet& o) const { return mSites == o.mSites; }
+
+private:
+    std::vector<Site> mSites;
+    std::vector<std::pair<uint32_t, std::string>> mKindNames;
+};
+
+} // namespace HexWorld
+} // namespace Draoi

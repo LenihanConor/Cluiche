@@ -63,7 +63,7 @@ TEST(TimerExpiry, TimeSinceExpiry_BeforeExpiry_Asserts)
 
     time.Tick();
 
-    EXPECT_DEATH({ timer.TimeSinceExpiry(time.GetTime()); }, "");
+    DIA_EXPECT_DEATH({ timer.TimeSinceExpiry(time.GetTime()); }, "");
 }
 
 TEST(TimerExpiry, TickPastExpiry_TimerStopsRunning)

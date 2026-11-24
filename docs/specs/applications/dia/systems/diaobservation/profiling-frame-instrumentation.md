@@ -10,6 +10,10 @@
 
 **Status:** `Approved` — 2026-05-19
 
+> **Amended 2026-11-09 (Approved):** module-attributed scopes, always-on unit timing, trip reports and `--perf`. See "Amendment 2026-11-09" at the end, and @perf-inspector.md / @perf-live-control.md.
+>
+> **Amended 2026-11-12 (Approved):** worker-thread profile records and the offline Perfetto converter (`dia perf convert`). See "Amendment 2026-11-12" at the end, and @docs/specs/applications/dia/systems/diathreading/job-observation.md.
+
 **Research:** @docs/research/observ_telemetry/summary.md
 
 **Depends on:** Feature #2 (foundation) — `SessionManager` wires `ProfileFileSink` and drives `Profiler`; session directory must exist. Feature #5 (metrics registry) — `DIA_PROFILE_SCOPE_METRIC` variant feeds `Histogram::Observe()`. Both must be Done before implementation begins.
@@ -317,3 +321,122 @@ Each registered thread maintains:
 ## Status
 
 `Approved` — 2026-05-19. Steps 3 (Binding Decisions) and 4 (AI Review Questions) complete and confirmed.
+
+
+---
+
+## Amendment 2026-11-09: module attribution, always-on unit timing, trip reports
+
+**Status of this amendment:** `Approved` — 2026-11-09 (with @perf-inspector.md and @perf-live-control.md). **Revised 2026-11-10** after the plan audit: subject is a 4-byte CRC value (A1), Sim timing per fixed step (A2), trip skips and no I/O on the PU thread (A3); AA10-AA12 added.
+**Why:** the S-1 panel perf investigation (docs/specs/applications/cow/systems/s1-worldgeneration/worldgen-panel.plan.md, "Perf fix") needed hand-written timers because (1) every module update uses the same scope name `module.update` with no module identity, (2) profiling and tracing default OFF, so a session had an empty `trace.jsonl` and no `profile.jsonl`, and (3) the only over-budget signal was a per-frame `pu.over_budget` log line (`ProcessingUnit.cpp`), which fed the panel's log push and kept the unit over budget (a feedback loop).
+
+### A1. Module-attributed scopes
+- `ScopeRecord` gains `uint32_t subject`: the CRC **value** of the module or PU instance id; zero when not set. `name` stays `module.update` / `pu.update`, so existing filters keep working. `profile.jsonl` gains a `"subject"` field holding the instance id as text (omitted when zero).
+- The subject is the 4-byte CRC value, not a `StringCRC`: a `StringCRC` carries a 64-char string (about 68 bytes), which would grow every per-thread closed ring and the `ProfileFileSink` 60 x 512 frame ring by about 2 MB and copy 64 chars per scope. Names are resolved when the file is written, from a subject name table (`Profiler::RegisterSubjectName(uint32_t, const char*)`) filled once when a module or PU is created. An unknown value is written as hex (`"0x1a2b3c4d"`).
+- `ScopedZone` gains an overload taking a subject; `Module::Update` and `ProcessingUnit::Update` pass their instance ids. No string building on the hot path (the CRC value is read from the module's id).
+- Sections inside a module (`DIA_PROFILE_SCOPE`) inherit the subject of the enclosing module scope through the thread-local open stack, so no call-site changes are needed to attribute them.
+
+### A2. Always-on unit timing (independent of the profile pillar)
+- Each `ProcessingUnit` keeps a `UnitTimingTable` (new, pure, `Dia/DiaObservation/Profile/UnitTimingTable.h`): for each module, last ms, EWMA, and a ring of the last 128 frames' ms; plus the unit's own tick ms. Filled by the PU with two `steady_clock` reads per module per frame. Cost target: under 0.5 us per module per frame; the table's own cost is published as the gauge `perf.self_ms`.
+- **Frame definition.** One table entry is one forward pass (`RunForwardPass`). Main and Render run one pass per `Update()`. SimPU's fixed-step accumulator runs 0 to N passes per `Update()`, so on Sim an entry is one fixed step, and an `Update()` that runs no step adds no entry. Each Sim `Update()` also records its step count; the counter `pu.<unit>.catchup_updates` counts calls that ran more than one step, so catch-up is visible on its own and is never read as slow modules.
+- Gauges: `pu.<unit>.module.<id>.ms` (EWMA), registered when the module starts and unregistered when it stops (the gauge name is built once, off the hot path). Existing `pu.<unit>.last_tick_ms` is unchanged.
+- Always compiled in (Debug and Release). Profile scopes stay opt-in (SD-O27 unchanged).
+
+### A3. Trip detector and trip report
+- `TripDetector` (new, pure, same folder): per unit, trips when the tick exceeds the budget for `tripFrames` consecutive frames (default 10) or exceeds `tripFactor` x budget in one frame (default 2.0). It re-arms after `rearmFrames` frames under budget (default 30). After a trip, further trips for that unit are suppressed for `minIntervalMs` (default 5000) and counted.
+- On a trip, **one** record is written to `trips.jsonl` in the session directory: unit, frame range, budget, peak ms, the top 5 modules by mean ms over the trip window (with sections), the worst frame's full breakdown, the last 60 frames of that unit from the ring, and the suppressed-trip count since the previous record. One Warning log line `pu.trip id=... frames=... peak_ms=... top=...` accompanies it.
+- The per-frame `pu.over_budget` Warning in `ProcessingUnit.cpp` is replaced by the counter `pu.<unit>.over_budget_frames` and the trip record. The log line must never be emitted at tick rate.
+- Budget: `target_ms` from the unit frequency, times `observation.perf.budget_scale` (default 1.0; Debug runs may set 1.5-2.0). Reports state the build configuration. The budget applies per entry (per fixed step on Sim, see A2), never to a whole multi-step Sim `Update()`.
+- The detector ignores the unit's first entry and any entry in which a module of that unit is starting (module start costs), as the old warning skipped tick 1. The old warning's 7% jitter allowance is dropped: `tripFrames` filters jitter, and `budget_scale` covers slow builds.
+- The detector runs on the unit's own thread. It never does file I/O there: the trip record goes to the observation drain, which writes `trips.jsonl`. With no session started, only the counter and the log line happen.
+
+### A4. Config and CLI
+- `observation.perf { trip_frames, trip_factor, rearm_frames, min_interval_ms, budget_scale }`; CLI `--perf` (shorthand: profile enabled with the ApplicationFlow category, trips on, and a `perf-summary.json` written at exit with per-unit, per-module p50/p95/max and trip counts). `dia run|launch <target> --perf[=seconds]` forwards `--perf` and, when given a duration, exits the app after that many seconds (automation exit path).
+
+### Acceptance criteria (amendment)
+| ID | Criterion | Verification |
+|----|-----------|--------------|
+| AA1 | A `module.update` record in `profile.jsonl` carries `subject` equal to the module's instance id; two modules in one frame are distinguishable | Unit test with two test modules |
+| AA2 | A section scope opened inside a module update inherits that module's subject | Unit test |
+| AA3 | `UnitTimingTable` reports last, EWMA and p95 per module; a module sleeping 5 ms shows 5 ms +/- 1 ms | Unit test |
+| AA4 | With profiling OFF, the per-module gauges still update | Unit test |
+| AA5 | `TripDetector`: 10 consecutive frames over budget produce exactly one trip; 1,000 frames over budget produce at most 1 trip per `minIntervalMs` and the next record states the suppressed count | Unit test with a fake clock |
+| AA6 | A trip record lists the top modules in descending mean ms and includes the last 60 frames | Unit test |
+| AA7 | A unit that is over budget for 1,000 frames writes no more than 1 `pu.trip` log line per 5 s and zero `pu.over_budget` lines | Integration test (the S-1 case: card open, Debug) |
+| AA8 | `UnitTimingTable` costs under 0.5 us per module per frame in Release | Benchmark test (reported, not gating) |
+| AA9 | `--perf` writes `perf-summary.json` with every module of every unit, including modules that stopped before exit | Integration test |
+| AA10 | A Sim `Update()` that runs 3 fixed steps within the per-step budget raises no trip, adds 3 table entries and counts one `catchup_updates`; one with 0 steps adds no entry | Unit test |
+| AA11 | No trip is raised on a unit's first entry or on an entry in which one of its modules is starting | Unit test |
+| AA12 | `profile.jsonl` writes the subject as the module's instance id text; an unregistered subject value is written as hex | Unit test |
+
+### Binding decisions (amendment)
+| ID | Decision | How it applies |
+|----|----------|----------------|
+| SD-PERF-1 | Module timing is always on and independent of profile categories | A2 is not gated by `profileEnabled` (SD-O27 stays for scopes) |
+| SD-PERF-2 | Telemetry never writes at tick rate | A3 replaces the per-frame warning; any future diagnostic needs a rate limit at the source |
+| SD-PERF-3 | Pure data types in DiaObservation; hosts in application code | `UnitTimingTable` and `TripDetector` depend only on DiaCore (SD-O21); `ProcessingUnit` (DiaApplicationFlow) fills them |
+
+### Open design questions (amendment)
+1. ~~`ScopeRecord` grows by 4 bytes. Is the 512-entry closed ring still within budget?~~ **Resolved 2026-11-10:** it grows by 4 bytes only because the subject is a `uint32_t` CRC value (see A1); a `StringCRC` would have been about 68 bytes. **Measured 2026-11-16 (task A5):** `sizeof(ScopeRecord)` = 112 bytes → 120 bytes after adding subject field (8-byte alignment padding).
+2. ~~Where does the per-module gauge set live when modules are created and destroyed per stage?~~ **Resolved 2026-11-10:** register on module start, unregister on stop (A2). If `MetricRegistry` has no unregister, adding one is part of task A2.
+4. ~~What is a "frame" on SimPU, which runs 0 to N fixed steps per `Update()`?~~ **Resolved 2026-11-10:** one fixed step (A2, A3).
+3. Should trips also be raised by a single module exceeding a share of the frame (for example 40%) even when the unit is under budget? (Deferred; the mockup lists it as a trip option.)
+
+### Tasks (amendment)
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| A1 | `ScopeRecord.subject` (`uint32_t`), subject name table, `ScopedZone` subject overload, `profile.jsonl` field, module/PU call sites, inheritance through the open stack | AA1, AA2, AA12 | Done | sonnet | Dia |
+| A2 | `UnitTimingTable` + PU hookup (per forward pass) + Sim step count and `catchup_updates` + per-module gauges + `perf.self_ms` | AA3, AA4, AA8, AA10 | Done | sonnet | Dia |
+| A3 | `TripDetector` (first-entry and starting-module skips) + `trips.jsonl` via the drain + replace `pu.over_budget` | AA5, AA6, AA7, AA11 | Done | sonnet | Dia; edits `ProcessingUnit.cpp` |
+| A4 | Config block, `--perf` flag, `perf-summary.json`, `dia run|launch --perf[=seconds]` | AA9 | Done | sonnet | DiaCLI |
+| A5 | Update `dia.dia.observation.architecture.module.md` | - | Done | haiku | |
+
+## Amendment 2026-11-12: worker threads and offline analysis
+
+**Status of this amendment:** `Approved` — 2026-11-12. Builds on Amendment 2026-11-09 (A1 subject) and @docs/specs/applications/dia/systems/diathreading/job-observation.md (`IJobObserver`).
+**Why:** DiaDeferredStep (weather, ecology) and in-frame parallel ranges move cost onto job workers. Workers never call `RegisterThreadScopeBuffer`, so their scopes are dropped (AC12). Offline, the only deep view is the Inspector's 60 s export, which needs a live game.
+
+### B1. Worker-thread scopes
+- `JobObserver::OnWorkerStart` registers the worker's scope buffer and adds `Worker N` to a new thread-name table (`Profiler::RegisterThreadName(uint32_t threadId, const char*)`). `profile.jsonl` writes the name once per thread as a `record_type:"thread_name"` line.
+- Each job runs inside a root scope `job.run` whose subject is the job owner (A1), so `DIA_PROFILE_SCOPE` sections inside the job inherit it without call-site changes.
+- `frame_number` on a worker is the global frame counter when the scope opened. Async work (a deferred step spans keys N to N+k) is placed by its timestamps and `tag`, not by frame number.
+
+### B2. Job records in the profile file
+- When profiling is on, each `JobTimingRecord` is also written to `profile.jsonl` from the worker's ring (never from a PU thread, never at tick rate on the PU) as:
+  `{"record_type":"profile_job","thread_id":12,"submit_thread":3,"owner":"ecology","tag":4,"range":2,"range_count":8,"submit_unix_nano":...,"start_unix_nano":...,"end_unix_nano":...}`
+- `owner` is resolved through the subject name table (A1), and unknown values are written as hex. The job's `job.run` scope already carries its duration. This record adds the submit time and the submitting thread, which give queue wait and the cross-thread link.
+
+### B3. Offline converter: `dia perf convert`
+- `dia perf convert <session-dir|profile.jsonl> [--out trace.json] [--from s --to s]` writes Chrome-trace JSON that Perfetto loads:
+  - one track per thread, named from `thread_name` records;
+  - scopes as complete events (`ph:"X"`) with the subject in `args`;
+  - `profile_job` records as flow events (`ph:"s"` on the submitting thread at `submit_unix_nano`, `ph:"f"` on the worker's `job.run`), so a job shows as an arrow from its submitter;
+  - trips (`trips.jsonl`) and perf markers as instant events (`ph:"i"`).
+- Pure Python in DiaCLI, streaming the input (sessions can be large). No engine change.
+- This is the offline deep-analysis path. There is no perf Editor plugin for now (decision 2026-11-12, see @perf-inspector.md Revision 2026-11-12).
+
+### Acceptance criteria (amendment 2026-11-12)
+| ID | Criterion | Verification |
+|----|-----------|--------------|
+| AB1 | A `DIA_PROFILE_SCOPE` inside a job appears in `profile.jsonl` with the worker's `thread_id` and the job owner as subject | Integration test |
+| AB2 | Each worker has one `thread_name` record (`Worker N`) | Unit test |
+| AB3 | With profiling on, each completed job writes one `profile_job` record; with profiling off, none | Unit test |
+| AB4 | `dia perf convert` on a recorded session produces JSON that passes a Chrome-trace schema check, with one track per thread, job flow arrows and trip instants | pytest on a fixture session |
+| AB5 | `dia perf convert` on a 200 MB `profile.jsonl` runs in bounded memory (streaming, under 500 MB peak) | pytest (reported) |
+| AB6 | Manual: the converted S-3 Ecology session loads in Perfetto and shows Sim, Main, Render and worker tracks with job arrows | Manual check recorded in notes |
+
+### Binding decisions (amendment 2026-11-12)
+| ID | Decision | How it applies |
+|----|----------|----------------|
+| SD-PERF-2 | Telemetry never writes at tick rate | `profile_job` records go through the worker ring and the drain, not the PU thread |
+| SD-PERF-7 | Telemetry cost budgets (@perf-inspector.md Revision 2026-11-12) | Worker scope and job-record cost count toward the detached budget |
+
+### Open design questions (amendment 2026-11-12)
+1. **Ring size on busy workers.** The 512-entry closed ring per thread may overflow when a worker runs many small jobs per frame. Raise it for workers only, or accept drops (which are already counted)? Proposal: keep 512, report drops, and revisit after the 10,000 jobs/s flood benchmark.
+
+### Tasks (amendment 2026-11-12)
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| B1 | Thread-name table, `thread_name` records, `job.run` root scope with owner subject (in `JobObserver`) | AB1, AB2 | Planned | sonnet | Needs job-observation tasks 2 and 4 |
+| B2 | `profile_job` record from the worker ring via the drain | AB3 | Planned | sonnet | |
+| B3 | `dia perf convert` (DiaCLI), streaming, flow events, trips and markers | AB4, AB5, AB6 | Planned | sonnet | Can start before B1/B2 against today's `profile.jsonl` (thread tracks and scopes) |

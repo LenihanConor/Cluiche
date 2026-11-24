@@ -1,3 +1,4 @@
+import { newFrameReqId } from '@dia/editor-ui';
 import { useState, useRef, useCallback, useEffect, CSSProperties, JSX } from 'react';
 import { useAssetRuntimeStore } from '../store';
 import type { AssetRow, AssetState } from '../types';
@@ -25,7 +26,7 @@ type SortDir = 'asc' | 'desc';
 
 function sendBridgeRequest(type: string, data: unknown) {
     window.parent.postMessage(
-        { __diaFromFrame: true, payload: { type, reqId: null, data } },
+        { __diaFromFrame: true, payload: { type, reqId: newFrameReqId(), data } },
         '*',
     );
 }

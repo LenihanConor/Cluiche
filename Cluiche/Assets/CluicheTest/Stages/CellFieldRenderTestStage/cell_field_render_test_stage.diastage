@@ -1,0 +1,11 @@
+{
+    "name": "CellFieldRenderTestStage",
+    "manifest": "Stages/CellFieldRenderTestStage/misc/ApplicationFlow/cell_field_render_test_stage.diaapp",
+    "tags": ["test", "cells"],
+    "description": "Cell field rendering and visualization",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

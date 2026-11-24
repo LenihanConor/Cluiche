@@ -12,16 +12,16 @@
 #include <DiaGridVisibility/GridVisibilitySystem.h>
 #include <DiaGridVisibility/VisibilityGroupId.h>
 #include <DiaEntitySpatial/EntitySpatialModule.h>
-#include <DiaDebugDraw/Domain/IDebugDomain.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Colour/RGBA.h>
 #include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaPathfinding/CellCoord.h>
+#include <DiaGeometry2D/Grid/CellCoord.h>
 #include <DiaEntity/Entity.h>
 
 namespace Dia
@@ -145,7 +145,7 @@ namespace Dia
                         [&](Dia::Entity::Entity /*entity*/,
                             Dia::GridVisibility::VisibilityGroupId groupId,
                             float sightRadius,
-                            Dia::Pathfinding::CellCoord lastVisCell)
+                            Dia::Geometry2D::CellCoord lastVisCell)
                         {
                             if (!(groupId == *mSelectedGroup))
                                 return;
@@ -345,7 +345,7 @@ namespace Dia
                 mSystem.VisitSightSources(
                     [&](Dia::Entity::Entity,
                         Dia::GridVisibility::VisibilityGroupId,
-                        float, Dia::Pathfinding::CellCoord)
+                        float, Dia::Geometry2D::CellCoord)
                     { ++sightSourceCount; });
 
                 Json::Value stats(Json::objectValue);

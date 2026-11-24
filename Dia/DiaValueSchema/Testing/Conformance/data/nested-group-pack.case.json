@@ -1,0 +1,96 @@
+{
+  "description": "A pack addresses a parameter by its FLAT key '<group>.<key>' (2026-11-20 user decision). A nested group object such as {\"grazing\":{\"rate\":2.5}} is rejected (data.nested-group-pack, naming the flat key); ApplyPack drops it with a warning. An object under a MAP parameter name is the map-columns form and stays valid. The cow.biomes file is the shared keyRef key data file: ids TemperateForest, Desert, Tundra (also used by the C++ conformance tests).",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.params",
+      "entries": [
+        {
+          "key": "grazing.rate",
+          "kind": "parameter",
+          "label": "grazing.rate",
+          "description": "d",
+          "type": "float",
+          "min": 0,
+          "max": 5,
+          "default": 1
+        },
+        {
+          "key": "grazing.scale",
+          "kind": "parameter",
+          "label": "grazing.scale",
+          "description": "d",
+          "type": "float",
+          "min": 0,
+          "max": 5,
+          "default": 1
+        },
+        {
+          "key": "affinity",
+          "kind": "parameter",
+          "label": "affinity",
+          "description": "d",
+          "type": "map",
+          "keyRef": "cow.biomes/biomes[].id",
+          "valueType": "float",
+          "min": 0,
+          "max": 1,
+          "default": {
+            "TemperateForest": 0.9,
+            "Desert": 0.8,
+            "Tundra": 0.9
+          }
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Biomes/biomes.json",
+      "pack": false,
+      "content": {
+        "format": "cow.biomes",
+        "version": 1,
+        "biomes": [
+          {
+            "id": "TemperateForest"
+          },
+          {
+            "id": "Desert"
+          },
+          {
+            "id": "Tundra"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Global/Params/Packs/pack.json",
+      "pack": true,
+      "content": {
+        "format": "cow.params",
+        "version": 1,
+        "grazing.scale": 2,
+        "grazing": {
+          "rate": 2.5
+        },
+        "affinity": {
+          "Desert": 0.3
+        }
+      }
+    }
+  ],
+  "expected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.nested-group-pack",
+      "file": "Global/Params/Packs/pack.json",
+      "key": "grazing",
+      "path": "grazing",
+      "record": null,
+      "messageContains": "grazing.rate",
+      "suggestion": null
+    }
+  ]
+}

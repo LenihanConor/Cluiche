@@ -1,7 +1,9 @@
 #include <DiaObservation/Metric/MetricRegistry.h>
 
 #include <DiaCore/Core/Assert.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <algorithm>
+#include <cstring>
 #include <chrono>
 
 namespace Dia
@@ -50,10 +52,18 @@ namespace Dia
             {
                 std::lock_guard<std::mutex> lock(mMutex);
 
-                for (const auto& e : mCounters)
+                for (auto& e : mCounters)
                 {
                     if (e.name == name)
+                    {
+                        if (e.retired)
+                        {
+                            e.retired = false;
+                            e.primitive->Reset();
+                            ++mGeneration;
+                        }
                         return e.primitive;
+                    }
                 }
 
                 for (const auto& e : mGauges)
@@ -65,6 +75,7 @@ namespace Dia
                 entry.name      = name;
                 entry.primitive = new Counter();
                 mCounters.push_back(entry);
+                ++mGeneration;
                 return entry.primitive;
             }
 
@@ -72,10 +83,18 @@ namespace Dia
             {
                 std::lock_guard<std::mutex> lock(mMutex);
 
-                for (const auto& e : mGauges)
+                for (auto& e : mGauges)
                 {
                     if (e.name == name)
+                    {
+                        if (e.retired)
+                        {
+                            e.retired = false;
+                            e.primitive->Reset();
+                            ++mGeneration;
+                        }
                         return e.primitive;
+                    }
                 }
 
                 for (const auto& e : mCounters)
@@ -87,6 +106,7 @@ namespace Dia
                 entry.name      = name;
                 entry.primitive = new Gauge();
                 mGauges.push_back(entry);
+                ++mGeneration;
                 return entry.primitive;
             }
 
@@ -96,10 +116,18 @@ namespace Dia
             {
                 std::lock_guard<std::mutex> lock(mMutex);
 
-                for (const auto& e : mHistograms)
+                for (auto& e : mHistograms)
                 {
                     if (e.name == name)
+                    {
+                        if (e.retired)
+                        {
+                            e.retired = false;
+                            e.primitive->Reset();
+                            ++mGeneration;
+                        }
                         return e.primitive;
+                    }
                 }
 
                 for (const auto& e : mCounters)
@@ -111,7 +139,166 @@ namespace Dia
                 entry.name      = name;
                 entry.primitive = new Histogram(bucketBounds, bucketCount);
                 mHistograms.push_back(entry);
+                ++mGeneration;
                 return entry.primitive;
+            }
+
+            static bool SameStr(const char* a, const char* b)
+            {
+                if (a == b) return true;
+                if (!a || !b) return false;
+                return std::strcmp(a, b) == 0;
+            }
+
+            static bool SameInfo(const MetricInfo& a, const MetricInfo& b)
+            {
+                return SameStr(a.label, b.label) && SameStr(a.description, b.description)
+                    && SameStr(a.unit, b.unit);
+            }
+
+            bool MetricRegistry::ApplyInfoLocked(const Dia::Core::StringCRC& name, const MetricInfo& info)
+            {
+                for (auto& e : mInfos)
+                {
+                    if (!(e.name == name))
+                        continue;
+                    if (SameInfo(e.info, info))
+                        return false;
+                    if (e.warned)
+                        return false;
+                    e.warned = true;
+                    ++mConflictWarnings;
+                    return true;
+                }
+                mInfos.push_back(InfoEntry{ name, info, false });
+                ++mGeneration;
+                return false;
+            }
+
+            void MetricRegistry::WarnConflict(const Dia::Core::StringCRC& name)
+            {
+                DIA_LOG_WARNING("VSC", "Metric '%s' re-registered with conflicting info; keeping the first",
+                                name.AsChar());
+            }
+
+            Counter* MetricRegistry::RegisterCounter(const Dia::Core::StringCRC& name, const MetricInfo& info)
+            {
+                Counter* c = RegisterCounter(name);
+                bool warn;
+                {
+                    std::lock_guard<std::mutex> lock(mMutex);
+                    warn = ApplyInfoLocked(name, info);
+                }
+                if (warn) WarnConflict(name);
+                return c;
+            }
+
+            Gauge* MetricRegistry::RegisterGauge(const Dia::Core::StringCRC& name, const MetricInfo& info)
+            {
+                Gauge* g = RegisterGauge(name);
+                bool warn;
+                {
+                    std::lock_guard<std::mutex> lock(mMutex);
+                    warn = ApplyInfoLocked(name, info);
+                }
+                if (warn) WarnConflict(name);
+                return g;
+            }
+
+            Histogram* MetricRegistry::RegisterHistogram(const Dia::Core::StringCRC& name,
+                                                          const float*  bucketBounds,
+                                                          unsigned int  bucketCount,
+                                                          const MetricInfo& info)
+            {
+                Histogram* h = RegisterHistogram(name, bucketBounds, bucketCount);
+                bool warn;
+                {
+                    std::lock_guard<std::mutex> lock(mMutex);
+                    warn = ApplyInfoLocked(name, info);
+                }
+                if (warn) WarnConflict(name);
+                return h;
+            }
+
+            const MetricInfo* MetricRegistry::GetInfo(const Dia::Core::StringCRC& name) const
+            {
+                std::lock_guard<std::mutex> lock(mMutex);
+                if (IsRetiredLocked(name))
+                    return nullptr;
+                for (const auto& e : mInfos)
+                {
+                    if (e.name == name)
+                        return &e.info;
+                }
+                return nullptr;
+            }
+
+            void MetricRegistry::ForEachMetric(MetricVisitor visitor, void* user) const
+            {
+                if (!visitor)
+                    return;
+
+                // The visitor runs outside the lock, so it must not be handed pointers into mInfos: a
+                // concurrent (or visitor-triggered) Reset() clears that deque. Each item carries its own
+                // copy of the info; the pointer passed to the visitor is valid for that call only.
+                struct Item { Dia::Core::StringCRC name; MetricKind kind; bool hasInfo; MetricInfo info; };
+                std::vector<Item> items;
+                {
+                    std::lock_guard<std::mutex> lock(mMutex);
+                    items.reserve(mCounters.size() + mGauges.size() + mHistograms.size());
+                    auto makeItem = [this](const Dia::Core::StringCRC& n, MetricKind k) -> Item
+                    {
+                        for (const auto& i : mInfos)
+                            if (i.name == n) return Item{ n, k, true, i.info };
+                        return Item{ n, k, false, MetricInfo() };
+                    };
+                    for (const auto& e : mCounters)   if (!e.retired) items.push_back(makeItem(e.name, MetricKind::Counter));
+                    for (const auto& e : mGauges)     if (!e.retired) items.push_back(makeItem(e.name, MetricKind::Gauge));
+                    for (const auto& e : mHistograms) if (!e.retired) items.push_back(makeItem(e.name, MetricKind::Histogram));
+                }
+                for (const auto& it : items)
+                    visitor(it.name, it.kind, it.hasInfo ? &it.info : nullptr, user);
+            }
+
+            bool MetricRegistry::IsRetiredLocked(const Dia::Core::StringCRC& name) const
+            {
+                for (const auto& e : mCounters)   if (e.name == name) return e.retired;
+                for (const auto& e : mGauges)     if (e.name == name) return e.retired;
+                for (const auto& e : mHistograms) if (e.name == name) return e.retired;
+                return false;
+            }
+
+            bool MetricRegistry::Unregister(const Dia::Core::StringCRC& name)
+            {
+                std::lock_guard<std::mutex> lock(mMutex);
+                auto retire = [this, &name](auto& vec) -> bool
+                {
+                    for (auto& e : vec)
+                    {
+                        if (e.name == name)
+                        {
+                            if (e.retired)
+                                return false;
+                            e.retired = true;
+                            ++mGeneration;
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+                return retire(mCounters) || retire(mGauges) || retire(mHistograms);
+            }
+
+            unsigned int MetricRegistry::Generation() const
+            {
+                std::lock_guard<std::mutex> lock(mMutex);
+                return mGeneration;
+            }
+
+            unsigned int MetricRegistry::ConflictWarningCount() const
+            {
+                std::lock_guard<std::mutex> lock(mMutex);
+                return mConflictWarnings;
             }
 
             Counter* MetricRegistry::FindCounter(const Dia::Core::StringCRC& name) const
@@ -120,7 +307,7 @@ namespace Dia
                 for (const auto& e : mCounters)
                 {
                     if (e.name == name)
-                        return e.primitive;
+                        return e.retired ? nullptr : e.primitive;
                 }
                 return nullptr;
             }
@@ -131,7 +318,7 @@ namespace Dia
                 for (const auto& e : mGauges)
                 {
                     if (e.name == name)
-                        return e.primitive;
+                        return e.retired ? nullptr : e.primitive;
                 }
                 return nullptr;
             }
@@ -142,7 +329,7 @@ namespace Dia
                 for (const auto& e : mHistograms)
                 {
                     if (e.name == name)
-                        return e.primitive;
+                        return e.retired ? nullptr : e.primitive;
                 }
                 return nullptr;
             }
@@ -158,6 +345,7 @@ namespace Dia
 
                 for (const auto& e : mCounters)
                 {
+                    if (e.retired) continue;
                     if (out.entryCount >= kMaxMetricEntries) break;
                     MetricEntry& entry  = out.entries[out.entryCount++];
                     entry.name          = e.name;
@@ -172,6 +360,7 @@ namespace Dia
 
                 for (const auto& e : mGauges)
                 {
+                    if (e.retired) continue;
                     if (out.entryCount >= kMaxMetricEntries) break;
                     MetricEntry& entry  = out.entries[out.entryCount++];
                     entry.name          = e.name;
@@ -186,6 +375,7 @@ namespace Dia
 
                 for (const auto& e : mHistograms)
                 {
+                    if (e.retired) continue;
                     if (out.entryCount >= kMaxMetricEntries) break;
                     MetricEntry& entry = out.entries[out.entryCount++];
                     entry.name         = e.name;
@@ -251,6 +441,8 @@ namespace Dia
                 mCounters.clear();
                 mGauges.clear();
                 mHistograms.clear();
+                mInfos.clear();
+                ++mGeneration;
                 mSinks.clear();
             }
 

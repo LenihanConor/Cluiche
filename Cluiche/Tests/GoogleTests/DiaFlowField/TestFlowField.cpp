@@ -10,7 +10,7 @@
 #include <DiaMaths/Vector/Vector2D.h>
 
 using namespace Dia::FlowField;
-using Dia::Pathfinding::CellCoord;
+using Dia::Geometry2D::CellCoord;
 using Dia::Maths::Vector2D;
 
 // FlowCell tests

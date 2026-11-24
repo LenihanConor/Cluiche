@@ -129,15 +129,18 @@ def _get_e2e_root(repo_root):
 @click.option("--filter", "filter_expr", default=None, metavar="EXPR",
               help="pytest -k filter expression")
 @click.option("--scenario", "scenario_glob", default=None, metavar="GLOB",
-              help="fnmatch glob to filter scenario paths (e.g. '*boot*')")
+              help="fnmatch glob to filter scenario paths (e.g. '*boot*'); "
+                   "comma-separate several (e.g. '*boot*,*arena*')")
 @click.option("--list", "list_only", is_flag=True, default=False,
               help="Print matched scenario paths and exit (no launch/pytest)")
 @click.option("--port", type=int, default=None,
               help="Override WebSocket port from plan")
 @click.option("--no-launch", "no_launch", is_flag=True, default=False,
               help="Skip app launch; connect to an already-running app")
+@click.option("--no-build", "no_build", is_flag=True, default=False,
+              help="Skip the build and run the last built exe (default: build the plan's app first)")
 @click.pass_context
-def e2e(ctx, suite, filter_expr, scenario_glob, list_only, port, no_launch):
+def e2e(ctx, suite, filter_expr, scenario_glob, list_only, port, no_launch, no_build):
     """Run E2E automation scenarios against a Dia application.
 
     Loads plan from Cluiche/Tests/E2E/plans/<suite>.json, launches the app,
@@ -151,6 +154,7 @@ def e2e(ctx, suite, filter_expr, scenario_glob, list_only, port, no_launch):
         dia test e2e --scenario="*boot*"
         dia test e2e --list --scenario="*rigidbody*"
         dia test e2e --no-launch --port=9876
+        dia test e2e --no-build
     """
     repo_root = find_repo_root(__file__)
     e2e_root = _get_e2e_root(repo_root)
@@ -174,6 +178,17 @@ def e2e(ctx, suite, filter_expr, scenario_glob, list_only, port, no_launch):
 
     if port is not None:
         plan["port"] = port
+
+    # The e2e run launches the last built exe, so build first unless told not to.
+    # --list and --no-launch never start the app, so they skip the build too.
+    if not (no_build or no_launch or list_only):
+        from dia_cli.cli.run import _run_pipeline
+        build_code = _run_pipeline(ctx, repo_root, plan["app"], plan.get("config", "Debug"), False)
+        if build_code != 0:
+            click.echo(f"ERROR: build of '{plan['app']}' failed; not running E2E scenarios "
+                       "(use --no-build to run the last built exe)", err=True)
+            ctx.exit(build_code)
+            return
 
     exit_code = run_orchestration(
         plan=plan,

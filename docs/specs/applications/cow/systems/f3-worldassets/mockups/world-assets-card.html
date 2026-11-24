@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>World Assets Card — F-3 Mockup</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0a0a0a;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  color: #d4d4d4;
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+}
+
+/* ─────────────────────────────── CARD CHROME ─── */
+.card {
+  width: 420px;
+  background: #181818;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header {
+  background: #1f1f1f;
+  border-bottom: 1px solid #2d2d2d;
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-icon {
+  width: 14px;
+  height: 14px;
+  background: #f5a623;
+  color: #fff;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+}
+
+.card-title {
+  flex: 1;
+  font-size: 10px;
+  color: #aaa;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.card-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ─────────────────────────────── BUNDLE HEADER ─── */
+.bundle-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #222;
+}
+
+.bundle-name {
+  flex: 1;
+  font-size: 13px;
+  color: #5a9fd4;
+  font-weight: 600;
+}
+
+.pill {
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid;
+  font-weight: 600;
+}
+
+.pill.ok {
+  color: #3a7a3a;
+  background: #1a2a1a;
+  border-color: #2a4a2a;
+}
+
+.pill.error {
+  color: #c84a4a;
+  background: #2a1a1a;
+  border-color: #4a2a2a;
+}
+
+/* ─────────────────────────────── PART ROW ─── */
+.part {
+  background: #1b1b1b;
+  border: 1px solid #252525;
+  border-radius: 3px;
+  padding: 8px 10px;
+}
+
+.part-label {
+  font-size: 9px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 6px;
+}
+
+.part-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.part-value {
+  flex: 1;
+  font-size: 11px;
+  color: #ccc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge {
+  font-size: 8px;
+  padding: 2px 5px;
+  border-radius: 2px;
+  border: 1px solid;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge.stale {
+  color: #f5a623;
+  background: #2a2210;
+  border-color: #4a4420;
+}
+
+.badge.dirty {
+  color: #5a9fd4;
+  background: #1a2530;
+  border-color: #2a3a50;
+}
+
+.meta {
+  font-size: 9px;
+  color: #555;
+}
+
+.part-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.btn {
+  font-family: inherit;
+  font-size: 9px;
+  padding: 3px 8px;
+  background: #252525;
+  border: 1px solid #3a3a3a;
+  color: #999;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.btn:hover { background: #2a2a2a; color: #ccc; }
+
+.btn.primary {
+  background: #2a3a4a;
+  border-color: #3a5a7a;
+  color: #5a9fd4;
+}
+
+.btn.primary:hover {
+  background: #3a4a5a;
+  color: #7ab9f4;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────── MODAL ─── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  width: 480px;
+  background: #1b1b1b;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+
+.modal-header {
+  background: #222;
+  padding: 10px 14px;
+  border-bottom: 1px solid #333;
+  font-size: 11px;
+  color: #aaa;
+  font-weight: 600;
+}
+
+.modal-body {
+  padding: 14px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.form-row {
+  margin-bottom: 12px;
+}
+
+.form-label {
+  font-size: 10px;
+  color: #777;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.form-input {
+  width: 100%;
+  background: #0f0f0f;
+  border: 1px solid #3a3a3a;
+  color: #ccc;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 5px 8px;
+  border-radius: 2px;
+  outline: none;
+}
+
+.form-input:focus { border-color: #5a9fd4; }
+
+.form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #999;
+}
+
+.form-checkbox input {
+  width: 14px;
+  height: 14px;
+  accent-color: #5a9fd4;
+}
+
+.preview-box {
+  background: #0d0d0d;
+  border: 1px solid #2a2a2a;
+  border-radius: 2px;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+.preview-title {
+  font-size: 9px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 8px;
+}
+
+.diff-line {
+  font-size: 10px;
+  line-height: 1.5;
+  display: flex;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.diff-key { color: #5a9fd4; width: 130px; }
+.diff-arrow { color: #555; }
+.diff-from { color: #888; }
+.diff-to { color: #ccc; }
+
+.command-preview {
+  font-size: 10px;
+  color: #888;
+  background: #0a0a0a;
+  padding: 6px 8px;
+  border-radius: 2px;
+  margin-top: 6px;
+  font-family: 'Consolas', monospace;
+}
+
+.command-preview .cmd { color: #5a9fd4; }
+
+.modal-footer {
+  background: #1a1a1a;
+  border-top: 1px solid #2a2a2a;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ─────────────────────────────── LOG ─── */
+.log-footer {
+  border-top: 1px solid #222;
+  padding: 8px 12px;
+  font-size: 10px;
+  background: #141414;
+}
+
+.log-line {
+  display: flex;
+  gap: 8px;
+  color: #777;
+}
+
+.log-channel {
+  color: #5a9fd4;
+  font-weight: 600;
+  width: 35px;
+}
+
+.log-level {
+  width: 40px;
+  font-weight: 600;
+}
+
+.log-level.info { color: #5a9fd4; }
+
+.log-msg { color: #aaa; }
+
+/* ─────────────────────────────── HEX MAP PLACEHOLDER ─── */
+.map-placeholder {
+  width: 420px;
+  height: 360px;
+  background: #0d0d12;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2a2a3a;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+/* ─────────────────────────────── TOOLTIP ─── */
+.tooltip-anchor {
+  position: relative;
+  cursor: help;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 6px;
+  background: #2a2a2a;
+  border: 1px solid #4a4a4a;
+  padding: 6px 9px;
+  border-radius: 3px;
+  font-size: 10px;
+  color: #ccc;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.tooltip-anchor:hover .tooltip {
+  opacity: 1;
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-icon">⚙</div>
+    <div class="card-title">WORLD ASSETS</div>
+  </div>
+
+  <div class="card-body">
+
+    <!-- Bundle Header -->
+    <div class="bundle-header">
+      <div class="bundle-name">archipelago_lush</div>
+      <div class="pill ok">source: Cluiche/Assets/CoW</div>
+    </div>
+
+    <!-- Terrain Part -->
+    <div class="part">
+      <div class="part-label">Terrain</div>
+      <div class="part-content">
+        <div class="part-value">
+          <span style="color: #ccc;">archipelago_s42</span>
+          <span class="meta">baked</span>
+          <span class="meta">Standard 80×52</span>
+          <span class="meta" style="color: #3a3a3a;">9f3c…</span>
+        </div>
+      </div>
+      <div class="part-controls">
+        <button class="btn">Load ▾</button>
+        <button class="btn">Bake as…</button>
+        <button class="btn">Clear</button>
+      </div>
+    </div>
+
+    <!-- Weather Part -->
+    <div class="part">
+      <div class="part-label">Weather Pack</div>
+      <div class="part-content">
+        <div class="part-value">
+          <span style="color: #ccc;">harsh_winters</span>
+          <div class="tooltip-anchor">
+            <span class="badge stale">stale v3 &lt; v4</span>
+            <div class="tooltip">dropped key grazing.old_rate; Save to upgrade</div>
+          </div>
+        </div>
+      </div>
+      <div class="part-controls">
+        <button class="btn">Load ▾</button>
+        <button class="btn">Save as…</button>
+        <button class="btn">Clear</button>
+      </div>
+    </div>
+
+    <!-- Ecology Part -->
+    <div class="part">
+      <div class="part-label">Ecology Pack</div>
+      <div class="part-content">
+        <div class="part-value">
+          <span style="color: #ccc;">lush</span>
+          <span class="meta">3 overrides</span>
+          <span class="badge dirty">unsaved: 2</span>
+        </div>
+      </div>
+      <div class="part-controls">
+        <button class="btn">Load ▾</button>
+        <button class="btn primary">Save as…</button>
+        <button class="btn">Clear</button>
+      </div>
+    </div>
+
+    <!-- Start State Part -->
+    <div class="part">
+      <div class="part-label">Start State</div>
+      <div class="part-content">
+        <div class="part-value">
+          <span style="color: #ccc;">archipelago_s42</span>
+          <span class="meta">14 cells</span>
+        </div>
+      </div>
+      <div class="part-controls">
+        <button class="btn">Load ▾</button>
+        <button class="btn">Save as…</button>
+        <button class="btn">Clear</button>
+      </div>
+    </div>
+
+    <!-- Bundle Actions -->
+    <div style="display: flex; gap: 6px; padding-top: 6px;">
+      <button class="btn primary" style="flex: 1;">Save bundle as…</button>
+    </div>
+
+  </div>
+
+  <div class="log-footer">
+    <div class="log-line">
+      <span class="log-channel">[WAS]</span>
+      <span class="log-level info">INFO</span>
+      <span class="log-msg">saved Global/Ecology/Packs/lush_v2.ecology.json (+catalogue)</span>
+    </div>
+  </div>
+</div>
+
+<!-- Hex Map Placeholder -->
+<div class="map-placeholder">
+  🗺️ S-3 ECOLOGY TESTBED HEX MAP
+</div>
+
+<!-- Modal: Save Ecology Pack As -->
+<div class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">Save Ecology Pack As</div>
+    <div class="modal-body">
+
+      <div class="form-row">
+        <label class="form-label">ID</label>
+        <input type="text" class="form-input" value="lush_v2" placeholder="pack_id">
+      </div>
+
+      <div class="form-row">
+        <label class="form-label">Display Name</label>
+        <input type="text" class="form-input" value="Lush v2" placeholder="Human-readable name">
+      </div>
+
+      <div class="form-row">
+        <label class="form-checkbox">
+          <input type="checkbox">
+          <span>Overwrite if exists</span>
+        </label>
+      </div>
+
+      <div class="preview-box">
+        <div class="preview-title">Overrides (diff vs defaults)</div>
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <div class="diff-line">
+            <span class="diff-key">grazing.rate</span>
+            <span class="diff-arrow">→</span>
+            <span class="diff-from">1.0</span>
+            <span class="diff-arrow">→</span>
+            <span class="diff-to">0.8</span>
+          </div>
+          <div class="diff-line">
+            <span class="diff-key">regrowth.forest</span>
+            <span class="diff-arrow">→</span>
+            <span class="diff-from">1.0</span>
+            <span class="diff-arrow">→</span>
+            <span class="diff-to">1.25</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #1a1a1a;">
+          <div class="preview-title">Target Path</div>
+          <div style="font-size: 10px; color: #888;">Global/Ecology/Packs/lush_v2.ecology.json</div>
+        </div>
+
+        <div class="command-preview">
+          <span class="cmd">cow.world.pack.save_as</span> ecology lush_v2 "Lush v2"
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn">Cancel</button>
+      <button class="btn primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Example: Disabled state for baked terrain requirement -->
+<div style="position: fixed; bottom: 20px; left: 20px; width: 380px; background: #1b1b1b; border: 1px solid #2a2a2a; border-radius: 3px; padding: 10px; font-size: 10px; color: #888;">
+  <div style="color: #c84a4a; font-weight: 600; margin-bottom: 4px;">⚠ Start State Save Unavailable</div>
+  <div>Bake terrain first (start states need baked terrain)</div>
+  <div style="margin-top: 6px; font-size: 9px; color: #555;">Current terrain: preset + seed (archipelago_standard, seed 42)</div>
+</div>
+
+</body>
+</html>

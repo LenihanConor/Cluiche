@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{b64e4101-33cf-4a90-8098-8d92fb79879e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="WorldCellFields">
+      <UniqueIdentifier>{0d4d67ea-4ea6-4ed5-9487-edd49e846a01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CellSelector">
+      <UniqueIdentifier>{eb134972-1e1f-408b-ad89-e67b2be58ffc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HexWorldSaveCodec">
+      <UniqueIdentifier>{8fb56526-1b1e-4c9c-b606-056a4252cc19}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="BiomeFieldContribution">
+      <UniqueIdentifier>{e8585d57-8f0a-41eb-9212-3751b8ed73af}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CellVocabulary.h" />
+    <ClInclude Include="BiomeRegistry.h" />
+    <ClInclude Include="StratumTable.h" />
+    <ClInclude Include="WorldHexGrid.h" />
+    <ClInclude Include="SharedWorldHexGrid.h" />
+    <ClInclude Include="Regions.h" />
+    <ClInclude Include="Sites.h" />
+    <ClInclude Include="WorldStructure.h" />
+    <ClInclude Include="Testing\BiomeTestRegistry.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\StratumTestIndices.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldCellFields.h">
+      <Filter>WorldCellFields</Filter>
+    </ClInclude>
+    <ClInclude Include="CellSelector.h">
+      <Filter>CellSelector</Filter>
+    </ClInclude>
+    <ClInclude Include="HexWorldSaveCodec.h">
+      <Filter>HexWorldSaveCodec</Filter>
+    </ClInclude>
+    <ClInclude Include="BiomeFieldContribution.h">
+      <Filter>BiomeFieldContribution</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="BiomeRegistry.cpp" />
+    <ClCompile Include="StratumTable.cpp" />
+    <ClCompile Include="WorldHexGrid.cpp" />
+    <ClCompile Include="Sites.cpp" />
+    <ClCompile Include="WorldStructure.cpp" />
+    <ClCompile Include="WorldCellFields.cpp">
+      <Filter>WorldCellFields</Filter>
+    </ClCompile>
+    <ClCompile Include="CellSelector.cpp">
+      <Filter>CellSelector</Filter>
+    </ClCompile>
+    <ClCompile Include="HexWorldSaveCodec.cpp">
+      <Filter>HexWorldSaveCodec</Filter>
+    </ClCompile>
+    <ClCompile Include="BiomeFieldContribution.cpp">
+      <Filter>BiomeFieldContribution</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.draoi.hexworld.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

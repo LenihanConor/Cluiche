@@ -1,0 +1,49 @@
+{
+  "description": "A constraint broken by the schema defaults names both keys.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.params",
+      "constraints": [
+        {
+          "a": "lo",
+          "op": "<=",
+          "b": "hi"
+        }
+      ],
+      "entries": [
+        {
+          "key": "lo",
+          "kind": "parameter",
+          "label": "lo",
+          "description": "d",
+          "type": "float",
+          "default": 5
+        },
+        {
+          "key": "hi",
+          "kind": "parameter",
+          "label": "hi",
+          "description": "d",
+          "type": "float",
+          "default": 3
+        }
+      ]
+    }
+  ],
+  "files": [],
+  "expected": [],
+  "schemaExpected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.constraint-violated",
+      "file": "schemas[0]",
+      "key": "lo",
+      "path": "constraints[0]",
+      "record": null,
+      "messageContains": "hi",
+      "suggestion": null
+    }
+  ]
+}

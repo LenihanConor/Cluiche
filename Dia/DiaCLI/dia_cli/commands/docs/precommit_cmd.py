@@ -1,6 +1,7 @@
 """dia docs precommit — run all pre-commit checks as a deterministic script."""
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -68,12 +69,23 @@ def _check_forbidden_patterns(files: List[Path]) -> List[Tuple[str, str, bool]]:
     return issues
 
 
+_CODE_ROOTS = ("Dia", "Draoi", "Cluiche")
+
+
+def _in_code_root(repo_root: Path, f: Path) -> bool:
+    """True when f lives under a code root (Dia/, Draoi/, Cluiche/) of the repo."""
+    try:
+        return f.relative_to(repo_root).parts[0] in _CODE_ROOTS
+    except (ValueError, IndexError):
+        return False
+
+
 def _check_vcxproj_sync(repo_root: Path, files: List[Path]) -> List[str]:
     missing: List[str] = []
     new_cpp_files = [
         f for f in files
         if f.suffix in (".h", ".hpp", ".cpp")
-        and ("Dia" in str(f) or "Cluiche" in str(f))
+        and _in_code_root(repo_root, f)
         and f.exists()
     ]
 
@@ -108,10 +120,122 @@ def _check_manifests(repo_root: Path, files: List[Path]) -> List[str]:
             import json
             text = mf.read_text(encoding="utf-8")
             json.loads(text)
-        except (json.JSONDecodeError, OSError) as e:
+        except (json.JSONDecodeError, UnicodeDecodeError, OSError) as e:
             errors.append(f"{mf.name}: {e}")
 
     return errors
+
+
+def _conformance_dir(repo_root: Path) -> Path:
+    from dia_cli.commands.validate import schema_discovery
+    return (repo_root / Path(*schema_discovery.CONFORMANCE_REL)).resolve()
+
+
+def _under(path: Path, root: Path) -> bool:
+    return path == root or root in path.parents
+
+
+def _in_schemad_folder(f: Path, assets: Path) -> bool:
+    """True when a *.schema.json sits in f's folder or any folder above it (up to the asset root)."""
+    d = f.resolve().parent
+    while _under(d, assets):
+        try:
+            if any(c.is_file() and c.name.lower().endswith(".schema.json") for c in d.iterdir()):
+                return True
+        except OSError:
+            return False
+        if d == assets:
+            break
+        d = d.parent
+    return False
+
+
+def _schema_candidates(repo_root: Path, files: List[Path]) -> List[Path]:
+    """Changed *.schema.json files, plus changed asset *.json that dia validate schema would check.
+
+    A changed asset *.json is a candidate when it carries a top-level string `format`, or when it
+    sits in a schema'd folder (so a missing `format` / unparsable JSON is caught). The intentionally
+    bad shared fixtures under Dia/DiaValueSchema/Testing are never candidates.
+    """
+    assets = (repo_root / "Cluiche" / "Assets").resolve()
+    fixtures = _conformance_dir(repo_root)
+    out: List[Path] = []
+    for f in files:
+        name = f.name.lower()
+        if not name.endswith(".json") or not f.is_file() or name.endswith(".catalogue.json"):
+            continue
+        rf = f.resolve()
+        if _under(rf, fixtures):
+            continue
+        if name.endswith(".schema.json"):
+            out.append(f)
+            continue
+        if not _under(rf, assets):
+            continue
+        try:
+            doc = json.loads(f.read_text(encoding="utf-8-sig"))
+        except (OSError, ValueError, RecursionError):
+            doc = None
+        if (isinstance(doc, dict) and isinstance(doc.get("format"), str)) or _in_schemad_folder(f, assets):
+            out.append(f)
+    return out
+
+
+def _check_schema(repo_root: Path, files: List[Path]) -> Tuple[List[str], List[str]]:
+    """Run `dia validate schema` over changed schema/data files; returns (errors, warnings).
+
+    The whole Cluiche/Assets tree is scanned so cross-file refs resolve, but only findings
+    whose file is one of the changed files are reported. Nothing is scanned when no
+    relevant file changed. A changed schema outside the asset tree is validated on its own
+    (one run per file, so same-named files cannot collide).
+    """
+    candidates = _schema_candidates(repo_root, files)
+    if not candidates:
+        return [], []
+
+    from dia_cli.commands.validate import schema_discovery
+
+    assets = (repo_root / "Cluiche" / "Assets").resolve()
+    names = set()
+    outside: List[Path] = []
+    for f in candidates:
+        rf = f.resolve()
+        if assets in rf.parents:
+            names.add(rf.relative_to(assets).as_posix())
+        else:
+            outside.append(f)
+
+    runs: List[Tuple[List[Path], set]] = []
+    if names:
+        runs.append(([assets], names))
+    for f in outside:
+        runs.append(([f], {f.name}))
+
+    errors: List[str] = []
+    warnings: List[str] = []
+    for paths, wanted in runs:
+        findings, _checked = schema_discovery.discover_and_validate(paths, None)
+        for fd in findings:
+            if fd.file not in wanted:
+                continue
+            line = f"{fd.severity} {fd.file}: {fd.message}"
+            (errors if fd.severity == "FAIL" else warnings).append(line)
+    return errors, warnings
+
+
+def _check_value_reference(repo_root: Path, files: List[Path]) -> List[str]:
+    """WARN lines when a changed sidecar/ramps/reference page leaves docs/reference/<app>/values.md stale."""
+    from dia_cli.commands.docs import value_reference
+    return value_reference.precommit_warnings(repo_root, files)
+
+
+def _check_stage_proves(repo_root: Path) -> Tuple[List[str], int]:
+    """Run the stage-proves check (non-strict); returns (broken-link errors, unproven count)."""
+    from dia_cli.commands.check import stage_proves
+    res = stage_proves.check(repo_root)
+    errors = [f"stage '{b.stage}' (game {b.game}): proves path not found: {b.path}"
+              for b in res.broken_links]
+    return errors, len(res.unproven)
 
 
 @click.command("precommit")
@@ -185,6 +309,36 @@ def precommit(scope: str, staged: bool) -> None:
         errors += len(manifest_errors)
     else:
         click.echo("  OK    Manifest validity")
+
+    # Check 4: schema (dia validate schema on changed schema/data files)
+    schema_errors, schema_warnings = _check_schema(repo_root, files)
+    if schema_errors or schema_warnings:
+        click.echo(f"  {'FAIL' if schema_errors else 'WARN'}  schema:")
+        for line in schema_errors + schema_warnings:
+            click.echo(f"        {line}")
+        errors += len(schema_errors)
+        warnings += len(schema_warnings)
+    elif _schema_candidates(repo_root, files):
+        click.echo("  OK    schema")
+
+    # Check 5: value reference page (WARN only, never blocks)
+    ref_warnings = _check_value_reference(repo_root, files)
+    if ref_warnings:
+        click.echo("  WARN  value reference:")
+        for line in ref_warnings:
+            click.echo(f"        {line}")
+        warnings += len(ref_warnings)
+
+    # Check 6: stage-proves (broken links fail; unproven specs informational, non-strict)
+    proves_errors, unproven = _check_stage_proves(repo_root)
+    if proves_errors:
+        click.echo("  FAIL  stage-proves:")
+        for line in proves_errors:
+            click.echo(f"        {line}")
+        errors += len(proves_errors)
+    else:
+        suffix = f" ({unproven} unproven spec(s), informational)" if unproven else ""
+        click.echo(f"  OK    stage-proves{suffix}")
 
     # Summary
     click.echo("")

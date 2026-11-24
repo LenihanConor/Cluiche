@@ -17,6 +17,7 @@ DiaEditorUI is the shared React component library for all editor plugin UIs in t
 - **EmptyState** — centred placeholder with icon, message, and hint text
 - **ConnectionStatus** — unified connection status indicator (dot + label + optional dropdown) replacing three divergent implementations
 - **useBridge** — React hook that wraps `EditorBridge.subscribe()` and `EditorBridge.request()` with React lifecycle; replaces manual `useEffect` wiring in all four editors
+- **CellGridCanvas** — generic hex/square cell-grid canvas (ramp or palette colouring, hover, click, selection/outline/footprint layers, box and stroke gestures, controlled zoom and pan); see [cell-grid-canvas.md](cell-grid-canvas.md)
 - **Toast / notifications** — zustand-backed toast queue with auto-dismiss; extracted from CluicheEditor and made available to all plugins
 
 ## Non-Responsibilities
@@ -234,6 +235,7 @@ export { useToast, ToastRenderer } from './notifications/useToast'
 | ConnectionStatus | Unified component; retire `ConnectionStatusDot`, `LiveConnectionButton`, `ConnectionButton` | — | Draft |
 | useBridge hook | Extract `useEffect` subscribe/request pattern present in all 4 editors | — | Draft |
 | Toast system | Move `useNotifications` + `ToastRenderer` from CluicheEditor into shared package | — | Draft |
+| CellGridCanvas | Generic hex/square cell-grid canvas for T-1 mini-map and T-2 cell editor (added 2026-10-20) | [cell-grid-canvas.md](cell-grid-canvas.md) | Approved |
 
 ## Status
 

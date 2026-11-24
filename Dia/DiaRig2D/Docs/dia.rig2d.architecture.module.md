@@ -68,7 +68,8 @@ dependencies:
   required:
     - dia.core
     - dia.maths
-    - dia.logger
+    - dia.observation
+    - dia.serializer
   forbidden:
     - dia.graphics
     - dia.application

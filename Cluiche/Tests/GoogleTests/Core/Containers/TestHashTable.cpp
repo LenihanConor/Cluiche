@@ -159,7 +159,7 @@ TEST(HashTableC, AddAndQuery_WorksCorrectly)
 	EXPECT_EQ(hashMap3.GetItemByIndexConst(5), 'f');
 	EXPECT_EQ(hashMap3.GetItemByIndexConst(6), 'g');
 
-	EXPECT_DEATH(hashMap.Add(0, 'h'), "");
+	DIA_EXPECT_DEATH(hashMap.Add(0, 'h'), "");
 }
 
 TEST(HashTableC, RemoveOperations_WorkCorrectly)
@@ -275,7 +275,7 @@ TEST(HashTableC, RemoveOperations_WorkCorrectly)
 	EXPECT_EQ(hashMap3.GetItemByIndex(3), 'f');
 	EXPECT_EQ(hashMap3.GetItemByIndex(4), 'g');
 
-	EXPECT_DEATH(hashMap3.RemoveByIndex(15), "");
+	DIA_EXPECT_DEATH(hashMap3.RemoveByIndex(15), "");
 
 	hashMap4.RemoveByPayload('a');
 
@@ -294,7 +294,7 @@ TEST(HashTableC, RemoveOperations_WorkCorrectly)
 	EXPECT_TRUE(hashMap4.ContainsPayload('f'));
 	EXPECT_TRUE(hashMap4.ContainsPayload('g'));
 
-	EXPECT_DEATH(hashMap4.RemoveByPayload('h'), "");
+	DIA_EXPECT_DEATH(hashMap4.RemoveByPayload('h'), "");
 }
 
 TEST(HashTable, AddAndQuery_WorksCorrectly)
@@ -433,7 +433,7 @@ TEST(HashTable, AddAndQuery_WorksCorrectly)
 	EXPECT_EQ(hashMap3.GetItemByIndexConst(5), 'f');
 	EXPECT_EQ(hashMap3.GetItemByIndexConst(6), 'g');
 
-	EXPECT_DEATH(hashMap.Add(0, 'h'), "");
+	DIA_EXPECT_DEATH(hashMap.Add(0, 'h'), "");
 }
 
 TEST(HashTable, RemoveOperations_WorkCorrectly)
@@ -550,7 +550,7 @@ TEST(HashTable, RemoveOperations_WorkCorrectly)
 	EXPECT_EQ(hashMap3.GetItemByIndex(3), 'f');
 	EXPECT_EQ(hashMap3.GetItemByIndex(4), 'g');
 
-	EXPECT_DEATH(hashMap3.RemoveByIndex(15), "");
+	DIA_EXPECT_DEATH(hashMap3.RemoveByIndex(15), "");
 
 	hashMap4.RemoveByPayload('a');
 
@@ -569,5 +569,5 @@ TEST(HashTable, RemoveOperations_WorkCorrectly)
 	EXPECT_TRUE(hashMap4.ContainsPayload('f'));
 	EXPECT_TRUE(hashMap4.ContainsPayload('g'));
 
-	EXPECT_DEATH(hashMap4.RemoveByPayload('h'), "");
+	DIA_EXPECT_DEATH(hashMap4.RemoveByPayload('h'), "");
 }

@@ -6,9 +6,9 @@ layer: tools/inspector
 path: Dia/DiaAIInspector
 dependencies:
   required:
-    - DiaEditor
-    - DiaCore
-    - DiaObservation
+    - dia.core.crc
+    - dia.editor
+    - dia.observation
   optional: []
   forbidden:
     - DiaVisualDebugger

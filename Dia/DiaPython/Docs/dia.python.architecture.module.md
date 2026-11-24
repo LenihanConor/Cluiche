@@ -67,11 +67,9 @@ public_api:
 dependencies:
   required:
     - dia.core.containers
-    - dia.core.logging
-    - dia.core.threading
     - dia.core.crc
-    - pybind11 (external)
-    - Python 3.11 runtime (external)
+    - dia.core
+    - dia.observation
   forbidden: []
 ---
 

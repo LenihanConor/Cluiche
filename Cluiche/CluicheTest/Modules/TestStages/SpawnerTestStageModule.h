@@ -5,7 +5,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/Entity.h>
-#include <DiaEntitySpawner/EntitySpawnerModule.h>
+#include "Modules/EngineModules/EntitySpawnerModule.h"
 #include <DiaMessageBus/Bus.h>
 #include <memory>
 

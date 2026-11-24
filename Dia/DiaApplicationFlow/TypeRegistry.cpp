@@ -4,6 +4,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaApplicationFlow/TypeRegistry.h"
 
+#include <cstdio>
+
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 
@@ -27,6 +29,15 @@ namespace Dia { namespace ApplicationFlow {
         {
             DIA_LOG_WARNING("ApplicationFlow", "Module type '%s' already registered, skipping duplicate", typeId.AsChar());
             return;
+        }
+
+        if (mFactories.IsFull())
+        {
+            // Registration runs at static init, before logging starts, so use stderr.
+            // The Add below still asserts; this only names the cause.
+            fprintf(stderr, "TypeRegistry is full (%u module types): cannot register '%s'. "
+                            "Raise the mFactories size in TypeRegistry.h.\n",
+                    mFactories.Capacity(), typeId.AsChar());
         }
 
         mFactories.Add(typeId, meta);

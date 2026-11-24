@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.lighting3dvisualdebugger
 name: DiaLighting3DVisualDebugger
 owner_team: TBD
-layer: domain/visual/tools
+layer: 4.1-Visual
 status: active
 maturity: dev
 
@@ -38,7 +38,6 @@ dependent_modules:
   - dia.maths
   - dia.geometry3d
   - dia.lighting3d
-  - dia.visualdebugger
 
 public_api:
   headers:
@@ -54,9 +53,12 @@ dependencies:
   required:
     - dia.lighting3d
     - dia.geometry3d
-    - dia.visualdebugger
     - dia.maths
     - dia.core
+    - dia.debug.visualdebugger
+    - dia.graphics.frame
+    - dia.graphics.misc
+    - dia.observation
   forbidden:
     - dia.application
     - dia.bgfx3d

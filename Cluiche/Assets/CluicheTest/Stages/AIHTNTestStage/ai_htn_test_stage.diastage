@@ -1,6 +1,8 @@
 {
     "name": "AIHTNTestStage",
     "manifest": "Stages/AIHTNTestStage/misc/ApplicationFlow/ai_htn_test_stage.diaapp",
+    "tags": ["test", "ai"],
+    "description": "Hierarchical task network planner",
     "config": {
         "path_aliases": {
             "stage_root": "."

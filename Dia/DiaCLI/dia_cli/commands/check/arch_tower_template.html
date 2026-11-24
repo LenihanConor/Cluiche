@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Module Tower</title>
+<style>
+:root{--bg:#10141c;--panel:#171d29;--line:#2a3345;--fg:#e6ebf5;--dim:#7f8aa3;--ok:#3ecf8e;--bad:#ff5d6c;--warn:#ffb454;--out:#6cb6ff;--in:#c792ea;--cyc:#f78fb3;--l3:#22304a;--l2:#2b2a47;--l1:#25363a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,Segoe UI,sans-serif;display:flex;flex-direction:column;height:100vh}
+header{display:flex;align-items:center;gap:18px;padding:10px 18px;border-bottom:1px solid var(--line)}
+h1{font-size:18px;margin:0}.sub{color:var(--dim);font-size:12px}
+.score{margin-left:auto;display:flex;gap:14px;align-items:center}
+.pill{padding:4px 12px;border-radius:99px;font-weight:700;background:#2a1b20;color:var(--bad);border:1px solid var(--bad)}
+.pill.zero{background:#12281f;color:var(--ok);border-color:var(--ok)}
+.delta{font-size:12px;color:var(--dim)}button{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+button.on{background:#2b3a58;border-color:#6c8cd5}
+.bar{display:flex;align-items:center;gap:10px;padding:8px 18px;border-bottom:1px solid var(--line);background:#131925;font-size:12px;color:var(--dim)}
+.bar input[type=text]{background:#0d1118;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:5px 9px;width:230px;font-family:Consolas,monospace}
+.bar input.err{border-color:var(--bad)}
+main{flex:1;display:flex;min-height:0}
+#towerWrap{flex:1;position:relative;overflow:auto;padding:14px}
+#tower{position:relative;display:flex;flex-direction:column;gap:8px;min-width:760px}
+.floor{display:flex;gap:6px;align-items:stretch}
+.flabel{width:118px;flex:none;font-size:11px;color:var(--dim);padding-top:8px}
+.flabel b{display:block;color:var(--fg);font-size:12px}
+.lane{flex:1;min-height:74px;border:1px dashed var(--line);border-radius:8px;padding:6px 6px 22px;display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;position:relative}
+.lane.l3{background:var(--l3)}.lane.l2{background:var(--l2)}.lane.l1{background:var(--l1)}
+.lane.hot{outline:2px solid var(--ok)}
+.lname{position:absolute;right:8px;bottom:4px;font-size:10px;color:var(--dim);pointer-events:none}
+.others{position:absolute;left:8px;bottom:4px;font-size:10px;color:var(--dim);pointer-events:none}
+.box{padding:5px 9px;border-radius:7px;background:#0d1118;border:1.5px solid #4a5670;cursor:grab;user-select:none;font-size:12px;z-index:2;white-space:nowrap;height:fit-content}
+.full .box{padding:2px 6px;font-size:11px}
+.box.bad{border-color:var(--bad);box-shadow:0 0 10px #ff5d6c55}.box.moved{border-style:dashed;border-color:var(--warn)}.box.sel{outline:2px solid #fff}
+.box.selmod{outline:2px solid #fff;background:#243049}.box.nb-out{border-color:var(--out)}.box.nb-in{border-color:var(--in)}.box.cyc{border-color:var(--cyc)}
+.box small{color:var(--dim);margin-left:4px}
+svg#pipes{position:absolute;left:0;top:0;pointer-events:none;z-index:1;overflow:visible}
+aside{width:390px;flex:none;border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:12px}
+aside h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin:12px 0 8px}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;background:#131a26;cursor:pointer}
+.card.sel{border-color:#fff}.card.bad{border-left:4px solid var(--bad)}.card.new{border-left:4px solid var(--warn)}.card.fixed{border-left:4px solid var(--ok);opacity:.8}.card.cyc{border-left:4px solid var(--cyc)}
+.card p{margin:2px 0 6px}.mono{font-family:Consolas,monospace;font-size:12px;color:var(--dim)}
+.chip{display:inline-block;margin:2px 4px 0 0;padding:2px 8px;border-radius:99px;background:#222c40;font-size:11px;color:#b9c6e6}
+.hint{color:var(--dim);font-size:12px;margin:0 0 10px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--dim);padding:0 0 8px 124px}
+.legend i{display:inline-block;width:18px;height:0;border-top:3px solid;vertical-align:middle;margin-right:5px}
+.mp{border:1px solid #fff3;border-radius:10px;padding:10px;background:#1b2436;margin-bottom:6px}
+.mp h3{margin:0 0 2px;font-size:15px}.mp .row{display:flex;justify-content:space-between;gap:8px;padding:2px 6px;border-radius:5px;cursor:pointer;font-size:12px}
+.mp .row:hover{background:#27324a}.mp .row.badrow{color:var(--bad)}.mp .row span:last-child{color:var(--dim)}
+.mp h4{margin:10px 0 4px;font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.mp h4.out{color:var(--out)}.mp h4.in{color:var(--in)}
+.bd{display:inline-block;font:700 10px Consolas,monospace;padding:1px 4px;border-radius:4px;margin-left:2px;vertical-align:1px}
+.bd.M{background:#ff5d6c33;color:#ff8a95;border:1px solid #ff5d6c}.bd.PU{background:#ffb45433;color:#ffc97f;border:1px solid #ffb454}.bd.A{background:#6cb6ff33;color:#9acdff;border:1px solid #6cb6ff}
+.badges{margin-left:6px}.fan{color:var(--dim);font-size:10px;margin-left:6px}
+.box.ghost{border:1.5px dashed var(--ok);background:#0d1118aa;color:#9fe8c4;cursor:default}.box.ghost div{font-size:11px}
+.wrow{display:flex;gap:8px;align-items:baseline;padding:2px 0;font-size:12px}.wrow .mono{flex:1}
+.mp h4.wire{color:var(--ok)}.fanline{color:var(--ok);font-size:12px;margin:0}
+</style></head><body>
+<header><div><h1>Module Tower <span class="sub">- generated /*GENERATED*/ by <code>dia check arch --html</code></span></h1>
+<div class="sub">Dependencies may only point <b>down</b> the tower. Red pipes break that rule. Click a module for its in and out. Drag a module to another floor to try a fix.</div></div>
+<div class="score"><span class="delta" id="delta"></span><span class="pill" id="count"></span><button id="reset">Reset</button></div></header>
+<div class="bar"><span>Lens</span><button id="wOn" class="on">Wiring on</button><button id="wOff">Wiring off</button> <span style="margin-left:6px">View</span><button id="vLeaks" class="on">Leaks</button><button id="vFull">Full stack</button>
+<span id="filterBox" style="display:none">Filter modules (regex)<input type="text" id="filter" placeholder="e.g. ^dia\.(core|maths)  or  visualdebugger"> <label style="margin-left:10px"><input type="checkbox" id="allPipes"> all pipes</label> <span id="fcount" style="margin-left:12px"></span></span></div>
+<main><div id="towerWrap"><div class="legend"><span><i style="border-color:#ff5d6c"></i>leak</span><span><i style="border-color:#3ecf8e;opacity:.6"></i>fine</span><span><i style="border-color:#ffb454;border-top-style:dashed"></i>newly broken by your move</span><span><i style="border-color:#6cb6ff"></i>module uses</span><span><i style="border-color:#c792ea"></i>used by module</span><span><i style="border-color:#f78fb3"></i>cycle</span><span><span class="bd M">M</span> module class</span><span><span class="bd PU">PU</span> processing-unit affinity</span><span><span class="bd A">A</span> application access</span><span style="color:#3ecf8e">- - ghost: lowest floor without its wiring</span></div>
+<div id="tower"></div><svg id="pipes"></svg></div>
+<aside><div id="modpanel"></div><h2>Leak report</h2><p class="hint">Click a card to light up its pipe.</p><div id="cards"></div><div id="detail"></div><h2>Cycles</h2><div id="cycles"></div><h2>Proposal</h2><p class="hint">Drag modules to try layer moves, add notes for anything the page cannot express (moving a header, adding an interface), then copy this into the chat.</p><textarea id="notes" placeholder="Notes, e.g. move HexTopology.h into a shared module" style="width:100%;height:54px;background:#0d1118;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px"></textarea><textarea id="proposal" readonly style="width:100%;height:210px;margin-top:6px;background:#0d1118;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px;font:12px Consolas,monospace"></textarea><div style="margin:6px 0 20px"><button id="copyProp">Copy proposal</button> <span id="copied" class="mono"></span></div></aside></main>
+<script>
+const DATA=/*DATA*/;
+const LANES=[
+ {fl:'Floor 5|Draoi',cls:'l3',lanes:[['draoi','draoi']]},
+ {fl:'Floor 3|Domains',cls:'l3',lanes:[['domain/visual/core','visual'],['domain/gameplay/core','gameplay'],['domain/physics/core','physics'],['domain/animation/core','animation']]},
+ {fl:'Floor 2|Assets',cls:'l2',lanes:[['assets/core','assets core'],['assets/tools','assets tools']]},
+ {fl:'Floor 1c|Application / Platform',cls:'l1',lanes:[['foundation/application','application'],['foundation/platform','platform']]},
+ {fl:'Floor 1b|Services / Maths',cls:'l1',lanes:[['foundation/services','services'],['foundation/maths','maths']]},
+ {fl:'Floor 1a|Core',cls:'l1',lanes:[['foundation/core','core']]}];
+function parse(l){
+ if(l==='draoi')return[5,0,'draoi',''];
+ if(l.startsWith('foundation/')){const g=l.slice(11);const mp={core:[1,0],maths:[1,1],services:[1,1],platform:[1,2],application:[1,2]};return mp[g]?[mp[g][0],mp[g][1],g,'']:null}
+ if(l.startsWith('assets/')){const t=l.slice(7);return t==='core'?[2,0,'assets','core']:t==='tools'?[2,1,'assets','tools']:null}
+ if(l.startsWith('domain/')){const p=l.slice(7).split('/');if(p.length===2)return[3,p[1]==='core'?0:1,p[0],p[1]]}
+ return null}
+function rule(fl,tl){const a=parse(fl),b=parse(tl);if(!a||!b)return null;
+ if(b[0]>a[0])return 'up';
+ if(b[0]===a[0]){
+  if(a[0]===1){if(b[1]>a[1])return 'up';if(b[1]===a[1]&&a[2]!==b[2])return 'side'}
+  if(a[0]===2&&b[1]>a[1])return 'up';
+  if(a[0]===3){if(b[1]>a[1])return 'up';if(a[2]!==b[2])return 'side'}}
+ return null}
+const floorOf=l=>{const p=parse(l);return p[0]===1?'1'+'abc'[p[1]===2?2:p[1]]:String(p[0])};
+const rank=l=>{const p=parse(l);return p[0]*10+p[1]};
+const WIRING=DATA.wiring||{};let lens=true;
+const wireFiles=m=>new Set((WIRING[m]||[]).map(w=>w.file));
+const TAGS=['M','PU','A'];
+const badges=m=>{const t=new Set((WIRING[m]||[]).map(w=>w.tag));return TAGS.filter(x=>t.has(x)).map(x=>'<span class="bd '+x+'">'+x+'</span>').join('')};
+const CANDS=LANES.slice().reverse().flatMap(f=>f.lanes.map(l=>l[0]));
+function fanBelow(m){return(IN[m]||[]).filter(e=>layer[e.f]&&!related(e.f,m)&&rank(layer[e.f])<rank(layer[m])).length}
+function ghost(m){if(!layer[m]||!(WIRING[m]||[]).length)return null;const wf=wireFiles(m);
+ const rem=(OUT[m]||[]).filter(e=>Object.keys(e.files||{}).some(f=>!wf.has(f)));
+ const cand=CANDS.find(c=>rem.every(e=>!layer[e.t]||!rule(c,layer[e.t])));
+ if(!cand||rank(cand)>=rank(layer[m])||laneOf(cand)===laneOf(layer[m]))return null;
+ const pins=[];let n=0;(OUT[m]||[]).forEach(e=>Object.entries(e.files||{}).forEach(([f,c])=>{if(wf.has(f)&&layer[e.t]&&rule(cand,layer[e.t])){n+=c;pins.push({file:f,to:e.t,n:c})}}));
+ return{layer:cand,n,pins}}
+const short=id=>id.replace(/^dia\./,'');
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+let layer={...DATA.layers};const orig={...DATA.layers};
+const bad=()=>DATA.edges.filter(e=>rule(layer[e.f],layer[e.t])).map(e=>({...e,kind:rule(layer[e.f],layer[e.t])}));
+const key=e=>e.f+'>'+e.t;const origBad=new Set(DATA.violations.map(v=>v.f+'>'+v.t));
+const baseBad=bad();
+let sel=null,selMod=null,moved=new Set(),view='leaks',filterRe=null,allPipes=false,cycFocus=new Set(),cycSel=null;
+const related=(a,b)=>a.startsWith(b+'.')||b.startsWith(a+'.');
+const OUT={},IN={};DATA.edges.forEach(e=>{(OUT[e.f]=OUT[e.f]||[]).push(e);(IN[e.t]=IN[e.t]||[]).push(e)});
+function findCycles(){const ids=Object.keys(DATA.layers);const g={};ids.forEach(i=>g[i]=[]);
+ DATA.edges.forEach(e=>{if(g[e.f]&&g[e.t]&&!related(e.f,e.t))g[e.f].push(e.t)});
+ const idx={},low={},st=[],on=new Set(),res=[];let n=0;
+ const sc=v=>{const stack=[[v,0]];idx[v]=low[v]=n++;st.push(v);on.add(v);
+  while(stack.length){const top=stack[stack.length-1];const [u,i]=top;
+   if(i<g[u].length){top[1]++;const w=g[u][i];
+    if(idx[w]===undefined){idx[w]=low[w]=n++;st.push(w);on.add(w);stack.push([w,0])}else if(on.has(w))low[u]=Math.min(low[u],idx[w])}
+   else{stack.pop();if(stack.length){const p=stack[stack.length-1][0];low[p]=Math.min(low[p],low[u])}
+    if(low[u]===idx[u]){const comp=[];let w;do{w=st.pop();on.delete(w);comp.push(w)}while(w!==u);if(comp.length>1)res.push(comp.sort())}}}};
+ ids.forEach(v=>{if(idx[v]===undefined)sc(v)});return res}
+const CYCLES=findCycles();
+function laneOf(l){const q=parse(l);if(!q)return null;
+ for(const fl of LANES)for(const [ls] of fl.lanes){const p=parse(ls);
+  if(q[0]===1&&ls===l)return ls;
+  if(q[0]===5&&ls==='draoi')return ls;
+  if(q[0]===2&&p[0]===2&&p[3]===q[3])return ls;
+  if(q[0]===3&&p[0]===3&&p[2]===q[2])return ls}
+ return null}
+function shownSet(cur){const s=new Set();
+ if(view==='full'){Object.keys(layer).forEach(m=>{if(!filterRe||filterRe.test(m))s.add(m)});return s}
+ DATA.violations.forEach(v=>{s.add(v.f);s.add(v.t)});cur.forEach(e=>{s.add(e.f);s.add(e.t)});moved.forEach(m=>s.add(m));
+ if(selMod){s.add(selMod);(OUT[selMod]||[]).forEach(e=>s.add(e.t));(IN[selMod]||[]).forEach(e=>s.add(e.f))}
+ cycFocus.forEach(m=>s.add(m));if(lens)Object.keys(WIRING).forEach(m=>{if(layer[m])s.add(m)});return s}
+function render(){const cur=bad();const shown=shownSet(cur);
+ const nbOut=new Set(selMod?(OUT[selMod]||[]).map(e=>e.t):[]),nbIn=new Set(selMod?(IN[selMod]||[]).map(e=>e.f):[]);
+ const t=document.getElementById('tower');t.innerHTML='';t.className=view==='full'?'full':'';let shownCount=0;
+ for(const fl of LANES){const row=document.createElement('div');row.className='floor';const [fa,fb]=fl.fl.split('|');
+  row.innerHTML='<div class="flabel"><b>'+fa+'</b>'+fb+'</div>';
+  for(const [ls,nm] of fl.lanes){const ln=document.createElement('div');ln.className='lane '+fl.cls;ln.dataset.layer=ls;
+   const here=Object.keys(layer).filter(m=>laneOf(layer[m])===ls).sort();const boxes=here.filter(m=>shown.has(m));shownCount+=boxes.length;
+   for(const m of boxes){const b=document.createElement('div');
+    b.className='box'+(cur.some(e=>e.f===m)?' bad':'')+(moved.has(m)?' moved':'')+(sel&&(sel.f===m||sel.t===m)?' sel':'')
+     +(m===selMod?' selmod':'')+(nbOut.has(m)?' nb-out':'')+(nbIn.has(m)?' nb-in':'')+(cycFocus.has(m)?' cyc':'');b.dataset.id=m;
+    const fb=fanBelow(m);const showFan=fb>0&&(m===selMod||(lens&&(WIRING[m]||[]).length)||cur.some(e=>e.t===m));
+    b.innerHTML=esc(short(m))+(parse(layer[m])[3]==='tools'?'<small>tools</small>':'')+(lens&&(WIRING[m]||[]).length?'<span class="badges">'+badges(m)+'</span>':'')+(showFan?'<span class="fan">'+fb+' below</span>':'');b.onmousedown=ev=>drag(ev,m);ln.appendChild(b)}
+   if(lens&&selMod){const g=ghost(selMod);if(g&&g.layer===ls)ln.insertAdjacentHTML('beforeend','<div class="box ghost" data-ghost="'+esc(selMod)+'">'+esc(short(selMod))+'<div>would fit here</div></div>')}
+   const oth=here.length-boxes.length;if(oth>0)ln.insertAdjacentHTML('beforeend','<span class="others">+'+oth+(view==='full'?' filtered out':' other modules, no leaks')+'</span>');
+   ln.insertAdjacentHTML('beforeend','<span class="lname">'+nm+'</span>');row.appendChild(ln)}
+  t.appendChild(row)}
+ requestAnimationFrame(()=>pipes(cur,shown));cards(cur,new Set(cur.map(key)));modpanel();cyclePanel();proposal(cur);
+ document.getElementById('fcount').textContent=view==='full'?shownCount+' of '+Object.keys(layer).length+' modules':'';
+ const oc=(DATA.other||[]).length,n=cur.length+oc,n0=baseBad.length+oc;const c=document.getElementById('count');
+ c.textContent=n+' leak'+(n===1?'':'s');c.className='pill'+(n?'':' zero');
+ document.getElementById('delta').textContent=moved.size?('was '+n0+' - now '+n+' ('+(n<n0?'-':'+')+Math.abs(n-n0)+')'):''}
+function pipes(cur,shown){const svg=document.getElementById('pipes'),w=document.getElementById('towerWrap'),r0=w.getBoundingClientRect();
+ svg.setAttribute('width',w.scrollWidth);svg.setAttribute('height',w.scrollHeight);let h='';
+ const pos=id=>{const e=document.querySelector('.box[data-id="'+id+'"]');if(!e)return null;const r=e.getBoundingClientRect();
+  return{x:r.left-r0.left+w.scrollLeft+r.width/2,y:r.top-r0.top+w.scrollTop+r.height/2,top:r.top-r0.top+w.scrollTop,bot:r.bottom-r0.top+w.scrollTop}};
+ const draw=(e,color,wd,dash,op)=>{const a=pos(e.f),b=pos(e.t);if(!a||!b)return;const up=b.y<a.y-4;
+  const y1=up?a.top:a.bot,y2=up?b.bot:b.top,m=(y1+y2)/2;
+  h+='<path d="M'+a.x+','+y1+' C'+a.x+','+m+' '+b.x+','+m+' '+b.x+','+y2+'" fill="none" stroke="'+color+'" stroke-width="'+wd+'"'+(dash?' stroke-dasharray="6 4"':'')+' opacity="'+op+'"/><circle cx="'+b.x+'" cy="'+y2+'" r="4" fill="'+color+'" opacity="'+op+'"/>'};
+ const curK=new Set(cur.map(key));
+ if(view==='leaks'||allPipes)DATA.edges.filter(e=>shown.has(e.f)&&shown.has(e.t)&&!curK.has(key(e))).forEach(e=>draw(e,'#3ecf8e',1.2,false,view==='full'?.18:.35));
+ if(selMod){(OUT[selMod]||[]).filter(e=>!curK.has(key(e))).forEach(e=>draw(e,'#6cb6ff',2,false,.9));
+  (IN[selMod]||[]).filter(e=>!curK.has(key(e))).forEach(e=>draw(e,'#c792ea',2,false,.9))}
+ if(cycFocus.size)DATA.edges.filter(e=>cycFocus.has(e.f)&&cycFocus.has(e.t)&&!related(e.f,e.t)).forEach(e=>draw(e,'#f78fb3',2.5,false,.95));
+ cur.forEach(e=>draw(e,origBad.has(key(e))?'#ff5d6c':'#ffb454',(sel&&key(sel)===key(e))?6:3.5,!origBad.has(key(e)),1));
+ svg.innerHTML=h}
+function say(e){const a=floorOf(layer[e.f]),b=floorOf(layer[e.t]);
+ const pl=e.n+' place'+(e.n>1?'s':'');
+ return e.kind==='up'?'<b>'+short(e.f)+'</b> (floor '+a+') reaches <b>up</b> to <b>'+short(e.t)+'</b> (floor '+b+') in '+pl+'.'
+  :'<b>'+short(e.f)+'</b> and <b>'+short(e.t)+"</b> sit on the same floor but in different wings, which isn't allowed ("+pl+').'}
+function fanNote(e){if(e.kind!=='up')return '';const n=fanBelow(e.t);if(n<1)return '';
+ return '<p class="fanline">'+n+' module'+(n>1?'s':'')+' use'+(n>1?'':'s')+' '+esc(short(e.t))+' from below; '+e.n+' include'+(e.n>1?'s':'')+' reach'+(e.n>1?'':'es')+' up.'+((WIRING[e.t]||[]).length?' Moving its wiring out fixes them all at once.':'')+'</p>'}
+function chips(e){return e.kind==='up'?['Move '+short(e.f)+' up','Move '+short(e.t)+' down','Put an interface below both']:['Move the shared header to a common module','Merge the wings']}
+function cards(cur,curK){const c=document.getElementById('cards');c.innerHTML='';const baseK=new Set(baseBad.map(key));
+ cur.forEach(e=>{const d=document.createElement('div');const isNew=!baseK.has(key(e));
+  d.className='card '+(isNew?'new':'bad')+(sel&&key(sel)===key(e)?' sel':'');d.dataset.leak=key(e);
+  d.innerHTML=(isNew?'<div class="mono">NEW - caused by your move</div>':'')+'<p>'+say(e)+'</p>'+fanNote(e)+chips(e).map(x=>'<span class="chip">'+x+'</span>').join('');
+  d.onclick=()=>{sel=e;render();detail(e)};c.appendChild(d)});
+ baseBad.filter(e=>!curK.has(key(e))).forEach(e=>{const d=document.createElement('div');d.className='card fixed';
+  d.innerHTML='<div class="mono">FIXED by your move</div><p>'+short(e.f)+' to '+short(e.t)+'</p>';c.appendChild(d)});
+ (DATA.other||[]).forEach(o=>{const d=document.createElement('div');d.className='card bad';
+  d.innerHTML='<div class="mono">'+esc(o.kind)+'</div><p><b>'+esc(short(o.f))+'</b> to <b>'+esc(short(o.t))+'</b>: '+esc(o.rule)+'</p>'+(lens&&o.kind==='placement'?badges(o.f):'')+'<div class="mono">'+esc(o.file)+':'+o.line+'</div>';c.appendChild(d)});
+ if(!cur.length&&!moved.size&&!(DATA.other||[]).length)c.innerHTML='<p class="hint">No leaks.</p>'}
+function detail(e){const d=document.getElementById('detail');const vs=DATA.violations.filter(v=>v.f===e.f&&v.t===e.t);
+ const rows=vs.length?vs:[{file:e.file,line:'',inc:e.inc}];
+ d.innerHTML='<h2>The actual includes</h2>'+rows.map(v=>'<div class="card"><div class="mono">'+esc(v.file)+(v.line?':'+v.line:'')+'</div><div class="mono">#include &lt;'+esc(v.inc)+'&gt;</div></div>').join('')}
+function modpanel(){const p=document.getElementById('modpanel');if(!selMod){p.innerHTML='';return}
+ const rows=(list,end,cls)=>list.slice().sort((a,b)=>a[end].localeCompare(b[end])).map(e=>{const bd=rule(layer[e.f],layer[e.t]);
+  return '<div class="row'+(bd?' badrow':'')+'" data-go="'+esc(e[end])+'"><span>'+(bd?'! ':'')+esc(short(e[end]))+' <small>('+floorOf(layer[e[end]])+')</small></span><span>'+e.n+' include'+(e.n>1?'s':'')+'</span></div>'}).join('')||'<div class="mono">none</div>';
+ const o=OUT[selMod]||[],i=IN[selMod]||[];
+ p.innerHTML='<div class="mp"><h3>'+esc(short(selMod))+'</h3><div class="mono">floor '+floorOf(layer[selMod])+' - '+esc(layer[selMod])+'</div>'
+  +'<h4 class="out">Uses ('+o.length+')</h4>'+rows(o,'t')+'<h4 class="in">Used by ('+i.length+')</h4>'+rows(i,'f')
+  +wirePanel(selMod)
+  +'<div style="margin-top:8px"><button id="clearMod">Clear</button></div></div>';
+ p.querySelectorAll('.row').forEach(r=>r.onclick=()=>{selMod=r.dataset.go;render()});document.getElementById('clearMod').onclick=()=>{selMod=null;render()}}
+function wirePanel(m){if(!lens)return '';const w=WIRING[m]||[];const fb=fanBelow(m);let h='';
+ if(w.length){const fl=new Set(w.map(x=>x.file));
+  h+='<h4 class="wire">Wiring ('+fl.size+' file'+(fl.size>1?'s':'')+', '+w.length+' symbol'+(w.length>1?'s':'')+')</h4>'
+   +w.map(x=>'<div class="wrow"><span class="bd '+x.tag+'">'+x.tag+'</span><span class="mono">'+esc(x.file.split('/').pop())+':'+x.line+' - '+esc(x.what)+'</span></div>').join('');
+  const g=ghost(m);
+  if(g)h+='<h4 class="wire">Pinned up</h4><p style="margin:2px 0">Pinned up by <b>'+g.n+' include'+(g.n>1?'s':'')+'</b> in those files. Without them it could sit on <b>'+esc(g.layer)+'</b> (dashed ghost box).</p><div class="mono">'+g.pins.map(p=>esc(p.file.split('/').pop())+' -> '+esc(short(p.to))+' ('+p.n+')').join(' &nbsp; ')+'</div>';
+  else h+='<h4 class="wire">Pinned up</h4><p class="mono">Removing its wiring would not lower it: the rest of the package needs this floor.</p>'}
+ if(fb>0){const up=(OUT[m]||[]).filter(e=>rule(layer[m],layer[e.t])==='up').reduce((a,e)=>a+e.n,0);
+  h+='<h4 class="wire">Fan-in</h4><p style="margin:2px 0"><b>'+fb+' module'+(fb>1?'s':'')+'</b> use it from below'+(up?', <b>'+up+' include'+(up>1?'s':'')+'</b> reach'+(up>1?'':'es')+' up':'')+'.</p>'}
+ return h}
+function cyclePanel(){const c=document.getElementById('cycles');
+ if(!CYCLES.length){c.innerHTML='<p class="hint">No include cycles between modules.</p>';return}
+ c.innerHTML='';CYCLES.forEach((cy,i)=>{const d=document.createElement('div');d.className='card cyc'+(cycSel===i?' sel':'');d.dataset.cycle=i;
+  d.innerHTML='<p><b>'+cy.length+' modules</b> include each other in a loop:</p><div class="mono">'+cy.map(m=>esc(short(m))).join(', ')+'</div>';
+  d.onclick=()=>{if(cycSel===i){cycSel=null;cycFocus=new Set()}else{cycSel=i;cycFocus=new Set(cy)}render()};c.appendChild(d)})}
+function proposal(cur){const ta=document.getElementById('proposal');const notes=document.getElementById('notes').value.trim();
+ if(!moved.size&&!notes){ta.value='(no proposal yet: drag a module to another floor, or write a note)';return}
+ const baseK=new Set(baseBad.map(key)),curK=new Set(cur.map(key));
+ const mv=[...moved].sort().map(m=>'- '+m+': `'+orig[m]+'` -> `'+layer[m]+'`'+(DATA.docs&&DATA.docs[m]?' (edit `layer:` in '+DATA.docs[m]+')':''));
+ const fixed=baseBad.filter(e=>!curK.has(key(e))).map(e=>'- '+short(e.f)+' -> '+short(e.t));
+ const fresh=cur.filter(e=>!baseK.has(key(e))).map(e=>'- '+short(e.f)+' -> '+short(e.t)+' ('+e.n+' include'+(e.n>1?'s':'')+')');
+ const left=cur.filter(e=>baseK.has(key(e))).map(e=>'- '+short(e.f)+' -> '+short(e.t));
+ const L=['# Architecture fix proposal (Module Tower)',''];
+ if(mv.length)L.push('## Layer moves (module doc `layer:` only, no code change)',...mv,'');
+ if(moved.size){L.push('## Effect (checked in the page with the same rules as `dia check arch`)','Leaks: '+baseBad.length+' -> '+cur.length,'');
+  L.push('Fixed:',...(fixed.length?fixed:['- none']),'','Newly broken:',...(fresh.length?fresh:['- none']),'','Still open:',...(left.length?left:['- none']),'')}
+ if(notes)L.push('## Notes',notes,'');
+ L.push('## Ask','Apply the layer moves above to the module docs, then run `dia check arch` and `dia check deps`, and report the result. Anything under Notes needs a code change: tell me the plan before editing.');
+ ta.value=L.join('\n')}
+function drag(ev,m){ev.preventDefault();const sx=ev.clientX,sy=ev.clientY;let dragged=false;let g=null;
+ const mv=e=>{if(!dragged&&Math.hypot(e.clientX-sx,e.clientY-sy)<5)return;
+  if(!dragged){dragged=true;g=document.createElement('div');g.className='box';g.textContent=short(m);g.style.cssText='position:fixed;pointer-events:none;z-index:9;opacity:.85'; document.body.appendChild(g)}
+  g.style.left=(e.clientX+8)+'px';g.style.top=(e.clientY+8)+'px';
+  document.querySelectorAll('.lane').forEach(l=>l.classList.remove('hot'));
+  const el=document.elementFromPoint(e.clientX,e.clientY);const l=el&&el.closest('.lane');if(l)l.classList.add('hot')};
+ const up=e=>{document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);
+  if(!dragged){selMod=(selMod===m)?null:m;sel=null;document.getElementById('detail').innerHTML='';render();return}
+  g.remove();const el=document.elementFromPoint(e.clientX,e.clientY);const l=el&&el.closest('.lane');
+  if(l&&laneOf(layer[m])!==l.dataset.layer){layer[m]=l.dataset.layer;
+   moved=new Set(Object.keys(layer).filter(k=>layer[k]!==orig[k]));document.getElementById('detail').innerHTML=''}
+  sel=null;render()};
+ document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up)}
+function setView(v){view=v;document.getElementById('vLeaks').className=v==='leaks'?'on':'';document.getElementById('vFull').className=v==='full'?'on':'';
+ document.getElementById('filterBox').style.display=v==='full'?'inline':'none';render()}
+document.getElementById('vLeaks').onclick=()=>setView('leaks');document.getElementById('vFull').onclick=()=>setView('full');
+document.getElementById('filter').oninput=ev=>{const v=ev.target.value.trim();
+ try{filterRe=v?new RegExp(v,'i'):null;ev.target.className=''}catch(x){filterRe=null;ev.target.className='err'}render()};
+document.getElementById('notes').oninput=()=>proposal(bad());
+document.getElementById('copyProp').onclick=()=>{const t=document.getElementById('proposal');t.select();let ok=false;try{ok=document.execCommand('copy')}catch(x){}document.getElementById('copied').textContent=ok?'copied':'press Ctrl+C to copy'};
+document.getElementById('wOn').onclick=()=>setLens(true);document.getElementById('wOff').onclick=()=>setLens(false);
+function setLens(v){lens=v;document.getElementById('wOn').className=v?'on':'';document.getElementById('wOff').className=v?'':'on';render()}
+document.getElementById('allPipes').onchange=ev=>{allPipes=ev.target.checked;render()};
+document.getElementById('reset').onclick=()=>{layer={...orig};moved=new Set();sel=null;selMod=null;cycFocus=new Set();cycSel=null;document.getElementById('detail').innerHTML='';render()};
+window.onresize=render;render();
+</script></body></html>

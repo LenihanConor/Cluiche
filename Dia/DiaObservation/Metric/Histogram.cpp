@@ -22,6 +22,14 @@ namespace Dia
                     mBounds[i] = bucketBounds[i];
             }
 
+            void Histogram::Reset()
+            {
+                std::lock_guard<std::mutex> lock(mMutex);
+                std::memset(mCounts, 0, sizeof(mCounts));
+                mTotal = 0;
+                mSum = 0.0;
+            }
+
             void Histogram::Observe(double value)
             {
                 std::lock_guard<std::mutex> lock(mMutex);

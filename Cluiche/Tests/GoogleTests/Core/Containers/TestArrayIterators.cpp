@@ -52,7 +52,7 @@ TEST(ArrayIterators, ConstIterator_NavigationAndComparison)
 
     EXPECT_TRUE(iter2.IsDone());
 
-    EXPECT_DEATH({ iter2.Current(); }, "");
+    DIA_EXPECT_DEATH({ iter2.Current(); }, "");
 
     iter2.Previous();
 
@@ -65,7 +65,7 @@ TEST(ArrayIterators, ConstIterator_NavigationAndComparison)
 
     EXPECT_TRUE(iter1.IsDone());
 
-    EXPECT_DEATH({ iter1.Current(); }, "");
+    DIA_EXPECT_DEATH({ iter1.Current(); }, "");
 }
 
 TEST(ArrayIterators, ConstReverseIterator_NavigationAndComparison)
@@ -118,7 +118,7 @@ TEST(ArrayIterators, ConstReverseIterator_NavigationAndComparison)
 
     EXPECT_TRUE(iter2.IsDone());
 
-    EXPECT_DEATH({ iter2.Current(); }, "");
+    DIA_EXPECT_DEATH({ iter2.Current(); }, "");
 
     iter2.Previous();
 
@@ -131,5 +131,5 @@ TEST(ArrayIterators, ConstReverseIterator_NavigationAndComparison)
 
     EXPECT_TRUE(iter1.IsDone());
 
-    EXPECT_DEATH({ iter1.Current(); }, "");
+    DIA_EXPECT_DEATH({ iter1.Current(); }, "");
 }

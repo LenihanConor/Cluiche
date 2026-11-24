@@ -285,3 +285,26 @@ TEST_F(MetricCommandTest, GetMetric_MissingParam_ReturnsError)
 
     McShutdown(app);
 }
+
+// ===========================================================================
+// Regression (found by ASan) — Application must not cache registry-owned
+// metric pointers across MetricRegistry::Reset() (heap-use-after-free).
+// ===========================================================================
+TEST_F(MetricCommandTest, Application_StreamMetrics_SurviveRegistryReset)
+{
+    TypeRegistry reg = McBuildRegistry();
+    ApplicationManifestV3 manifest = McSingleStageManifest();
+
+    {
+        Application first(manifest, reg);
+    }
+    MetricRegistry::Instance().Reset();
+
+    Application second(manifest, reg);
+    ASSERT_TRUE(second.Start());
+    second.Update(1.0f / 60.0f);
+
+    Gauge* gauge = MetricRegistry::Instance().FindGauge(StringCRC("dia.stream.service_committed"));
+    EXPECT_NE(gauge, nullptr);
+    McShutdown(second);
+}

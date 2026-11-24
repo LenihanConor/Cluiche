@@ -2,7 +2,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaMailbox/Mailbox.h>
 #include <stdio.h>
 

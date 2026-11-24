@@ -15,6 +15,8 @@ namespace Dia
 		class HealthRegistry
 		{
 		public:
+			static const unsigned int kMaxReporters = 64;
+
 			static HealthRegistry& Instance();
 
 			void Register(IHealthReporter* reporter);
@@ -40,6 +42,9 @@ namespace Dia
 			void Snapshot(ReporterSnapshot* out, unsigned int maxCount, unsigned int& outCount) const;
 			void PollTransitions(Transition* out, unsigned int maxCount, unsigned int& outCount);
 
+			// Number of Register() calls rejected because the registry was full (cleared by Reset).
+			unsigned int GetDroppedCount() const;
+
 			void Reset();
 
 		private:
@@ -48,8 +53,6 @@ namespace Dia
 
 			HealthRegistry(const HealthRegistry&) = delete;
 			HealthRegistry& operator=(const HealthRegistry&) = delete;
-
-			static const unsigned int kMaxReporters = 32;
 
 			struct ReporterEntry
 			{
@@ -65,6 +68,7 @@ namespace Dia
 
 			ReporterEntry    mReporters[kMaxReporters];
 			unsigned int     mReporterCount;
+			unsigned int     mDroppedCount;
 
 			RetiredEntry     mRetired[kMaxReporters];
 			unsigned int     mRetiredCount;

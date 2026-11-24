@@ -11,7 +11,9 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Profile/Profiler.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Perf/PerfMarkers.h>
 #include <DiaObservation/Health/HealthRegistry.h>
 
 namespace Dia { namespace ApplicationFlow {
@@ -46,6 +48,15 @@ namespace Dia { namespace ApplicationFlow {
         , mStartLogged(false)
         , mStopLogged(false)
     {
+        // Profile subject name (one-time; hot path only passes the CRC value).
+        Dia::Observation::Profile::Profiler::RegisterSubjectName(mInstanceId.Value(), mInstanceId.AsChar());
+    }
+
+    //--------------------------------------------------------------------------
+    Module::~Module()
+    {
+        // No-op when a completed/forced Stop already unregistered it; prevents a dangling registry entry otherwise.
+        Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mLifecycleReporter);
     }
 
     //--------------------------------------------------------------------------
@@ -232,6 +243,7 @@ namespace Dia { namespace ApplicationFlow {
                         DIA_LOG_ERROR("Application", "Module '%s' (PU '%s') DoStart TIMEOUT (%.1f ms)", mInstanceId.AsChar(), PuName(mProcessingUnit), mStateElapsedMs);
                         mLifecycleReporter.SetFailing(Dia::Core::StringCRC("module.start.timeout"));
                         mState.store(ModuleState::kFailed, std::memory_order_release);
+                        DIA_PERF_MARK_VALUE("module.failed", mInstanceId.Value());
                         DIA_LOG_INFO("module", "module.state.transition module_id=%s from=%s to=%s",
                                      mInstanceId.AsChar(),
                                      ModuleStateName(ModuleState::kStarting),
@@ -243,7 +255,7 @@ namespace Dia { namespace ApplicationFlow {
 
             case ModuleState::kActive:
             {
-                DIA_PROFILE_SCOPE("module.update", Dia::Observation::Profile::Category::kDiaApplicationFlow);
+                DIA_PROFILE_SCOPE_SUBJECT("module.update", Dia::Observation::Profile::Category::kDiaApplicationFlow, mInstanceId.Value());
                 DIA_TRACE_ZONE("module.update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
                 DoUpdate(deltaTime);
                 break;

@@ -14,9 +14,6 @@
 //
 //   EventDrivenSourceBase — derived class calls Push(payload) when an event
 //     occurs; base handles optional rate limiting.
-//
-//   OnDemandSourceBase — registers a query handler on Activate; derived class
-//     implements HandleQuery(args) for pull-based responses.
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaDebugServer/IInspectorDataSource.h"
 #include "DiaDebugServer/DebugServer.h"
@@ -65,7 +62,7 @@ protected:
     void Broadcast(const Json::Value& payload)
     {
         if (mServer)
-            mServer->NotifySubscribers(GetTopic(), payload);
+            mServer->PublishTopicOrdered(GetTopic(), payload);
     }
 
     static unsigned int HashCombine(unsigned int hash, unsigned int value)
@@ -107,7 +104,7 @@ public:
             if (connectionCount > 0)
             {
                 Json::Value payload = BuildPayload();
-                mServer->NotifySubscribers(GetTopic(), payload);
+                mServer->PublishTopicOrdered(GetTopic(), payload);
             }
             Reset();
         }
@@ -164,42 +161,13 @@ protected:
         const int maxPerWindow = GetPolicy().maxEventsPerWindow;
         if (maxPerWindow > 0 && mWindowEventsCount >= maxPerWindow) return;
         ++mWindowEventsCount;
-        mServer->NotifySubscribers(GetTopic(), payload);
+        mServer->PublishTopicOrdered(GetTopic(), payload);
     }
 
 private:
     DebugServer* mServer            = nullptr;
     int          mWindowEventsCount = 0;
     float        mWindowAccSec      = 0.0f;
-};
-
-//-----------------------------------------------------------------------------
-// OnDemandSourceBase
-//-----------------------------------------------------------------------------
-class OnDemandSourceBase : public IInspectorDataSource
-{
-public:
-    SourcePolicy GetPolicy() const override
-    {
-        return { SourceStrategy::kOnDemand, 0.0f, 0, 0.0f };
-    }
-
-    void Activate(DebugServer* server) override
-    {
-        mServer = server;
-        mServer->GetQueryRegistry().Register(GetTopic(),
-            [this](const Json::Value& args) { return HandleQuery(args); });
-    }
-
-    void Tick(float /*dt*/, int /*cc*/, int /*sc*/) override {}
-
-    void Deactivate() override { mServer = nullptr; }
-
-protected:
-    virtual Json::Value HandleQuery(const Json::Value& args) = 0;
-
-private:
-    DebugServer* mServer = nullptr;
 };
 
 }} // namespace Dia::DebugServer

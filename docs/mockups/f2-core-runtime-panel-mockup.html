@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>F-2 Core Runtime - TestRunnerPanel Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Courier New', monospace; background: #1e1e1e; color: #d4d4d4; padding: 12px; font-size: 13px; }
+  h1 { font-size: 15px; color: #9cdcfe; margin-bottom: 4px; }
+  .sub { color: #808080; margin-bottom: 10px; }
+  .demo { margin-bottom: 10px; }
+  .demo button { background: #333; color: #d4d4d4; border: 1px solid #555; padding: 3px 8px; font-family: inherit; cursor: pointer; margin-right: 4px; }
+  .demo button.on { border-color: #4a7c59; color: #b5e8b0; }
+  .panel { width: 760px; background: #252526; border: 2px solid #4a7c59; padding: 10px; }
+  .row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .title { color: #dcdcaa; font-weight: bold; }
+  .spacer { flex: 1; }
+  .btn { background: #0e639c; color: #fff; border: 0; padding: 4px 12px; font-family: inherit; cursor: pointer; }
+  .btn:disabled { background: #3a3a3a; color: #777; cursor: default; }
+  .sbtn { background: #333; color: #d4d4d4; border: 1px solid #555; padding: 3px 9px; font-family: inherit; cursor: pointer; }
+  .sbtn.sel { background: #4a7c59; border-color: #6aa87a; color: #fff; }
+  .strip { display: flex; gap: 2px; margin-bottom: 4px; }
+  .ph { flex: 1; text-align: center; padding: 4px 0; background: #2d2d2d; border: 1px solid #3c3c3c; color: #808080; font-size: 11px; }
+  .ph.done { background: #243b2a; border-color: #4a7c59; color: #b5e8b0; }
+  .ph.cur { background: #4a4a1f; border-color: #dcdcaa; color: #fff; }
+  .ph.bad { background: #4a2020; border-color: #f48771; color: #f8c9c0; }
+  .tick { color: #808080; margin-bottom: 10px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  th { text-align: left; color: #808080; font-weight: normal; border-bottom: 1px solid #3c3c3c; padding: 3px 6px; }
+  td { padding: 4px 6px; border-bottom: 1px solid #2d2d2d; }
+  .st { display: inline-block; min-width: 62px; text-align: center; padding: 1px 6px; font-size: 11px; }
+  .NotRun { background: #333; color: #888; }
+  .Running { background: #4a4a1f; color: #dcdcaa; }
+  .Pass { background: #243b2a; color: #b5e8b0; }
+  .Fail { background: #4a2020; color: #f48771; }
+  .box { background: #1e1e1e; border: 1px solid #3c3c3c; padding: 6px 8px; margin-bottom: 10px; }
+  .box .lbl { color: #808080; margin-bottom: 3px; }
+  .fp { display: grid; grid-template-columns: 90px 1fr; row-gap: 2px; }
+  .diff { color: #f48771; }
+  .ok { color: #b5e8b0; }
+  .note { color: #808080; font-size: 11px; margin-top: 12px; width: 760px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<h1>F-2 Core Runtime - TestRunnerPanel</h1>
+<div class="sub">Mockup of the CoW debug panel on the F2CoreRuntime stage. Use the buttons to preview each state.</div>
+
+<div class="demo">
+  Preview state:
+  <button id="s0" onclick="setState(0)">Idle</button>
+  <button id="s1" onclick="setState(1)">Mid-run (phase 3)</button>
+  <button id="s2" onclick="setState(2)">All pass</button>
+  <button id="s3" onclick="setState(3)">C3 fails</button>
+</div>
+
+<div class="panel">
+  <div class="row">
+    <span class="title">F-2 Core Runtime</span>
+    <span class="spacer"></span>
+    <button class="btn" id="run" onclick="setState(1)">Run Scenario</button>
+  </div>
+
+  <div class="strip" id="strip"></div>
+  <div class="tick" id="tick"></div>
+
+  <table>
+    <thead><tr><th style="width:26px">#</th><th style="width:190px">Check</th><th style="width:80px">Status</th><th>Result</th></tr></thead>
+    <tbody id="checks"></tbody>
+  </table>
+
+  <div class="box">
+    <div class="lbl">Fingerprints (8 streams + day counter + speed state)</div>
+    <div class="fp" id="fp"></div>
+  </div>
+
+  <div class="box">
+    <div class="lbl">Manual controls (same bus messages the script uses; disabled while the scenario runs)</div>
+    <div class="row" style="margin-bottom:4px">
+      <span style="width:62px;color:#808080">Speed</span>
+      <button class="sbtn" data-m>Pause</button>
+      <button class="sbtn" data-m>Slow</button>
+      <button class="sbtn sel" data-m>Normal</button>
+      <button class="sbtn" data-m>Fast</button>
+      <button class="sbtn" data-m>Fastest</button>
+      <span class="spacer"></span>
+      <span id="clock" style="color:#9cdcfe">Day 5 &middot; Paused &middot; modals 0</span>
+    </div>
+    <div class="row" style="margin-bottom:0">
+      <span style="width:62px;color:#808080">Step</span>
+      <button class="sbtn" data-m>Step 1 day</button>
+      <span style="width:24px"></span>
+      <span style="width:50px;color:#808080">Modal</span>
+      <button class="sbtn" data-m>Open</button>
+      <button class="sbtn" data-m>Close</button>
+    </div>
+  </div>
+
+  <div class="row" style="margin-bottom:0;color:#808080">
+    <span id="foot"></span>
+  </div>
+</div>
+
+<div class="note">
+  Reads only: phase, check status and result text come from F2TestRunnerModule (GetCurrentPhase, GetCheckStatus, GetLastResult);
+  fingerprints from the stored F500 / F1000 / replay captures. Buttons post requests only: Run Scenario calls RunScenario(),
+  the speed/modal/step buttons broadcast SpeedChangeRequested / ModalOpened / ModalClosed / ManualAdvanceRequested.
+  The panel holds no scenario logic.
+</div>
+
+<script>
+const phases = ['0 Isolation','1 Session','2 Save','3 Reference','4 Reload','5 Replay','6 Rerun','7 Failed load'];
+const checks = [
+  ['C1','Stream independence'], ['C2','Determinism'], ['C3','Save/load RNG round trip'],
+  ['C4','Clock proof'], ['C5','Save/load proof'], ['C6','Band resolver timing']
+];
+const R = {
+  C1:'8 / 8 streams independent over 64 draws',
+  C2:'0 divergences over 1000 ticks',
+  C3:'800 / 800 draws match, state identical',
+  C4:'22 / 22 transitions match, 0 double ticks over 500 ticks',
+  C5:'(a) restored fields match; (b) failed loads leave state untouched',
+  C6:'1 resolver invocation, floats stable'
+};
+const states = {
+  0: { cur:-1, statuses:['NotRun','NotRun','NotRun','NotRun','NotRun','NotRun'], res:['','','','','',''],
+       tick:'Idle', fp:false, run:'Run Scenario', runOn:true, manual:true, foot:'Ready.' },
+  1: { cur:3, statuses:['Pass','NotRun','NotRun','Pass','Running','Pass'], res:[R.C1,'','',R.C4,'(a) restored fields match; (b) pending',R.C6],
+       tick:'Phase 3 Reference future  -  tick 712 / 1000', fp:'mid', run:'Running...', runOn:false, manual:false, foot:'Scenario running. Manual controls locked.' },
+  2: { cur:8, statuses:['Pass','Pass','Pass','Pass','Pass','Pass'], res:[R.C1,R.C2,R.C3,R.C4,R.C5,R.C6],
+       tick:'Scenario complete  -  6 pass, 0 fail  -  2,553 updates', fp:'ok', run:'Run Again', runOn:true, manual:true, foot:'All checks passed.' },
+  3: { cur:8, statuses:['Pass','Pass','Fail','Pass','Pass','Pass'], res:[R.C1,R.C2,'state differs: 2 fields differ: dayCounter, preModalSpeedTier; 800 / 800 draws match',R.C4,R.C5,R.C6], bad:[5],
+       tick:'Scenario complete  -  5 pass, 1 fail', fp:'bad', run:'Run Again', runOn:true, manual:true, foot:'1 check failed. See C3.' }
+};
+
+function fpRows(kind) {
+  const rows = [];
+  const streams = 'WLD A1 B4 B6 C1 C2 B5 C4'.split(' ');
+  if (kind === false) return '<span style="color:#808080;grid-column:1/3">Captured during the run.</span>';
+  rows.push(['F500', 'day 5 &middot; paused &middot; streams captured (seed + draw count x 8)']);
+  if (kind === 'mid') { rows.push(['F1000', '<span style="color:#808080">pending</span>']); }
+  else {
+    rows.push(['F1000', 'day 16 &middot; Fastest &middot; streams captured']);
+    if (kind === 'ok') rows.push(['Replay F1000', '<span class="ok">identical to F1000 (all fields)</span>']);
+    else rows.push(['Replay F1000', '<span class="diff">dayCounter 15 vs 16, preModalSpeedTier 2 vs 3</span>']);
+    rows.push(['Rerun F1000', '<span class="ok">identical to F1000 (all fields)</span>']);
+  }
+  rows.push(['Streams', streams.join(' ')]);
+  return rows.map(r => typeof r === 'string' ? r : '<span style="color:#808080">'+r[0]+'</span><span>'+r[1]+'</span>').join('');
+}
+
+function setState(n) {
+  const s = states[n];
+  ['s0','s1','s2','s3'].forEach((id,i)=>document.getElementById(id).classList.toggle('on', i===n));
+  const strip = document.getElementById('strip');
+  strip.innerHTML = phases.map((p,i)=>{
+    let c = 'ph';
+    if (i < s.cur) c += ' done'; else if (i === s.cur) c += ' cur';
+    if (n === 3 && i === 5) c = 'ph bad';
+    return '<div class="'+c+'">'+p+'</div>';
+  }).join('');
+  document.getElementById('tick').textContent = s.tick;
+  document.getElementById('checks').innerHTML = checks.map((c,i)=>
+    '<tr><td>'+c[0]+'</td><td>'+c[1]+'</td><td><span class="st '+s.statuses[i]+'">'+s.statuses[i]+'</span></td><td>'+(s.res[i]||'')+'</td></tr>').join('');
+  document.getElementById('fp').innerHTML = fpRows(s.fp);
+  const run = document.getElementById('run'); run.textContent = s.run; run.disabled = !s.runOn;
+  document.querySelectorAll('[data-m]').forEach(b=>b.disabled=!s.manual);
+  document.getElementById('foot').textContent = s.foot;
+}
+setState(0);
+</script>
+</body>
+</html>

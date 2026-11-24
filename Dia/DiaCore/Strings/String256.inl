@@ -30,18 +30,6 @@ namespace Dia
 				: String<256>( iter, filter)
 			{}
 
-			//-----------------------------------------------------------------------------
-			inline
-			String256::String256 (const char* pRawString, ...)
-				: String<256>()
-			{
-				DIA_ASSERT(pRawString != NULL, "Invalid Data");
-
-				va_list args;
-				va_start(args, pRawString);
-				Format(pRawString, args);
-				va_end(args);
-			}
 			
 			//-----------------------------------------------------------------------------
 			inline

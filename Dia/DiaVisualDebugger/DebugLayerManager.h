@@ -12,7 +12,7 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
 #include <DiaGraphics/Camera/Camera2D.h>
 #include <DiaGraphics/Camera/ViewportTransform.h>
 #include <DiaGraphics3D/Camera3D.h>
@@ -26,11 +26,6 @@ namespace Dia
     namespace Graphics
     {
         class DebugFrameDataVisitor;
-    }
-
-    namespace DebugServer
-    {
-        class DebugServer;  // Forward declaration — no header included; caller passes nullptr if absent
     }
 }
 
@@ -162,20 +157,10 @@ namespace Dia
             // DiaAPI commands (call once during application startup)
             // ----------------------------------------------------------------
 
-            // Registers five commands: debug.layer.enable, debug.layer.disable,
-            // debug.layer.list, debug.scale, debug.pick (no-op stub).
+            // Registers four commands: debug.layer.enable, debug.layer.disable,
+            // debug.scale, debug.pick (no-op stub).
             // LIFETIME: manager must outlive the application (see class comment).
             void RegisterDiaAPICommands();
-
-            // ----------------------------------------------------------------
-            // Editor broadcast (optional)
-            // ----------------------------------------------------------------
-
-            // Broadcast current layer state to DiaDebugServer subscribers.
-            // No-op if debugServer is nullptr (DiaDebugServer is an optional dependency).
-            // Only broadcasts when mLayersDirty is true (set on Register/Enable/Disable/Unregister).
-            // Clears mLayersDirty after broadcast.
-            void BroadcastLayerState(Dia::DebugServer::DebugServer* debugServer);
 
             // ----------------------------------------------------------------
             // Query
@@ -232,9 +217,6 @@ namespace Dia
             // 2D cursor world position — updated by Coord2DCursorDrawer each Draw() call
             Dia::Maths::Vector2D         mCursorWorld;
 
-            // Broadcast state tracking (debug-editor-panel)
-            uint32_t mLastDroppedCount = 0;  // cached from FrameData at end of Draw()
-            bool     mLayersDirty      = false;  // set on Register/Unregister/Enable/Disable
             bool     mAPICommandsRegistered = false;
 
             // Insertion sort — stable, O(N²) acceptable for kMaxLayers = 128

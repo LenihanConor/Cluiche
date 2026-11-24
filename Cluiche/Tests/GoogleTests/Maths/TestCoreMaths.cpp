@@ -260,7 +260,7 @@ TEST(CoreMaths, SquareRoot_Zero_ReturnsZero)
 
 TEST(CoreMaths, SquareRoot_NegativeValue_Asserts)
 {
-    EXPECT_DEATH(SquareRoot(-1.0f), ".*");
+    DIA_EXPECT_DEATH(SquareRoot(-1.0f), ".*");
 }
 
 // ==============================================================================
@@ -290,5 +290,5 @@ TEST(CoreMaths, Factorial_Zero_ReturnsOne)
 
 TEST(CoreMaths, Factorial_NegativeValue_Asserts)
 {
-    EXPECT_DEATH(Factorial(-2), ".*");
+    DIA_EXPECT_DEATH(Factorial(-2), ".*");
 }

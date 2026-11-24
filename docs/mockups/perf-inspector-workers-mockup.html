@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Perf Inspector - Workers &amp; deferred steps (mockup)</title>
+<!--
+  MOCKUP ONLY (approved 2026-11-12, the visual acceptance gate for the Workers view). Extends perf-inspector-mockup.html with the job-worker view (DiaDeferredStep + JobSystem).
+  Inspector tier: CluicheEditor connected to the running game. Synthetic data.
+  Scenario (CoW, Debug|x64, 8 workers, deferred-step cap M=2, 1 key = 1 s here for readability):
+    - weather: kicked every key, applied k=1 key later, 4 ranges
+    - ecology: kicked every 2 keys, applied k=2 keys later, 8 ranges; key 4 has a succession event (ranges ~4x)
+    - gameplay: pathfinding queries, a flow-field rebuild burst at 6.2 s, in-frame steering ranges every Sim frame (Sim waits)
+  Interactive:
+    - click a worker slice (job), a deferred-step bar (step instance) or a Sim frame
+    - "Cap M" re-simulates the schedule (what-if): cap 4 removes the ecology stall but gameplay waits more during the burst
+    - zoom 10 s / 2 s / 200 ms around the selection; toggles hide gameplay / in-frame jobs
+  Data path (design): each job's timing record rides back with its completion to the submitting PU, which publishes it in its
+  existing snapshot to Main. No new cross-PU path. Worker threads register their profile buffers through a DiaThreading thread-start hook.
+-->
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Segoe UI',sans-serif; background:#1e1e1e; color:#d4d4d4; height:100vh; display:flex; flex-direction:column; overflow:hidden; font-size:12px; user-select:none; }
+.toolbar { display:flex; align-items:center; gap:10px; padding:5px 10px; background:#2d2d2d; border-bottom:1px solid #3c3c3c; flex-shrink:0; }
+.toolbar .conn { color:#7fd18b; } .toolbar .dim { color:#808080; } .toolbar .sp { flex:1; }
+.tabs { display:flex; gap:0; } .tabs span { padding:2px 10px; border:1px solid #3c3c3c; color:#808080; } .tabs span.on { color:#d4d4d4; background:#264f78; border-color:#3a74a8; }
+button { background:#3a3a3a; border:1px solid #4a4a4a; color:#d4d4d4; font:inherit; padding:2px 9px; cursor:pointer; } button:hover { background:#444; } button.on { background:#264f78; border-color:#3a74a8; }
+select { background:#252526; color:#d4d4d4; border:1px solid #3c3c3c; font:inherit; padding:1px 4px; }
+.layout { display:flex; flex:1; overflow:hidden; }
+.panel { display:flex; flex-direction:column; border-right:1px solid #3c3c3c; overflow:hidden; }
+.ptitle { padding:5px 10px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:#9cdcfe; background:#252526; border-bottom:1px solid #3c3c3c; flex-shrink:0; display:flex; gap:8px; align-items:center; }
+.ptitle .r { margin-left:auto; color:#808080; text-transform:none; font-weight:400; letter-spacing:0; }
+.pbody { flex:1; overflow:auto; padding:8px; }
+#left { width:290px; } #center { flex:1; } #right { width:300px; border-right:none; }
+h4 { font-size:11px; color:#c8c8c8; margin:4px 0 4px; display:flex; gap:6px; align-items:center; } h4 .m { margin-left:auto; color:#808080; font-weight:400; }
+.row { display:grid; grid-template-columns:12px 1fr 40px 40px 40px; gap:4px; align-items:center; padding:1px 0; }
+.row i { display:inline-block; width:9px; height:9px; border-radius:2px; }
+.row .n { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .row .v { text-align:right; color:#9cdcfe; font-variant-numeric:tabular-nums; }
+.row.h { color:#707070; font-size:10px; } .row.h span { text-align:right; } .row .sub { color:#707070; font-size:10px; grid-column:2 / span 4; }
+.hot { color:#f48771 !important; } .ok { color:#7fd18b; } .warnc { color:#d7ba7d; }
+#tl { flex:none; padding:6px 8px 2px; border-bottom:1px solid #3c3c3c; }
+.lane { display:grid; grid-template-columns:78px 1fr; align-items:center; } .lane .ln { color:#9cdcfe; font-weight:600; font-size:11px; } .lane .ln small { color:#808080; font-weight:400; margin-left:4px; }
+.grp { color:#707070; font-size:10px; text-transform:uppercase; letter-spacing:.05em; margin:5px 0 1px; border-top:1px solid #333; padding-top:3px; display:flex; } .grp span { margin-left:auto; text-transform:none; letter-spacing:0; }
+svg text { fill:#a0a0a0; font:10px 'Segoe UI'; }
+.legend { display:flex; gap:10px; flex-wrap:wrap; color:#a0a0a0; margin:4px 0 4px 78px; font-size:11px; } .legend i { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:4px; vertical-align:-1px; }
+#detail { flex:1; overflow:auto; padding:8px 10px; }
+.card { margin-bottom:12px; } .card h5 { font-size:11px; color:#9cdcfe; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; display:flex; } .card h5 span { margin-left:auto; color:#808080; text-transform:none; letter-spacing:0; font-weight:400; }
+.cols { display:grid; grid-template-columns:1.25fr 1fr; gap:16px; }
+.kv { display:grid; grid-template-columns:1fr auto; gap:2px 10px; } .kv span:nth-child(even) { text-align:right; color:#9cdcfe; font-variant-numeric:tabular-nums; } .kv .k2 { color:#808080; padding-left:10px; }
+.gantt { border:1px solid #3c3c3c; background:#1a1a1a; padding:4px 6px; } .gr { display:grid; grid-template-columns:110px 1fr 50px; gap:6px; align-items:center; height:15px; } .gr .tr { position:relative; height:9px; background:#232323; } .gr .tr b { position:absolute; top:0; bottom:0; } .gr .tr u { position:absolute; top:0; bottom:0; } .gr .ms { text-align:right; color:#9cdcfe; font-variant-numeric:tabular-nums; } .gr .nm { color:#a0a0a0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.bar { display:grid; grid-template-columns:130px 1fr 46px; gap:6px; align-items:center; margin:2px 0; } .bar .t { background:#2a2a2a; height:9px; } .bar .t b { display:block; height:100%; } .bar .ms { text-align:right; color:#9cdcfe; font-variant-numeric:tabular-nums; }
+.diag { border-left:3px solid #d7ba7d; background:#2a261c; padding:6px 8px; margin-top:6px; } .diag.bad { border-color:#f48771; background:#2d1f1f; } .diag.good { border-color:#7fd18b; background:#1d2a20; }
+.item { padding:5px 6px; border:1px solid #333; background:#232323; margin-bottom:5px; cursor:pointer; } .item.sel { border-color:#3a74a8; background:#1f2d3a; } .item .t1 { display:flex; gap:6px; } .item .t1 b { margin-left:auto; font-weight:400; } .item .t2 { color:#a0a0a0; margin-top:2px; font-size:11px; }
+.pill { font-size:10px; padding:0 6px; border-radius:8px; } .pill.bad { background:#5a1d1d; color:#f48771; } .pill.ok { background:#1d4a2a; color:#7fd18b; } .pill.warn { background:#4a3d1d; color:#d7ba7d; }
+.meter { height:6px; background:#2a2a2a; margin-top:3px; position:relative; } .meter b { display:block; height:100%; background:#4ec9b0; }
+.note { color:#707070; font-size:11px; margin-top:4px; line-height:1.35; }
+a.lnk { color:#4fc1ff; cursor:pointer; text-decoration:underline; }
+label.tg { display:flex; gap:6px; align-items:center; margin:2px 0; cursor:pointer; }
+#tip { position:fixed; background:#111; border:1px solid #444; padding:4px 7px; pointer-events:none; display:none; z-index:9; font-size:11px; line-height:1.4; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="conn">&#9679; Connected</span><span>CoW</span><span class="dim">Debug|x64 &middot; S3EcologyTestbedStage &middot; ws://localhost:9229</span>
+  <span class="tabs"><span>Frames</span><span class="on">Workers</span></span>
+  <span class="sp"></span>
+  <span class="dim">Zoom</span><button data-z="10000" class="on">10 s</button><button data-z="2000">2 s</button><button data-z="200">200 ms</button><button id="zstep">Fit step</button>
+  <button id="pause">Pause</button><button>Export Perfetto&hellip;</button>
+</div>
+
+<div class="layout">
+  <div class="panel" id="left">
+    <div class="ptitle">Deferred steps &amp; job owners</div>
+    <div class="pbody" id="lp"></div>
+  </div>
+  <div class="panel" id="center">
+    <div class="ptitle">Timeline <span class="r" id="winlabel"></span></div>
+    <div id="tl"></div>
+    <div class="ptitle" id="dtitle">Selection</div>
+    <div id="detail"></div>
+  </div>
+  <div class="panel" id="right">
+    <div class="ptitle">Late results <span class="r" id="stallc"></span></div>
+    <div style="padding:8px;border-bottom:1px solid #3c3c3c;max-height:30%;overflow:auto" id="stalls"></div>
+    <div class="ptitle">Pool health <span class="r" id="health"></span></div>
+    <div class="pbody" id="pool"></div>
+  </div>
+</div>
+<div id="tip"></div>
+
+<script>
+// ---------------- model ----------------
+const WIN = 10000, KEY = 1000, FRAME = 1000/30, NW = 8, SIMBUDGET = 33.3;
+const OWN = {
+  weather:  {n:'weather',              c:'#4fc1ff', cls:'def', mod:'WeatherModule',        pu:'Sim'},
+  ecology:  {n:'ecology',              c:'#4ec9b0', cls:'def', mod:'EcologyModule',        pu:'Sim'},
+  path:     {n:'Pathfinding query',    c:'#c586c0', cls:'game', mod:'PathfindingModule',   pu:'Sim'},
+  flow:     {n:'FlowField rebuild',    c:'#d7ba7d', cls:'game', mod:'FlowFieldModule',     pu:'Sim'},
+  steer:    {n:'Steering (in-frame)',  c:'#8a8a8a', cls:'inf', mod:'SteeringModule',       pu:'Sim'},
+};
+const CH = [ {id:'weather', every:1, k:1, nR:4, base:52, var:22, capMs:0.8, applyMs:0.6, wc:'96 KB',  secs:[['advect',.42],['precipitation',.33],['temperature',.25]]},
+             {id:'ecology', every:2, k:2, nR:8, base:105, var:35, capMs:1.9, applyMs:1.4, wc:'1.8 MB', secs:[['sample weather (rain, temp)',.14],['succession',.27],['spread',.36],['grazing',.23]]} ];
+function r(i,s){ const x=Math.sin(i*12.9898+s*78.233)*43758.5453; return x-Math.floor(x); }
+let CAP = 2, SHOW = {game:true, inf:true};
+
+function build(cap){
+  const jobs=[], steps=[]; let id=0;
+  CH.forEach((ch,ci)=>{ for(let key=0; key<10; key+=ch.every){
+    const kick=key*KEY+2, apply=(key+ch.k)*KEY, st={ch:ch.id, key, kick, apply, ranges:[], capMs:ch.capMs*(0.9+r(key,ci)*.2), applyMs:ch.applyMs*(0.9+r(key,ci+5)*.2)};
+    const heavy = ch.id==='ecology' && key===4 ? 4.3 : 1;
+    st.event = heavy>1 ? 'succession event' : null;
+    for(let i=0;i<ch.nR;i++){ const j={id:id++, owner:ch.id, cls:'def', submit:kick+st.capMs, dur:(ch.base+r(key*10+i,ci)*ch.var)*heavy*(i===ch.nR-1&&heavy>1?1.25:1), step:st, range:i, nR:ch.nR}; jobs.push(j); st.ranges.push(j); }
+    steps.push(st); } });
+  for(let t=0,i=0;t<WIN;t+=37,i++) if(r(i,7)>0.45) jobs.push({id:id++, owner:'path', cls:'game', submit:t+r(i,8)*30, dur:2+r(i,9)*5});
+  for(let i=0;i<12;i++) jobs.push({id:id++, owner:'flow', cls:'game', submit:6200+i*0.05, dur:26+r(i,11)*9, range:i, nR:12});
+  const nF=Math.floor(WIN/FRAME);
+  for(let f=0;f<nF;f++) for(let i=0;i<3;i++) jobs.push({id:id++, owner:'steer', cls:'inf', submit:f*FRAME+4, dur:1.0+r(f*3+i,13)*0.7, frame:f, range:i, nR:3});
+  jobs.sort((a,b)=>a.submit-b.submit || a.id-b.id);
+  const free=new Array(NW).fill(0), defIv=[];
+  jobs.forEach(j=>{
+    const minFree=Math.min(...free); const t0=Math.max(j.submit,minFree); let t=t0;
+    if(j.cls==='def'){ for(;;){ const cov=defIv.filter(v=>v.s<=t && v.e>t); if(cov.length<cap) break; t=Math.min(...cov.map(v=>v.e)); } }
+    let w=free.findIndex(fv=>fv<=t+1e-9); if(w<0){ w=free.indexOf(minFree); t=Math.max(t,minFree); }
+    j.start=t; j.end=t+j.dur; j.worker=w; j.workerWait=t0-j.submit; j.capWait=t-t0;
+    j.busyAtSubmit = {def:defIv.filter(v=>v.s<=j.submit&&v.e>j.submit).length, any:free.filter(fv=>fv>j.submit).length};
+    free[w]=j.end; if(j.cls==='def') defIv.push({s:t,e:j.end});
+  });
+  steps.forEach(s=>{ s.first=Math.min(...s.ranges.map(j=>j.start)); s.done=Math.max(...s.ranges.map(j=>j.end)); s.stall=Math.max(0,s.done-s.apply);
+    s.cpu=s.ranges.reduce((a,j)=>a+j.dur,0); s.capWait=s.ranges.reduce((a,j)=>a+j.capWait,0); s.workerWait=s.ranges.reduce((a,j)=>a+j.workerWait,0); });
+  // Sim frames
+  const frames=[];
+  for(let f=0;f<nF;f++){ const t=f*FRAME, parts=[]; parts.push(['Sim modules',9+r(f,21)*3,'#6a9955']);
+    const inf=jobs.filter(j=>j.cls==='inf'&&j.frame===f); const wait=Math.max(...inf.map(j=>j.end))-inf[0].submit; parts.push(['wait: in-frame steering ranges',wait,OWN.steer.c]);
+    steps.forEach(s=>{ if(s.kick>=t&&s.kick<t+FRAME) parts.push([`${s.ch} Capture (key ${s.key})`,s.capMs,OWN[s.ch].c]);
+                       if(s.apply>=t&&s.apply<t+FRAME){ if(s.stall>0) parts.push([`STALL: ${s.ch} key ${s.key} not ready`,s.stall,'#f48771']); parts.push([`${s.ch} Apply (key ${s.key})`,s.applyMs,OWN[s.ch].c]); } });
+    frames.push({f,t,parts,tot:parts.reduce((a,p)=>a+p[1],0)}); }
+  return {jobs, steps, frames};
+}
+let D = build(CAP);
+let sel = {kind:'step', s:D.steps.find(s=>s.ch==='ecology'&&s.key===4)}, view = {s:0, e:WIN};
+
+// ---------------- helpers ----------------
+const W = 820;
+const X = t => (t-view.s)/(view.e-view.s)*W;
+const vis = (a,b) => b>=view.s && a<=view.e;
+function pct(a,p){ if(!a.length) return 0; const s=[...a].sort((x,y)=>x-y); return s[Math.floor(p*(s.length-1))]; }
+function fmt(ms){ return ms>=1000? (ms/1000).toFixed(2)+' s' : ms>=10? ms.toFixed(0)+' ms' : ms.toFixed(1)+' ms'; }
+function selTime(){ if(sel.kind==='step') return (sel.s.kick+Math.max(sel.s.apply,sel.s.done))/2; if(sel.kind==='job') return sel.j.start; if(sel.kind==='frame') return sel.fr.t; return WIN/2; }
+function zoom(span){ const c=selTime(); let s=Math.max(0,c-span/2), e=Math.min(WIN,s+span); s=Math.max(0,e-span); view={s,e}; document.querySelectorAll('[data-z]').forEach(b=>b.classList.toggle('on',+b.dataset.z===span)); render(); }
+function stepOf(j){ return j.step; }
+function shown(j){ return j.cls==='def' || SHOW[j.cls]; }
+
+// ---------------- timeline ----------------
+function lanes(){
+  const tl=document.getElementById('tl'); let h='';
+  document.getElementById('winlabel').textContent=`${fmt(view.s)} – ${fmt(view.e)} · ${NW} workers · deferred-step cap M=${CAP}`;
+  // time axis
+  const span=view.e-view.s, stepT = span>5000?1000: span>1000?250: span>300?50:20; let ax='';
+  for(let t=Math.ceil(view.s/stepT)*stepT;t<=view.e;t+=stepT){ ax+=`<line x1="${X(t)}" x2="${X(t)}" y1="10" y2="14" stroke="#555"/><text x="${X(t)+2}" y="9">${t%1000===0?'key '+(t/1000):fmt(t)}</text>`; }
+  h+=`<div class="lane"><div class="ln"></div><svg width="${W}" height="15">${ax}</svg></div>`;
+  // Sim lane
+  const SH=46, MAXY=60, Y=v=>SH-Math.min(v,MAXY)/MAXY*SH; let sb='';
+  D.frames.forEach(fr=>{ if(!vis(fr.t,fr.t+FRAME)) return; let acc=0; const x=X(fr.t), w=Math.max(0.8,X(fr.t+FRAME)-x-0.4);
+    fr.parts.forEach(p=>{ const y1=Y(acc+p[1]), y0=Y(acc); sb+=`<rect x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(0,y0-y1).toFixed(1)}" fill="${p[2]}"/>`; acc+=p[1]; });
+    if(fr.tot>MAXY) sb+=`<text x="${x}" y="9" style="fill:#f48771">▲${fr.tot.toFixed(0)}</text>`;
+    if(sel.kind==='frame'&&sel.fr===fr) sb+=`<rect x="${x-1}" y="0" width="${w+2}" height="${SH}" fill="none" stroke="#fff"/>`; });
+  h+=`<div class="lane"><div class="ln">Sim<small>30 Hz</small></div><svg data-lane="sim" width="${W}" height="${SH+1}" style="background:#1a1a1a;cursor:crosshair"><line x1="0" x2="${W}" y1="${Y(SIMBUDGET)}" y2="${Y(SIMBUDGET)}" stroke="#d7ba7d" stroke-dasharray="4 3"/><text x="${W-84}" y="${Y(SIMBUDGET)-3}">budget 33.3 ms</text>${sb}</svg></div>`;
+  // workers
+  const busy=new Array(NW).fill(0); D.jobs.forEach(j=>{ if(shown(j)) busy[j.worker]+=Math.max(0,Math.min(j.end,view.e)-Math.max(j.start,view.s)); });
+  h+=`<div class="grp">Workers<span>slice colour = owner · hatched = in-frame (Sim waits) · outline = selected</span></div>`;
+  for(let w=0;w<NW;w++){ let b=''; const RH=13;
+    D.jobs.forEach(j=>{ if(j.worker!==w||!shown(j)||!vis(j.start,j.end)) return; const x=X(j.start), wd=Math.max(1,X(j.end)-x);
+      const hl = sel.kind==='step' ? (j.step===sel.s) : sel.kind==='job' ? (j===sel.j || (j.step&&j.step===sel.j.step)) : true;
+      const op = (sel.kind==='step'||sel.kind==='job') && j.cls==='def' && !hl ? .35 : 1;
+      b+=`<rect x="${x.toFixed(1)}" y="1" width="${wd.toFixed(1)}" height="${RH-2}" fill="${j.cls==='inf'?'url(#hatch)':OWN[j.owner].c}" opacity="${op}" ${sel.kind==='job'&&sel.j===j?'stroke="#fff" stroke-width="1.5"':''}/>`;
+      if(wd>46 && j.cls!=='inf') b+=`<text x="${x+3}" y="10" style="fill:#111">${j.step?j.owner+' '+(j.range+1)+'/'+j.nR:OWN[j.owner].n}</text>`; });
+    const u=busy[w]/(view.e-view.s);
+    h+=`<div class="lane"><div class="ln">W${w}<small>${(u*100).toFixed(0)}%</small></div><svg data-lane="w" data-w="${w}" width="${W}" height="${RH}" style="background:#1a1a1a;cursor:pointer">${w===0?'<defs><pattern id="hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="4" height="4" fill="#4a4a4a"/><line x1="0" y1="0" x2="0" y2="4" stroke="#9a9a9a" stroke-width="2"/></pattern></defs>':''}${b}</svg></div>`; }
+  // cap row: deferred concurrency
+  const CHH=22; let cp=''; const pts=[]; const ev=[]; D.jobs.filter(j=>j.cls==='def').forEach(j=>{ ev.push([j.start,1]); ev.push([j.end,-1]); }); ev.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  let c=0, lastT=0; const YC=v=>CHH-1-v/Math.max(CAP,4)*(CHH-3); let path=`M0 ${YC(0)}`;
+  ev.forEach(([t,d])=>{ path+=` L${X(t).toFixed(1)} ${YC(c)}`; c+=d; path+=` L${X(t).toFixed(1)} ${YC(c)}`; }); path+=` L${W} ${YC(0)}`;
+  // waiting-for-cap shading
+  D.jobs.filter(j=>j.cls==='def'&&j.capWait>0.5&&vis(j.submit,j.start)).forEach(j=>{ cp+=`<rect x="${X(j.submit+j.workerWait)}" y="0" width="${Math.max(1,X(j.start)-X(j.submit+j.workerWait))}" height="${CHH}" fill="#f48771" opacity="0.06"/>`; });
+  h+=`<div class="lane"><div class="ln">Cap<small>in use</small></div><svg width="${W}" height="${CHH}" style="background:#1a1a1a">${cp}<line x1="0" x2="${W}" y1="${YC(CAP)}" y2="${YC(CAP)}" stroke="#d7ba7d" stroke-dasharray="4 3"/><text x="${W-118}" y="${YC(CAP)-2}">cap M=${CAP} · red = ranges queued</text><path d="${path}" fill="none" stroke="#4ec9b0"/></svg></div>`;
+  // deferred step rows
+  h+=`<div class="grp">Deferred steps<span>outline = kick → apply window · fill = running → ready · red = late (Sim stalled)</span></div>`;
+  CH.forEach(ch=>{ let b=''; const RH=16;
+    D.steps.filter(s=>s.ch===ch.id).forEach(s=>{ if(!vis(s.kick,Math.max(s.apply,s.done))) return; const isSel=sel.kind==='step'&&sel.s===s || sel.kind==='job'&&sel.j.step===s;
+      b+=`<rect x="${X(s.kick)}" y="2" width="${Math.max(1,X(Math.min(s.apply,WIN))-X(s.kick))}" height="${RH-4}" fill="none" stroke="${OWN[ch.id].c}" opacity=".55" ${isSel?'stroke-width="2" style="stroke:#fff;opacity:1"':''}/>`;
+      b+=`<rect x="${X(s.first)}" y="5" width="${Math.max(1,X(Math.min(s.done,s.apply))-X(s.first))}" height="${RH-10}" fill="${OWN[ch.id].c}"/>`;
+      if(s.stall>0) b+=`<rect x="${X(s.apply)}" y="3" width="${Math.max(2,X(s.done)-X(s.apply))}" height="${RH-6}" fill="#f48771"/>`;
+      else if(s.done<WIN) b+=`<line x1="${X(s.done)}" x2="${X(s.done)}" y1="2" y2="${RH-2}" stroke="#7fd18b"/>`;
+      if(X(s.apply)-X(s.kick)>70) b+=`<text x="${X(s.kick)+4}" y="${RH-4}" style="fill:#c8c8c8">key ${s.key}→${s.key+ch.k}${s.event?' · '+s.event:''}</text>`; });
+    h+=`<div class="lane"><div class="ln" style="color:${OWN[ch.id].c}">${ch.id}<small>k=${ch.k}</small></div><svg data-lane="step" data-ch="${ch.id}" width="${W}" height="${RH}" style="background:#1a1a1a;cursor:pointer">${b}</svg></div>`; });
+  h+=`<div class="legend">${Object.entries(OWN).map(([k,o])=>`<span><i style="background:${k==='steer'?'#8a8a8a':o.c}"></i>${o.n}</span>`).join('')}<span><i style="background:#6a9955"></i>Sim modules</span><span><i style="background:#f48771"></i>stall</span></div>`;
+  tl.innerHTML=h;
+  tl.querySelectorAll('svg[data-lane]').forEach(sv=>{ sv.addEventListener('click',e=>pick(sv,e,true)); sv.addEventListener('mousemove',e=>pick(sv,e,false)); sv.addEventListener('mouseleave',()=>tip.style.display='none'); });
+}
+function hit(sv,e){ const rc=sv.getBoundingClientRect(); const px=e.clientX-rc.left; const t=view.s+px/W*(view.e-view.s); const tol=3/W*(view.e-view.s);
+  if(sv.dataset.lane==='w'){ const w=+sv.dataset.w; return {kind:'job', j:D.jobs.find(j=>j.worker===w&&shown(j)&&j.start-tol<=t&&j.end+tol>=t)}; }
+  if(sv.dataset.lane==='step'){ return {kind:'step', s:D.steps.find(s=>s.ch===sv.dataset.ch&&s.kick<=t&&Math.max(s.apply,s.done)>=t)}; }
+  return {kind:'frame', fr:D.frames[Math.max(0,Math.min(D.frames.length-1,Math.floor(t/FRAME)))]}; }
+const tip=document.getElementById('tip');
+function pick(sv,e,click){ const hh=hit(sv,e); const o=hh.j||hh.s||hh.fr; if(!o){ tip.style.display='none'; return; }
+  if(click){ sel=hh; render(); return; }
+  let s=''; if(hh.j){ const j=hh.j; s=`<b>${j.step?j.owner+' range '+(j.range+1)+'/'+j.nR+' · key '+j.step.key:OWN[j.owner].n}</b><br>W${j.worker} · run ${fmt(j.dur)} · queued ${fmt(j.workerWait+j.capWait)}${j.capWait>0.5?' (cap '+fmt(j.capWait)+')':''}`; }
+  else if(hh.s){ const st=hh.s; s=`<b>${st.ch} key ${st.key}→${st.key+CH.find(c=>c.id===st.ch).k}</b><br>${st.stall>0?'<span class=hot>late '+fmt(st.stall)+'</span>':'ready, window used '+((st.done-st.kick)/(st.apply-st.kick)*100).toFixed(0)+'%'}`; }
+  else { s=`<b>Sim frame ${hh.fr.f}</b> · ${hh.fr.tot.toFixed(1)} ms`; }
+  tip.innerHTML=s; tip.style.display='block'; tip.style.left=e.clientX+12+'px'; tip.style.top=e.clientY+12+'px'; }
+
+// ---------------- left panel ----------------
+function leftPanel(){
+  let h='<h4>Deferred-step channels<span class="m">run = first start → ready</span></h4><div class="row h"><span></span><span style="text-align:left">channel</span><span>run p95</span><span>window</span><span>late</span></div>';
+  CH.forEach(ch=>{ const ss=D.steps.filter(s=>s.ch===ch.id&&s.apply<=WIN+KEY*ch.k); const run=ss.map(s=>s.done-s.first), used=ss.map(s=>(s.done-s.kick)/(s.apply-s.kick)), late=ss.filter(s=>s.stall>0).length;
+    h+=`<div class="row"><i style="background:${OWN[ch.id].c}"></i><span class="n">${ch.id}</span><span class="v">${fmt(pct(run,.95))}</span><span class="v ${pct(used,.95)>0.9?'hot':''}">${(pct(used,.95)*100).toFixed(0)}%</span><span class="v ${late?'hot':''}">${late}</span>
+      <span></span><span class="sub">every ${ch.every} key · apply k=${ch.k} · ${ch.nR} ranges · working copy ${ch.wc}</span></div>`; });
+  h+='<div class="note">"Window" = share of the kick→apply window used before the result was ready (p95). Over ~90% means the next spike will stall Sim.</div>';
+  h+='<h4 style="margin-top:12px">Gameplay jobs<span class="m">queue wait</span></h4><div class="row h"><span></span><span style="text-align:left">owner</span><span>jobs</span><span>p50</span><span>p95</span></div>';
+  ['path','flow','steer'].forEach(k=>{ const js=D.jobs.filter(j=>j.owner===k); const q=js.map(j=>j.workerWait+j.capWait);
+    h+=`<div class="row"><i style="background:${OWN[k].c}"></i><span class="n" title="${OWN[k].mod}">${OWN[k].n}</span><span class="v">${js.length}</span><span class="v">${fmt(pct(q,.5))}</span><span class="v ${pct(q,.95)>10?'hot':''}">${fmt(pct(q,.95))}</span></div>`; });
+  h+='<div class="note">Owner = the module that submitted the job (carried with the job, restored on the worker).</div>';
+  h+=`<h4 style="margin-top:12px">Pool<span class="m">${NW} workers</span></h4>
+    <div style="display:flex;gap:6px;align-items:center;margin:3px 0"><span>Deferred-step cap M</span><select id="cap">${[1,2,4,8].map(v=>`<option ${v===CAP?'selected':''}>${v}</option>`).join('')}</select><span class="dim note" style="margin:0">.diaapp default max(1, workers/4)</span></div>
+    <label class="tg"><input type="checkbox" id="sg" ${SHOW.game?'checked':''}> show gameplay jobs</label>
+    <label class="tg"><input type="checkbox" id="si" ${SHOW.inf?'checked':''}> show in-frame jobs</label>
+    <div class="note">Changing M here is a what-if: the mockup re-runs the schedule. Try M=4: the ecology stall goes away, but the flow-field burst at 6.2 s waits longer. Whether the Inspector may change M live is an open question.</div>`;
+  const lp=document.getElementById('lp'); lp.innerHTML=h;
+  lp.querySelector('#cap').onchange=e=>{ const keep = sel.kind==='step'?[sel.s.ch,sel.s.key]:null; CAP=+e.target.value; D=build(CAP); if(keep) sel={kind:'step',s:D.steps.find(s=>s.ch===keep[0]&&s.key===keep[1])}; else sel={kind:'none'}; render(); };
+  lp.querySelector('#sg').onchange=e=>{ SHOW.game=e.target.checked; render(); };
+  lp.querySelector('#si').onchange=e=>{ SHOW.inf=e.target.checked; render(); };
+}
+
+// ---------------- detail ----------------
+function detail(){
+  const el=document.getElementById('detail'), dt=document.getElementById('dtitle');
+  if(sel.kind==='step') return detailStep(sel.s, el, dt);
+  if(sel.kind==='job')  return detailJob(sel.j, el, dt);
+  if(sel.kind==='frame')return detailFrame(sel.fr, el, dt);
+  dt.innerHTML='Selection'; el.innerHTML='<div class="note">Click a worker slice, a deferred-step bar or a Sim frame.</div>';
+}
+function detailStep(s, el, dt){
+  const ch=CH.find(c=>c.id===s.ch), end=Math.max(s.apply,s.done), T0=s.kick, T1=end+ (end-T0)*0.04, P=t=>((t-T0)/(T1-T0)*100).toFixed(2)+'%', Wd=(a,b)=>Math.max(0.4,(b-a)/(T1-T0)*100).toFixed(2)+'%';
+  dt.innerHTML=`Deferred step <span class="r">${s.ch} · kick key ${s.key} → apply key ${s.key+ch.k} ${s.stall>0?'<span class="pill bad">late '+fmt(s.stall)+'</span>':'<span class="pill ok">ready</span>'} ${s.event?'<span class="pill warn">'+s.event+'</span>':''}</span>`;
+  let g=`<div class="gr"><span class="nm">Capture · Sim</span><span class="tr"><b style="left:${P(s.kick)};width:${Wd(s.kick,s.kick+s.capMs)};background:${OWN[s.ch].c}"></b></span><span class="ms">${s.capMs.toFixed(1)}</span></div>`;
+  [...s.ranges].sort((a,b)=>a.range-b.range).forEach(j=>{ g+=`<div class="gr"><span class="nm">range ${j.range+1} · W${j.worker}</span><span class="tr">
+      ${j.workerWait>0.3?`<u style="left:${P(j.submit)};width:${Wd(j.submit,j.submit+j.workerWait)};background:#5a5a5a"></u>`:''}
+      ${j.capWait>0.3?`<u style="left:${P(j.submit+j.workerWait)};width:${Wd(j.submit+j.workerWait,j.start)};background:#6b3a3a"></u>`:''}
+      <b style="left:${P(j.start)};width:${Wd(j.start,j.end)};background:${OWN[s.ch].c}"></b></span><span class="ms">${fmt(j.dur)}</span></div>`; });
+  g+=`<div class="gr"><span class="nm">Apply · Sim</span><span class="tr"><b style="left:${P(Math.max(s.apply,s.done))};width:${Wd(0,s.applyMs)};background:${OWN[s.ch].c}"></b>${s.stall>0?`<b style="left:${P(s.apply)};width:${Wd(s.apply,s.done)};background:#f48771"></b>`:''}<u style="left:${P(s.apply)};width:1px;background:#d7ba7d;top:-3px;bottom:-3px"></u></span><span class="ms">${s.applyMs.toFixed(1)}</span></div>`;
+  const span=s.done-s.first, par=s.cpu/span, durs=s.ranges.map(j=>j.dur), imb=Math.max(...durs)/(s.cpu/durs.length), used=(s.done-s.kick)/(s.apply-s.kick);
+  const kv=[['Sim critical path',fmt(s.capMs+s.applyMs+s.stall)],['· Capture + Apply',fmt(s.capMs+s.applyMs)],['· stall',s.stall>0?`<span class="hot">${fmt(s.stall)}</span>`:'0'],
+    ['Run span (first start → ready)',fmt(span)],['CPU across ranges',fmt(s.cpu)],['Parallelism achieved',`${par.toFixed(2)}× of M=${CAP}`],['Range imbalance (max / mean)',`<span class="${imb>1.3?'warnc':''}">${imb.toFixed(2)}</span>`],
+    ['Queued: waiting for a cap slot',`<span class="${s.capWait>50?'hot':''}">${fmt(s.capWait)}</span>`],['Queued: waiting for a free worker',fmt(s.workerWait)],['Window used',`<span class="${used>0.9?'hot':''}">${(used*100).toFixed(0)}%</span>`],
+    ['Inline fallbacks (TrySubmit failed)','0'],['Working copy',ch.wc]];
+  const k=kv.map(([a,b])=>`<span class="${a.startsWith('·')?'k2':''}">${a.replace('· ','')}</span><span>${b}</span>`).join('');
+  const sec=ch.secs.map(([n,f])=>{ const fx = s.event&&n==='succession'? f*2.2 : f; return [n,fx]; }); const sum=sec.reduce((a,x)=>a+x[1],0);
+  const secs=sec.map(([n,f])=>`<div class="bar"><span>${n}</span><span class="t"><b style="width:${f/sum*100}%;background:${OWN[s.ch].c}"></b></span><span class="ms">${fmt(s.cpu*f/sum)}</span></div>`).join('');
+  // diagnosis via what-if
+  let dg='';
+  if(s.stall>0){ const alt=build(CAP*2).steps.find(x=>x.ch===s.ch&&x.key===s.key); const capShare=s.capWait/(s.capWait+s.workerWait+1e-9);
+    dg=`<div class="diag bad"><b>Late by ${fmt(s.stall)}.</b> Ranges spent ${fmt(s.capWait)} waiting for a cap slot and ${fmt(s.workerWait)} waiting for a worker: ${capShare>0.5?`the <b>cap</b> was the limit, not the pool`:`the <b>pool</b> was busy`}. ${s.event?`CPU was ${(s.cpu/ (ch.nR*(ch.base+ch.var/2))).toFixed(1)}× a normal step (${s.event}).`:''}
+      What-if M=${CAP*2}: ${alt.stall>0?`still late by ${fmt(alt.stall)}`:`ready ${fmt(alt.apply-alt.done)} before apply`}. Other options: raise k, or split the event over keys.</div>`; }
+  else if(used>0.8) dg=`<div class="diag">Ready, but used ${(used*100).toFixed(0)}% of its window. A spike this size would stall Sim.</div>`;
+  else dg=`<div class="diag good">Ready with ${fmt(s.apply-s.done)} to spare (${(used*100).toFixed(0)}% of the window used).</div>`;
+  // who else used the workers while this step was running
+  const comp={}; let ctot=0; D.jobs.forEach(j=>{ const d=Math.max(0,Math.min(j.end,s.done)-Math.max(j.start,s.first)); if(d>0){ const key=j.step===s?'this':j.owner; comp[key]=(comp[key]||0)+d; ctot+=d; } });
+  const cord=Object.entries(comp).sort((a,b)=>b[1]-a[1]);
+  const cc=k=>k==='this'?'#ffffff':k==='steer'?'#8a8a8a':OWN[k].c, cn=k=>k==='this'?`this step (${s.ch} key ${s.key})`:OWN[k].n;
+  const compH=`<div style="display:flex;height:10px;margin:2px 0 4px">${cord.map(([k,v])=>`<span style="width:${v/ctot*100}%;background:${cc(k)}"></span>`).join('')}</div>`+
+    cord.map(([k,v])=>`<div class="bar"><span>${cn(k)}</span><span class="t"><b style="width:${v/cord[0][1]*100}%;background:${cc(k)}"></b></span><span class="ms">${(v/ctot*100).toFixed(0)}%</span></div>`).join('');
+  el.innerHTML=`<div class="cols"><div class="card"><h5>Kick → ranges → apply<span>grey = waiting for a worker · dark red = waiting for a cap slot</span></h5><div class="gantt">${g}</div>${dg}</div>
+    <div><div class="card"><h5>Cost<span>key ${s.key}</span></h5><div class="kv">${k}</div></div>
+    <div class="card"><h5>Inside this step<span>sections in Run · all ranges</span></h5>${secs}<div class="note">Sections are <code>DIA_PROFILE_SCOPE</code> inside Run. They inherit the step's owner, so work ecology does on weather data shows as a chunk of ecology.</div></div>
+    <div class="card"><h5>Workers during this step<span>${fmt(s.first)} – ${fmt(s.done)}</span></h5>${compH}<div class="note">Share of all worker time while this step ran: is the pool busy with this step, another channel, or gameplay?</div></div></div></div>`;
+}
+function detailJob(j, el, dt){
+  if(j.step){ const s=j.step; dt.innerHTML=`Job <span class="r">${j.owner} range ${j.range+1}/${j.nR} · key ${s.key} · W${j.worker}</span>`; }
+  else dt.innerHTML=`Job <span class="r">${OWN[j.owner].n} · W${j.worker}</span>`;
+  const o=OWN[j.owner];
+  const kv=[['Owner (submitting module)',o.mod],['Submitted from',o.pu+'PU'],['Kind',j.cls==='def'?'deferred step range (off critical path)':j.cls==='inf'?'in-frame range (Sim waits)':'gameplay job'],
+    ['Submitted at',fmt(j.submit)],['Queued: waiting for a free worker',fmt(j.workerWait)],['Queued: waiting for a cap slot',j.cls==='def'?fmt(j.capWait):'n/a'],['Run',fmt(j.dur)],['Worker',`W${j.worker}`],
+    ['Workers busy at submit',`${j.busyAtSubmit.any}/${NW} (${j.busyAtSubmit.def} on deferred steps)`]];
+  let extra='';
+  if(j.step) extra=`<div class="note">Part of <a class="lnk" id="tostep">${j.owner} key ${j.step.key}</a>. Its ${j.nR} ranges are highlighted on the worker rows.</div>`;
+  else if(j.workerWait>5) extra=`<div class="diag">Waited ${fmt(j.workerWait)} for a worker: ${j.busyAtSubmit.any}/${NW} busy, ${j.busyAtSubmit.def} of them on deferred-step ranges.</div>`;
+  el.innerHTML=`<div class="cols"><div class="card"><h5>Job<span>${j.id}</span></h5><div class="kv">${kv.map(([a,b])=>`<span>${a}</span><span>${b}</span>`).join('')}</div>${extra}</div>
+    <div class="card"><h5>Trace<span>links</span></h5><div class="note">Trace id is captured at Submit and restored on the worker, so the job is a child span of the submitting scope (${o.mod}.Update). In Perfetto this is a flow arrow from the Sim track to W${j.worker}.</div></div></div>`;
+  const ts=document.getElementById('tostep'); if(ts) ts.onclick=()=>{ sel={kind:'step',s:j.step}; render(); };
+}
+function detailFrame(fr, el, dt){
+  dt.innerHTML=`Sim frame <span class="r">frame ${fr.f} · ${fr.tot.toFixed(1)} ms ${fr.tot>SIMBUDGET?'<span class="pill bad">over</span>':'<span class="pill ok">ok</span>'}</span>`;
+  const top=Math.max(...fr.parts.map(p=>p[1]),1);
+  const b=fr.parts.map(p=>`<div class="bar" style="grid-template-columns:210px 1fr 50px"><span>${p[0]}</span><span class="t"><b style="width:${p[1]/top*100}%;background:${p[2]}"></b></span><span class="ms ${p[2]==='#f48771'?'hot':''}">${p[1].toFixed(1)}</span></div>`).join('');
+  const st=fr.parts.find(p=>p[0].startsWith('STALL')); let lk='';
+  if(st){ const s=D.steps.find(s=>s.apply>=fr.t&&s.apply<fr.t+FRAME&&s.stall>0); lk=`<div class="diag bad">This frame stalled on <a class="lnk" id="tostep">${s.ch} key ${s.key}</a>.</div>`; }
+  el.innerHTML=`<div class="cols"><div class="card"><h5>Sim frame breakdown<span>critical-path costs only</span></h5>${b}${lk}</div><div class="card"><h5>Note</h5><div class="note">Only job work that Sim <b>waits on</b> lands here: in-frame ranges, Capture, Apply and stalls. Deferred-step Run time is on the worker rows, which is the point of deferring it.</div></div></div>`;
+  const ts=document.getElementById('tostep'); if(ts) ts.onclick=()=>{ sel={kind:'step',s:D.steps.find(s=>s.apply>=fr.t&&s.apply<fr.t+FRAME&&s.stall>0)}; render(); };
+}
+
+// ---------------- right panel ----------------
+function rightPanel(){
+  const late=D.steps.filter(s=>s.stall>0);
+  document.getElementById('stallc').textContent=late.length+' in window';
+  document.getElementById('stalls').innerHTML = late.length? late.map((s,i)=>`<div class="item ${sel.kind==='step'&&sel.s===s?'sel':''}" data-i="${D.steps.indexOf(s)}"><div class="t1"><span class="pill bad">${s.ch}</span>key ${s.key}→${s.key+CH.find(c=>c.id===s.ch).k}<b class="hot">stall ${fmt(s.stall)}</b></div><div class="t2">cap wait ${fmt(s.capWait)} · worker wait ${fmt(s.workerWait)}${s.event?' · '+s.event:''}</div></div>`).join('') : '<div class="note">No late results. Sim never waited on a deferred step.</div>';
+  document.querySelectorAll('#stalls .item').forEach(it=>it.onclick=()=>{ sel={kind:'step',s:D.steps[+it.dataset.i]}; render(); });
+  const hp=document.getElementById('health'); hp.innerHTML= late.length?'<span class="pill warn">Degraded</span>':'<span class="pill ok">Healthy</span>';
+  // utilisation over whole window
+  const busy=new Array(NW).fill(0); D.jobs.forEach(j=>busy[j.worker]+=j.dur);
+  // where worker time went, by owner (window = current view)
+  const own={}; let totOwn=0; D.jobs.forEach(j=>{ const d=Math.max(0,Math.min(j.end,view.e)-Math.max(j.start,view.s)); if(d>0){ own[j.owner]=(own[j.owner]||0)+d; totOwn+=d; } });
+  const ord=Object.entries(own).sort((a,b)=>b[1]-a[1]);
+  let h=`<h4>Where worker time went<span class="m">visible window</span></h4>
+    <div style="display:flex;height:12px;margin:2px 0 4px">${ord.map(([k,v])=>`<span title="${OWN[k].n}" style="width:${v/totOwn*100}%;background:${k==='steer'?'#8a8a8a':OWN[k].c}"></span>`).join('')}</div>
+    <div class="kv">${ord.map(([k,v])=>`<span><i style="display:inline-block;width:8px;height:8px;background:${k==='steer'?'#8a8a8a':OWN[k].c};margin-right:5px"></i>${OWN[k].n}</span><span>${(v/totOwn*100).toFixed(0)}% · ${fmt(v)}</span>`).join('')}</div>
+    <div class="note">Zoom or select a step to see the split for that range of time.</div>`;
+  h+='<h4 style="margin-top:10px">Worker utilisation<span class="m">10 s</span></h4>';
+  busy.forEach((b,w)=>{ const u=b/WIN; h+=`<div style="display:grid;grid-template-columns:26px 1fr 34px;gap:6px;align-items:center;margin:2px 0"><span>W${w}</span><div class="meter" style="margin:0"><b style="width:${u*100}%"></b></div><span style="text-align:right;color:#9cdcfe">${(u*100).toFixed(0)}%</span></div>`; });
+  const q=c=>D.jobs.filter(j=>j.cls===c).map(j=>j.workerWait+j.capWait);
+  const ev=[]; D.jobs.filter(j=>j.cls==='def').forEach(j=>{ ev.push([j.start,1]); ev.push([j.end,-1]); }); ev.sort((a,b)=>a[0]-b[0]||a[1]-b[1]); let c=0,last=0,atCap=0; ev.forEach(([t,d])=>{ if(c>=CAP) atCap+=t-last; c+=d; last=t; });
+  h+=`<h4 style="margin-top:10px">Queue wait p95<span class="m">by kind</span></h4><div class="kv">
+     <span>deferred-step ranges</span><span>${fmt(pct(q('def'),.95))}</span>
+     <span>gameplay jobs</span><span class="${pct(q('game'),.95)>10?'hot':''}">${fmt(pct(q('game'),.95))}</span>
+     <span>in-frame ranges (Sim waits)</span><span class="${pct(q('inf'),.95)>1?'hot':''}">${fmt(pct(q('inf'),.95))}</span></div>
+   <h4 style="margin-top:10px">Cap &amp; queue</h4><div class="kv">
+     <span>time at cap (M=${CAP})</span><span>${(atCap/WIN*100).toFixed(0)}%</span>
+     <span>peak queue depth</span><span>${peakQueue()}</span>
+     <span>inline fallbacks</span><span>0</span>
+     <span>jobs completed</span><span>${D.jobs.length}</span></div>
+   <div class="note" style="margin-top:8px">In-frame queue wait is the number to watch: Sim waits for those ranges, so any queueing goes straight onto the Sim tick.</div>
+   <div class="note">Source: <code>IJobMetrics</code> + <code>dia.deferredstep.*</code>, and the job records carried back to SimPU. Pushed on <code>perf.timing</code> at 10 Hz; detail fetched on <code>perf.window</code>.</div>`;
+  document.getElementById('pool').innerHTML=h;
+}
+function peakQueue(){ const ev=[]; D.jobs.forEach(j=>{ if(j.start-j.submit>0.01){ ev.push([j.submit,1]); ev.push([j.start,-1]); } }); ev.sort((a,b)=>a[0]-b[0]||a[1]-b[1]); let c=0,m=0; ev.forEach(([,d])=>{ c+=d; m=Math.max(m,c); }); return m; }
+
+function render(){ lanes(); leftPanel(); detail(); rightPanel(); }
+document.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>zoom(+b.dataset.z));
+document.getElementById('zstep').onclick=()=>{ if(sel.kind!=='step'&&!(sel.kind==='job'&&sel.j.step)) return; const s=sel.kind==='step'?sel.s:sel.j.step; const e=Math.max(s.apply,s.done); const pad=(e-s.kick)*0.08; view={s:Math.max(0,s.kick-pad), e:Math.min(WIN,e+pad)}; document.querySelectorAll('[data-z]').forEach(b=>b.classList.remove('on')); render(); };
+document.getElementById('pause').onclick=e=>{ e.target.classList.toggle('on'); e.target.textContent=e.target.classList.contains('on')?'Resume':'Pause'; };
+render();
+</script>
+</body>
+</html>

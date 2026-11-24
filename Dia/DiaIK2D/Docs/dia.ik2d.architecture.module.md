@@ -43,7 +43,6 @@ dependent_modules:
   - dia.rig2d
   - dia.maths
   - dia.core
-  - dia.logger
 
 public_api:
   headers:
@@ -62,7 +61,8 @@ dependencies:
     - dia.rig2d
     - dia.maths
     - dia.core
-    - dia.logger
+    - dia.observation
+    - dia.serializer
   forbidden:
     - dia.graphics
     - dia.application

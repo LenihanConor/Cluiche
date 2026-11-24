@@ -68,7 +68,7 @@ TEST(DiaMaths_FloatBoundary, FSelect_NaNComparator_SelectsSecondArg)
 // FSquareRoot has DIA_ASSERT(number >= 0) — a negative input must trip the assert.
 TEST(DiaMaths_FloatBoundary, FSquareRoot_NegativeInput_Asserts)
 {
-    EXPECT_DEATH(FSquareRoot(-1.0f), ".*");
+    DIA_EXPECT_DEATH(FSquareRoot(-1.0f), ".*");
 }
 
 // FSquareRoot of positive infinity is well-defined: sqrt(+inf) = +inf
@@ -143,7 +143,7 @@ TEST(DiaMaths_FloatBoundary, FEqual_InfVsZero_ReturnsFalse)
 TEST(DiaMaths_FloatBoundary, Vector2D_Normalize_ZeroVector_Asserts)
 {
     Vector2D v(0.0f, 0.0f);
-    EXPECT_DEATH(v.Normalize(), ".*");
+    DIA_EXPECT_DEATH(v.Normalize(), ".*");
 }
 
 // Vector2D::NormalizeSafe() on a zero vector must not assert and must return

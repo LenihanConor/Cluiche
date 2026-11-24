@@ -27,8 +27,8 @@ non_responsibilities:
   - Cross-cutting engine orchestration
 
 dependent_modules:
-  - dia.maths.core
   - dia.maths.matrix
+  - dia.maths.noise
   - dia.maths.quaternion
   - dia.maths.transform
   - dia.maths.vector
@@ -39,6 +39,10 @@ public_api:
   entry_points: []
 
 dependencies:
-  required: []
+  required:
+    - dia.core.containers.hashtables
+    - dia.core.core
+    - dia.core.crc
+    - dia.core.reflect
   forbidden: []
 ---

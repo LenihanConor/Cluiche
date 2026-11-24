@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.gridvisibilityvisualdebugger
 name: DiaGridVisibilityVisualDebugger
 owner_team: TBD
-layer: domain/gameplay/tools
+layer: 4.1-Gameplay
 status: active
 maturity: dev
 
@@ -36,7 +36,6 @@ dependent_modules:
   - dia.entityspatial
   - dia.maths
   - dia.core
-  - dia.debugdraw
 
 public_api:
   headers:
@@ -53,6 +52,7 @@ dependencies:
     - dia.entityspatial
     - dia.maths
     - dia.core
-    - dia.debugdraw
+    - dia.entity
+    - dia.geometry2d
   forbidden: []
 ---

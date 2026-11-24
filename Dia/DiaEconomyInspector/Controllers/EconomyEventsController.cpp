@@ -11,7 +11,7 @@ void EconomyEventsController::Init(Dia::Editor::WebUIBridge* bridge)
 
 void EconomyEventsController::OnPayload(const Json::Value& payload)
 {
-    mBridge->NotifyUIDataChanged("economy_inspector.events", payload);
+    if (mBridge) mBridge->NotifyUIDataChanged("economy_inspector.events", payload);
 }
 
 } // namespace Dia::EconomyInspector

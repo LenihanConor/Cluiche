@@ -68,7 +68,7 @@ int GetAllRuleIds(
 // DiaRulesVisualDebugger/RulesVisualDebugger.h
 #ifdef DIA_DEBUG
 
-#include <DiaDebugDraw/Domain/IDebugDomain.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
 
 namespace Dia::Rules { class RuleSetComponent; }
 

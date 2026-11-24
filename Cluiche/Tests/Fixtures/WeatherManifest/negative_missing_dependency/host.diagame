@@ -1,0 +1,16 @@
+{
+    "name": "weather_fixture",
+    "version": 3,
+    "config": {
+        "name": "weather_fixture",
+        "window": {
+            "title": "weather_fixture"
+        }
+    },
+    "imports": [
+        {
+            "path": "weather_missing_worldgeneration.diaapp",
+            "type": "manifest"
+        }
+    ]
+}

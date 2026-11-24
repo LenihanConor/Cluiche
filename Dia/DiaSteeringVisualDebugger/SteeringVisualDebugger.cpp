@@ -8,8 +8,8 @@
 #include "VelocityArrowsDrawer.h"
 #include "SeparationRadiusDrawer.h"
 #include "DetectionBoxDrawer.h"
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaSteering/SteeringSystem.h>
 #include <memory>
 

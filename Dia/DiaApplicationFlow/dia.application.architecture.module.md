@@ -29,9 +29,10 @@ responsibilities:
   - ProcessingUnit — pure scheduler: owns modules, drives their FrameTick loop in manifest array
     order, supports dedicated thread; does NOT hold a back-pointer to Application
   - Application — manifest validation, PU/module creation, stage transition algorithm, error policy
-    (boot failure → shutdown; non-boot failure → capped rollback retries, then shutdown)
+    (boot failure → shutdown; non-boot failure → capped rollback retries, then shutdown); owns PerfPauseController (Main-only)
   - TypeRegistry + DIA_MODULE macro — static-init factory registration
   - ModuleRef<T> — lazy, lifecycle-safe inter-module access within a PU
+  - PerfPause (Debug-only, _DEBUG) — PerfPauseController (Main-owned) publishes $perfpause FrameStream snapshot; PerfPauseSet struct {generation, module bitset, domain CRCs}; denylist (Kernel, DebugServerHost, SimQueryHost); local owner for tests/in-process (released on stage exit / shutdown)
   - Three stream primitives — all manifest-authoritative, declared in .diaapp streams[]:
     - ServiceStream (once per scope): stable lifecycle handle (e.g. canvas, texture handler)
       shared from a provider PU to consumer PUs. Collected-then-committed model — all
@@ -42,6 +43,7 @@ responsibilities:
       struct, never add streams. Roles: reads / writes.
     - EventStream (frame-batched): discrete events flushed at producer tick boundary.
       Consumer gets exactly the previous frame's batch. Roles: reads / writes.
+      Manifest `capacity` (per-reader ring size, 0 = default 256) and `overflow` are honoured via IStreamConnector::GetDeclaredEventStreamConfig (Application implements it).
   - Unified channels[] array on ModuleDeclaration — each entry is {id, role} where role
     is one of reads / writes / provides / consumes.
   - ServiceStreamStore / ServiceStreamWriter / ServiceStreamReader — ServiceStream impl.
@@ -52,10 +54,13 @@ responsibilities:
   - ApplicationManifestV3 POD structs — in-memory representation of .diaapp v3 + .diastage files; stages are objects {name, transitions[], auto_advance} (SD-019)
   - ApplicationManifestLoaderV2 — JSON → ApplicationManifestV3 (v3 schema; rejects v2)
   - ManifestComposerV2 — .diagame → merged manifest (base + stage overlays)
+  - Launch presets (ManifestComposerV2::MergeStage reads optional .diastage `presets` into ApplicationManifestV3: compact shared preset table + 32 KB override-text pool, per-stage range on StageDeclaration; caps 16 presets/stage, 64/manifest, 4 modules/preset, 2 KB/preset; malformed presets are logged and ignored, the stage still loads; accessors FindPreset/HasPreset/GetPresetOverrideJson)
+  - Module::OnStageLaunch(const char* overridesJson) — virtual no-op hook called once per stage entry, immediately before BeginStart/DoStart, only for modules that actually start (not already-running `all` modules); argument is that module's override JSON from the chosen launch preset, or "". Application::TransitionToInternal(stage, preset) carries the preset through the drain to the module-start loop (also used for the initial stage, with no preset); logs delivered non-empty overrides on channel "Application"
+  - ManifestBootstrap — LoadManifest (compose + path_aliases + validate) and RegisterPathAliases, and RegisterDevAliases (--dev-alias name=path, reserved `source`); app keeps loop/frame rate
   - ManifestValidatorV2 — full structural + dependency + cycle validation, including
     array-order enforcement for declared dependencies (DEPENDENCY_ORDER error)
   - IApplicationInspectable — read-only runtime introspection for debug tools and tests; FindStream(StringCRC) → IStreamStore*
-  - IApplicationControl — narrow control interface (TransitionTo, RequestShutdown,
+  - IApplicationControl — narrow control interface (TransitionTo(stage), TransitionTo(stage, preset) [unknown non-empty preset is refused with a logged error, nothing queued], GetCurrentPreset [empty at boot / after a preset-less transition], RequestShutdown,
     GetCurrentStage, RegisterTransitionGuard, UnregisterTransitionGuards) exposed to
     runtime module code via Module::GetApplication()
 
@@ -71,6 +76,7 @@ public_api:
     - Dia/DiaApplicationFlow/Application.h
     - Dia/DiaApplicationFlow/Module.h
     - Dia/DiaApplicationFlow/ProcessingUnit.h
+    - Dia/DiaApplicationFlow/PerfPause.h   # Debug-only (_DEBUG) module/domain pause controller + $perfpause snapshot
     - Dia/DiaApplicationFlow/TypeRegistry.h
     - Dia/DiaApplicationFlow/StreamTypeRegistry.h
     - Dia/DiaApplicationFlow/ModuleRefV2.h
@@ -81,6 +87,7 @@ public_api:
     - Dia/DiaApplicationFlow/Manifest/ApplicationManifestLoaderV2.h
     - Dia/DiaApplicationFlow/Manifest/ManifestComposerV2.h
     - Dia/DiaApplicationFlow/Manifest/ManifestValidatorV2.h
+    - Dia/DiaApplicationFlow/Manifest/ManifestBootstrap.h
     - Dia/DiaApplicationFlow/Streams/IStreamStore.h
     - Dia/DiaApplicationFlow/Streams/FrameStreamStore.h
     - Dia/DiaApplicationFlow/Streams/EventStreamStore.h
@@ -126,7 +133,12 @@ dependencies:
     - dia.core.strings
     - dia.core.time
     - dia.core.memory
-    - dia.logger
     - dia.serializer
+    - dia.api
+    - dia.core
+    - dia.core.filepath
+    - dia.core.json.external.json
+    - dia.observation
+    - dia.streams
   forbidden: []
 ---

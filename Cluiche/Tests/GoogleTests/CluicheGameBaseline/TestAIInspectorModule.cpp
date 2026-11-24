@@ -3,7 +3,7 @@
 #ifdef DIA_DEBUG
 
 #include <Modules/AIInspectorModule.h>
-#include <DiaAIBudget/AIBudgetModule.h>
+#include <Modules/AIBudgetModule.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <memory>

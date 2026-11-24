@@ -81,13 +81,13 @@ TEST(DebugLayerManager_Registration, Register_DuplicateNameAsserts)
     TestLayer b("test.dup");
     mgr.Register(&a);
     // Registering a second layer with the same name must fire DIA_ASSERT → death
-    EXPECT_DEATH({ mgr.Register(&b); }, "");
+    DIA_EXPECT_DEATH({ mgr.Register(&b); }, "");
 }
 
 TEST(DebugLayerManager_Registration, Register_NullptrAsserts)
 {
     DebugLayerManager mgr;
-    EXPECT_DEATH({ mgr.Register(nullptr); }, "");
+    DIA_EXPECT_DEATH({ mgr.Register(nullptr); }, "");
 }
 
 TEST(DebugLayerManager_Registration, HasLayer_ReturnsTrueAfterRegister)
@@ -352,17 +352,6 @@ TEST(DebugLayerManager_Registration, MaxCapacity_NoAssert)
     EXPECT_EQ(mgr.GetLayerCount(), static_cast<int>(DebugLayerManager::kMaxLayers));
     for (unsigned int i = 0; i < DebugLayerManager::kMaxLayers; ++i)
         delete layers[i];
-}
-
-TEST(DebugLayerManager_Registration, Register_SetsLayerDirty_AfterRegister)
-{
-    DebugLayerManager mgr;
-    TestLayer layer("test.dirty.broadcast");
-    mgr.Register(&layer);
-    // BroadcastLayerState(nullptr) must be a no-op (nullptr guard) — no crash
-    EXPECT_NO_FATAL_FAILURE(mgr.BroadcastLayerState(nullptr));
-    // A second call must also be safe
-    EXPECT_NO_FATAL_FAILURE(mgr.BroadcastLayerState(nullptr));
 }
 
 // ============================================================================

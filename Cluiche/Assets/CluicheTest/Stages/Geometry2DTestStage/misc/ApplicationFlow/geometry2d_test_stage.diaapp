@@ -20,7 +20,8 @@
                     ],
                     "dependencies": [
                         "PickingModule",
-                        "VisualDebuggerModule"
+                        "VisualDebuggerModule",
+                        "SimQueryHostModule"
                     ],
                     "channels": [
                         {

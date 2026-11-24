@@ -24,7 +24,7 @@ intent: >
 responsibilities:
   - IAIBudgetedSystem interface — GetSystemId() + UpdateBudgeted(float budgetMs)
   - AIBudgetScheduler — fixed-capacity (16) ordered dispatch; wall-clock time measurement via steady_clock; skips systems when budget exhausted
-  - AIBudgetModule — Module subclass on SimPU; reads budgetUs from manifest; registers DiaObservation metrics
+  - AIBudgetModule (moved to CluicheGameBaseline) — Module subclass on SimPU; reads budgetUs from manifest; registers DiaObservation metrics
   - Metrics — ai.budget.used_us (Gauge), ai.budget.systems_run (Counter), ai.budget.systems_deferred (Counter)
 
 non_responsibilities:
@@ -40,18 +40,15 @@ public_api:
   headers:
     - Dia/DiaAIBudget/IAIBudgetedSystem.h
     - Dia/DiaAIBudget/AIBudgetScheduler.h
-    - Dia/DiaAIBudget/AIBudgetModule.h
   namespaces:
     - Dia::AIBudget
   entry_points:
     - IAIBudgetedSystem
     - AIBudgetScheduler
-    - AIBudgetModule
 
 dependencies:
   required:
     - dia.core
-    - dia.applicationflow
     - dia.observation
   forbidden:
     - dia.blackboard

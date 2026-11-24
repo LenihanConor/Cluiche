@@ -136,8 +136,8 @@ void PathfindingTestStageModule::BuildGrid()
 
 void PathfindingTestStageModule::ComputeInitialPath()
 {
-    const Dia::Pathfinding::CellCoord from{ 1,  1 };
-    const Dia::Pathfinding::CellCoord to  { 16, 7 };
+    const Dia::Geometry2D::CellCoord from{ 1,  1 };
+    const Dia::Geometry2D::CellCoord to  { 16, 7 };
 
     Dia::Pathfinding::PathResult result =
         Dia::Pathfinding::FindPath<Dia::Pathfinding::SquarePathGrid>(
@@ -155,7 +155,7 @@ void PathfindingTestStageModule::ComputeInitialPath()
 
 void PathfindingTestStageModule::ComputeInitialFlowField()
 {
-    const Dia::Pathfinding::CellCoord goalCell{ 16, 7 };
+    const Dia::Geometry2D::CellCoord goalCell{ 16, 7 };
 
     mCurrentField = &mFlowCache.GetOrCompute(
         Dia::Core::StringCRC("main"), goalCell);
@@ -357,7 +357,7 @@ void PathfindingTestStageModule::OnUpdate(float deltaTime)
         mFlowCache.Invalidate(Dia::Core::StringCRC("main"));
 
         // Recompute immediately
-        const Dia::Pathfinding::CellCoord goalCell{ 16, 7 };
+        const Dia::Geometry2D::CellCoord goalCell{ 16, 7 };
         mCurrentField = &mFlowCache.GetOrCompute(
             Dia::Core::StringCRC("main"), goalCell);
 

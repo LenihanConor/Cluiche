@@ -1,0 +1,125 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "cow.strata",
+  "entries": [
+    {
+      "key": "depth.FirstShores.share",
+      "kind": "parameter",
+      "label": "depth.FirstShores.share",
+      "description": "Share of main-landmass land assigned to the first (outermost) depth stratum. The shares of a set must complete 1.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.45
+    },
+    {
+      "key": "depth.WildReaches.share",
+      "kind": "parameter",
+      "label": "depth.WildReaches.share",
+      "description": "Share of main-landmass land assigned to the middle depth stratum. The shares of a set must complete 1.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.4
+    },
+    {
+      "key": "depth.AncientInteriors.share",
+      "kind": "parameter",
+      "label": "depth.AncientInteriors.share",
+      "description": "Share of main-landmass land assigned to the last (innermost) depth stratum. The shares of a set must complete 1.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.15
+    },
+    {
+      "key": "depth.AncientInteriors.min_coast_depth",
+      "kind": "parameter",
+      "label": "depth.AncientInteriors.min_coast_depth",
+      "description": "Minimum distance in cells from the coast for a cell to be in this stratum; a closer cell falls to the previous stratum.",
+      "type": "float",
+      "min": 0.0,
+      "max": 16.0,
+      "default": 3.0
+    },
+    {
+      "key": "sets[].id",
+      "kind": "field",
+      "label": "id",
+      "description": "Stratum set id (for example depth).",
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    {
+      "key": "sets[].ordered",
+      "kind": "field",
+      "label": "ordered",
+      "description": "True when the strata are ordered from first to last.",
+      "type": "bool"
+    },
+    {
+      "key": "sets[].assigner.type",
+      "kind": "field",
+      "label": "type",
+      "description": "How cells are assigned to strata (for example coast_cost_bands).",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "sets[].assigner.metric",
+      "kind": "field",
+      "label": "metric",
+      "description": "Cell metric the assigner reads (for example coast_cost).",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "sets[].strata[].name",
+      "kind": "field",
+      "label": "name",
+      "description": "Stratum name, unique within its set.",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "sets[].strata[].share",
+      "kind": "field",
+      "label": "share",
+      "description": "Share of the cells the stratum takes, 0 to 1.",
+      "type": "float",
+      "required": true
+    },
+    {
+      "key": "sets[].strata[].regions_min",
+      "kind": "field",
+      "label": "regions_min",
+      "description": "Minimum regions generated in the stratum.",
+      "type": "int",
+      "required": true
+    },
+    {
+      "key": "sets[].strata[].regions_max",
+      "kind": "field",
+      "label": "regions_max",
+      "description": "Maximum regions generated in the stratum.",
+      "type": "int",
+      "required": true
+    },
+    {
+      "key": "sets[].strata[].main_landmass_only",
+      "kind": "field",
+      "label": "main_landmass_only",
+      "description": "Restrict the stratum to the main landmass.",
+      "type": "bool"
+    },
+    {
+      "key": "sets[].strata[].min_coast_depth",
+      "kind": "field",
+      "label": "min_coast_depth",
+      "description": "Minimum coast depth a cell needs to join the stratum.",
+      "type": "int"
+    }
+  ]
+}

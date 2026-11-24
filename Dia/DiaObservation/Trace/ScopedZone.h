@@ -6,10 +6,13 @@ namespace Dia
 {
 	namespace Observation { namespace Trace
 	{
+		struct TraceLink;
+
 		class ScopedZone
 		{
 		public:
 			explicit ScopedZone(const Dia::Core::StringCRC& name, TraceCategory category);
+			ScopedZone(const Dia::Core::StringCRC& name, TraceCategory category, const TraceLink& link);
 			~ScopedZone();
 
 			ScopedZone(const ScopedZone&) = delete;

@@ -8,7 +8,7 @@
 #include <cstdlib>  // std::abs (integer)
 #include <cmath>    // std::fabsf
 
-#include "DiaPathfinding/CellCoord.h"
+#include "DiaGeometry2D/Grid/CellCoord.h"
 #include "DiaPathfinding/CPathGraph.h"
 #include "DiaPathfinding/IPathCostProvider.h"
 #include "DiaPathfinding/PathResult.h"
@@ -22,6 +22,7 @@
 #include <DiaMaths/Vector/Vector2D.h>
 
 using namespace Dia::Pathfinding;
+using Dia::Geometry2D::CellCoord;
 using Dia::Core::Containers::DynamicArrayC;
 
 // ---------------------------------------------------------------------------

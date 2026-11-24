@@ -87,11 +87,8 @@ template<typename T>
 inline void EventStreamReader<T>::Connect(IStreamConnector& connector, unsigned int maxReaders)
 {
     IStreamStore* istore = connector.RegisterOrFindStreamStore(
-        Dia::Core::UniquePtr<IStreamStore>(new EventStreamStore<T>(
-            mStreamId,
-            Dia::Core::StringCRC::kZero,
-            EventStreamStore<T>::kDefaultCapacity,
-            maxReaders)));
+        Dia::Core::UniquePtr<IStreamStore>(
+            EventStreamStore<T>::CreateForConnect(connector, mStreamId, maxReaders)));
     if (istore)
     {
         mStore       = static_cast<EventStreamStore<T>*>(istore);

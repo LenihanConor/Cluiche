@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+from dia_cli.utils.library_roots import iter_module_docs
+
 
 @dataclass
 class ModuleInfo:
@@ -26,8 +28,7 @@ def build_module_map(repo_root: Path) -> tuple[dict[str, ModuleInfo], list[str]]
     warnings: list[str] = []
     module_map: dict[str, ModuleInfo] = {}
 
-    dia_root = repo_root / "Dia"
-    for md_file in sorted(dia_root.rglob("dia.*.architecture.module.md")):
+    for md_file in iter_module_docs(repo_root):
         rel_path = md_file.relative_to(repo_root).as_posix()
         fm = _parse_frontmatter(md_file)
         if fm is None:

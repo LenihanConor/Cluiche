@@ -16,14 +16,26 @@ namespace Json { class Value; }
 #include <DiaStreams/IStreamConnector.h>
 #include <DiaStreams/EventStreamStore.h>
 #include <DiaApplicationFlow/LifecycleEvent.h>
+#include <DiaObservation/Profile/CoarseChunk.h>
+#include <DiaObservation/Profile/JobChunk.h>
+#include <DiaObservation/Profile/ChannelNameAnnounce.h>
+#include <DiaObservation/Profile/TripChunk.h>
+#include <DiaObservation/Trace/SpanChunk.h>
+#include <DiaObservation/Trace/SpanChunkSink.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Memory/UniquePtr.h>
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <thread>
+#ifdef _DEBUG
+#include <DiaApplicationFlow/PerfPause.h>
+#endif
+
+namespace Dia { namespace Observation { namespace Metric { class Counter; class Gauge; } } }
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -64,6 +76,22 @@ namespace Dia { namespace ApplicationFlow {
         // IApplicationControl — thread-safe; queues a stage transition to
         // execute at the top of the next Update() call.
         void TransitionTo(const Dia::Core::StringCRC& stageId) override;
+        void TransitionTo(const Dia::Core::StringCRC& stageId,
+                          const Dia::Core::StringCRC& presetId) override;
+        [[nodiscard]] Dia::Core::StringCRC GetCurrentPreset() const override;
+        [[nodiscard]] bool IsStageReady() const override { return mStageReady.load(); }
+
+        // Internal: TransitionTo with a launch preset (empty StringCRC = none).  The preset's
+        // per-module overrides are delivered via Module::OnStageLaunch when modules start.
+        // Thread-safe.  A later request replaces both stage and preset.
+        void TransitionToInternal(const Dia::Core::StringCRC& stageId,
+                                  const Dia::Core::StringCRC& presetId);
+
+        // Records the launch requested on the command line.  Call before Start().  The stage is
+        // not entered here: the game's navigation handler takes it once Boot is running
+        // (IApplicationControl::TakeInitialLaunch) and issues the transition.  Empty stage = none.
+        void SetInitialLaunch(const Dia::Core::StringCRC& stageId, const Dia::Core::StringCRC& presetId);
+        bool TakeInitialLaunch(Dia::Core::StringCRC& stageId, Dia::Core::StringCRC& presetId) override;
 
         // IApplicationControl — thread-safe; stops all dedicated threads and
         // begins stopping every active module.
@@ -110,7 +138,14 @@ namespace Dia { namespace ApplicationFlow {
         // dedicated PU threads are launched.  Calling it after Start() has
         // completed (i.e. from DoStart/DoUpdate/DoStop) asserts in debug;
         // in release the unsynchronized store array would be a data race.
-        IStreamStore* RegisterOrFindStreamStore(Dia::Core::UniquePtr<IStreamStore> newStore);
+        IStreamStore* RegisterOrFindStreamStore(Dia::Core::UniquePtr<IStreamStore> newStore) override;
+
+        // Reports the manifest-declared capacity / overflow policy for a stream
+        // so EventStreamReader/Writer::Connect() can honour them.
+        bool GetDeclaredEventStreamConfig(const Dia::Core::StringCRC& streamId,
+                                          unsigned int& outCapacity,
+                                          OverflowPolicy& outPolicy,
+                                          unsigned int& outBlockTimeoutMs) const override;
 
         // FindStreamStore: lookup only, no creation. Returns null if not found.
         // Safe to call at any time — mStreamStores is immutable after Start().
@@ -120,10 +155,35 @@ namespace Dia { namespace ApplicationFlow {
         // Compose() was not used or the .diagame had no config block.
         // Safe to call from any module lifecycle method (DoStart, OnConfigure, etc.).
         [[nodiscard]] const Json::Value* GetDiagameConfig() const override { return mManifest.diagameConfig; }
+        void SetTripReporter(Dia::Observation::Profile::TripReporter* reporter) override;
+        void SetTripConfig(const Dia::Observation::Profile::TripConfig& config) override;
+        void CollectPerfSummary(Dia::Observation::Profile::PerfSummary& out) const override;
 
         // Emit a lifecycle event on the $lifecycle stream.
         // Called internally by Application and Module; not part of the public module API.
         void EmitLifecycleEvent(const LifecycleEvent& ev);
+
+        // Perf Inspector task 1b: the "$perfcoarse" store, for a Main-side reader to RegisterReader()
+        // and consume. Null until Start().
+        EventStreamStore<Dia::Observation::Profile::CoarseChunk>* GetPerfCoarseStore() { return mPerfCoarseStore; }
+        // Perf Inspector task 13: the "$perfjobs" store (JobChunk, jobs and workers), for a Main-side reader.
+        EventStreamStore<Dia::Observation::Profile::JobChunk>* GetPerfJobsStore() { return mPerfJobsStore; }
+        // The "$perfnames" store (ChannelNameAnnounce: crc -> name for non-module ids such as deferred-step channels).
+        // Any PU may Send; a Main-side reader folds the pairs into its name table. No replay: announcers resend.
+        EventStreamStore<Dia::Observation::Profile::ChannelNameAnnounce>* GetPerfNamesStore() { return mPerfNamesStore; }
+        // Perf Inspector task 3b: the "$perftrips" store (TripChunk, one per emitted trip), for a Main-side reader.
+        EventStreamStore<Dia::Observation::Profile::TripChunk>* GetPerfTripsStore() { return mPerfTripsStore; }
+        // Perf Inspector row 6b: the "$perfspans" store (SpanChunk, closed trace spans batched by a sink on the
+        // tracer's drain thread), for a Main-side reader. Null until Start(). Empty unless tracing is on.
+        EventStreamStore<Dia::Observation::Trace::SpanChunk>* GetPerfSpansStore() { return mPerfSpansStore; }
+        // Maps an OS thread id seen in trace spans to the processing unit that runs on it (the main PU is the
+        // thread that called Start()). False for any other thread. Main thread only, valid after Start().
+        bool ResolveUnitForThread(uint32_t threadId, Dia::Core::StringCRC& outUnitId) const;
+
+#ifdef _DEBUG
+        // Perf live control (task 3, Debug only). Main-thread only. Null until Start().
+        PerfPauseController* GetPerfPauseController() { return mPerfPause.Get(); }
+#endif
 
     private:
         // Maximum number of ProcessingUnits supported (matches spec).
@@ -165,6 +225,10 @@ namespace Dia { namespace ApplicationFlow {
 
         // Returns true if every module in every PU is kInactive or kFailed.
         bool AllModulesInactive() const;
+
+        // Ticks PU 0 and every non-dedicated secondary PU inline, in manifest order.
+        // Dedicated-thread PUs run on their own thread and are not ticked here.
+        void UpdateInlineProcessingUnits(float deltaTime);
 
         // Walk all registered ServiceStreamStores; commit any that are registered
         // but not yet committed (i.e., provider called Register() and this is
@@ -211,15 +275,32 @@ namespace Dia { namespace ApplicationFlow {
         unsigned int mDedicatedThreadCount = 0;
 
         Dia::Core::StringCRC mCurrentStage;
+        Dia::Core::StringCRC mCurrentPreset;   // preset the running stage was launched with (empty = none)
 
         // Pending stage transition — written by TransitionTo(), read by Update().
         mutable std::mutex   mTransitionMutex;
         Dia::Core::StringCRC mPendingStage;
         std::atomic<bool>    mHasPendingTransition{false};
+        Dia::Core::StringCRC mPendingPreset;   // guarded by mTransitionMutex; travels with mPendingStage
+        Dia::Core::StringCRC mInitialStage;    // guarded by mTransitionMutex
+        Dia::Core::StringCRC mInitialPreset;   // guarded by mTransitionMutex
+        bool                 mHasInitialLaunch = false; // guarded by mTransitionMutex
+        Dia::Core::StringCRC mLaunchPreset;    // main-thread: preset of the transition being drained/committed
+
+        // Calls module->OnStageLaunch(json) with the override for `stage`/`preset`
+        // (or "" if none), then the caller does BeginStart().
+        void DeliverStageLaunch(Module* module, const Dia::Core::StringCRC& stage,
+                                const Dia::Core::StringCRC& preset);
 
         std::atomic<bool>    mShuttingDown{false};
         bool                 mStarted = false;
+        bool                 mRegisteredMainTraceBuffer = false;     // this Application registered the Main thread's tracer span buffer
+        bool                 mRegisteredMainProfileBuffer = false;   // this Application registered the Main thread's profiler buffer
         bool                 mShutdownInitiated = false;  // tracks whether BeginStopAllActive has been called
+        // Registry-owned stream metrics, resolved once in the constructor.
+        Observation::Metric::Counter* mServiceStreamCommitCount     = nullptr;
+        Observation::Metric::Counter* mServiceStreamResetCount      = nullptr;
+        Observation::Metric::Gauge*   mServiceStreamCommittedGauge  = nullptr;
         // True only while ConnectModuleStreams() is running.  Guards
         // RegisterOrFindStreamStore — calls outside this window
         // would race against dedicated-PU threads.
@@ -235,9 +316,32 @@ namespace Dia { namespace ApplicationFlow {
         // EmitLifecycleEvent() stamps the Event<T> envelope and calls Send directly.
         EventStreamStore<LifecycleEvent>* mLifecycleStore = nullptr;
 
+        // Perf Inspector task 1b: framework-owned "$perfcoarse" EventStream (all builds). Every PU
+        // sends CoarseChunk timing chunks here; a Main-side reader rebuilds the long coarse ring.
+        EventStreamStore<Dia::Observation::Profile::CoarseChunk>* mPerfCoarseStore = nullptr;
+        // Perf Inspector task 13: framework-owned "$perfjobs" EventStream (all builds): per-PU JobChunk.
+        EventStreamStore<Dia::Observation::Profile::JobChunk>* mPerfJobsStore = nullptr;
+        // Framework-owned "$perfnames" EventStream (all builds): ChannelNameAnnounce from any PU.
+        EventStreamStore<Dia::Observation::Profile::ChannelNameAnnounce>* mPerfNamesStore = nullptr;
+        // Perf Inspector task 3b: framework-owned "$perftrips" EventStream (all builds): per-PU TripChunk.
+        EventStreamStore<Dia::Observation::Profile::TripChunk>* mPerfTripsStore = nullptr;
+        // Perf Inspector row 6b: framework-owned "$perfspans" EventStream (all builds) fed by mSpanSink.
+        EventStreamStore<Dia::Observation::Trace::SpanChunk>* mPerfSpansStore = nullptr;
+        std::unique_ptr<Dia::Observation::Trace::SpanChunkSink> mSpanSink;
+        // OS thread id of each processing unit's thread, by PU index (0 = thread that called Start()); 0 = unknown.
+        uint32_t mUnitThreadIds[kMaxProcessingUnits] = {};
+
         // Transition drain state: set when outgoing modules are being stopped before
         // incoming modules can be started. Cleared once all outgoing are kInactive.
+#ifdef _DEBUG
+        // Framework-owned "$perfpause" FrameStream (store lives in mStreamStores) + its writer.
+        FrameStreamStore<PerfPauseSet>*              mPerfPauseStore = nullptr;
+        Dia::Core::UniquePtr<PerfPauseController>    mPerfPause;
+        static bool ResolveModuleType(void* ctx, const Dia::Core::StringCRC& instanceId, Dia::Core::StringCRC& outTypeId);
+#endif
         bool                 mTransitionDraining = false;
+        std::atomic<bool>    mStageReady{false};   // IApplicationControl::IsStageReady; written on Main only
+        void UpdateStageReady();
         Dia::Core::StringCRC mDrainingToStage;
 
         // Rollback retry state: on a non-boot module failure the release-build

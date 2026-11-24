@@ -133,5 +133,174 @@ namespace Dia
 			// typeId not registered — does not pass
 			return false;
 		}
+
+		void EditorPluginRegistry::TagGameScoped(const Dia::Core::StringCRC& typeId, const Dia::Core::StringCRC& gameId)
+		{
+			for (unsigned int i = 0; i < mEntries.Size(); ++i)
+			{
+				if (mEntries[i].typeId == typeId)
+				{
+					mEntries[i].gameId = gameId;
+					return;
+				}
+			}
+			DIA_ASSERT(false, "EditorPluginRegistry::TagGameScoped: typeId not found");
+		}
+
+		void EditorPluginRegistry::SetGameScope(const Dia::Core::StringCRC& gameId, const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxPlugins>& scopedTypeIds)
+		{
+			DIA_LOG_INFO("Editor", "EditorPluginRegistry: SetGameScope game=%s types=%u", gameId.AsChar(), scopedTypeIds.Size());
+			for (unsigned int i = 0; i < scopedTypeIds.Size(); ++i)
+			{
+				TagGameScoped(scopedTypeIds[i], gameId);
+			}
+			ChangeActiveGame(gameId);
+		}
+
+		void EditorPluginRegistry::ClearGameScope()
+		{
+			if (mActiveGameId != Dia::Core::StringCRC())
+			{
+				DIA_LOG_INFO("Editor", "EditorPluginRegistry: ClearGameScope");
+			}
+			ChangeActiveGame(Dia::Core::StringCRC());
+		}
+
+		void EditorPluginRegistry::ChangeActiveGame(const Dia::Core::StringCRC& newGame)
+		{
+			if (mActiveGameId == newGame)
+			{
+				return;
+			}
+
+			const Dia::Core::StringCRC oldGame = mActiveGameId;
+			mActiveGameId = newGame;
+			for (unsigned int i = 0; i < mListenerCount; ++i)
+			{
+				mListeners[i].callback(mListeners[i].userData, oldGame, newGame);
+			}
+		}
+
+		const Dia::Core::StringCRC& EditorPluginRegistry::GetActiveGameId() const
+		{
+			return mActiveGameId;
+		}
+
+		bool EditorPluginRegistry::IsGameScoped(const Dia::Core::StringCRC& typeId) const
+		{
+			for (unsigned int i = 0; i < mEntries.Size(); ++i)
+			{
+				if (mEntries[i].typeId == typeId)
+				{
+					return mEntries[i].gameId != Dia::Core::StringCRC();
+				}
+			}
+			return false;
+		}
+
+		bool EditorPluginRegistry::IsAvailable(const Dia::Core::StringCRC& typeId) const
+		{
+			for (unsigned int i = 0; i < mEntries.Size(); ++i)
+			{
+				if (mEntries[i].typeId == typeId)
+				{
+					if (mEntries[i].gameId != Dia::Core::StringCRC())
+					{
+						return mEntries[i].gameId == mActiveGameId;
+					}
+					return IsInScopeFilter(typeId);
+				}
+			}
+			return false;
+		}
+
+		bool EditorPluginRegistry::IsOutOfGameScope(const Dia::Core::StringCRC& typeId) const
+		{
+			for (unsigned int i = 0; i < mEntries.Size(); ++i)
+			{
+				if (mEntries[i].typeId == typeId)
+					return mEntries[i].gameId != Dia::Core::StringCRC() && mEntries[i].gameId != mActiveGameId;
+			}
+			return false;
+		}
+
+		bool EditorPluginRegistry::AddAssetRoute(const Dia::Core::StringCRC& assetType, const Dia::Core::StringCRC& editorPluginType)
+			{
+				for (unsigned int i = 0; i < mAssetRoutes.Size(); ++i)
+				{
+					if (mAssetRoutes[i].assetType == assetType && mAssetRoutes[i].editorPluginType == editorPluginType)
+						return false;
+				}
+				if (mAssetRoutes.IsFull())
+				{
+					DIA_LOG_WARNING("Editor", "EditorPluginRegistry: asset route capacity (%u) reached", kMaxAssetRoutes);
+					return false;
+				}
+				AssetRoute route;
+				route.assetType = assetType;
+				route.editorPluginType = editorPluginType;
+				mAssetRoutes.Add(route);
+				return true;
+			}
+
+			bool EditorPluginRegistry::RemoveAssetRoute(const Dia::Core::StringCRC& assetType, const Dia::Core::StringCRC& editorPluginType)
+			{
+				for (unsigned int i = 0; i < mAssetRoutes.Size(); ++i)
+				{
+					if (mAssetRoutes[i].assetType == assetType && mAssetRoutes[i].editorPluginType == editorPluginType)
+					{
+						mAssetRoutes.RemoveAt(i);
+						return true;
+					}
+				}
+				return false;
+			}
+
+			void EditorPluginRegistry::ClearAssetRoutes()
+			{
+				mAssetRoutes.RemoveAll();
+			}
+
+			unsigned int EditorPluginRegistry::GetAssetRouteCount() const
+			{
+				return mAssetRoutes.Size();
+			}
+
+			const Dia::Core::StringCRC& EditorPluginRegistry::GetAssetRouteAssetType(unsigned int index) const
+			{
+				DIA_ASSERT(index < mAssetRoutes.Size(), "EditorPluginRegistry: asset route index out of range");
+				return mAssetRoutes[index].assetType;
+			}
+
+			const Dia::Core::StringCRC& EditorPluginRegistry::GetAssetRouteEditor(unsigned int index) const
+			{
+				DIA_ASSERT(index < mAssetRoutes.Size(), "EditorPluginRegistry: asset route index out of range");
+				return mAssetRoutes[index].editorPluginType;
+			}
+
+			void EditorPluginRegistry::AddGameScopeListener(GameScopeChangedCallback callback, void* userData)
+		{
+			if (callback == nullptr)
+				return;
+			DIA_ASSERT(mListenerCount < kMaxGameScopeListeners, "EditorPluginRegistry: max game scope listeners reached");
+			if (mListenerCount >= kMaxGameScopeListeners)
+				return;
+			mListeners[mListenerCount].callback = callback;
+			mListeners[mListenerCount].userData = userData;
+			++mListenerCount;
+		}
+
+		void EditorPluginRegistry::RemoveGameScopeListener(GameScopeChangedCallback callback, void* userData)
+		{
+			for (unsigned int i = 0; i < mListenerCount; ++i)
+			{
+				if (mListeners[i].callback == callback && mListeners[i].userData == userData)
+				{
+					mListeners[i] = mListeners[mListenerCount - 1];
+					--mListenerCount;
+					return;
+				}
+			}
+		}
 	}
 }

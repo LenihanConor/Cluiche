@@ -4,6 +4,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <process.h>
 
 namespace Dia
 {
@@ -22,8 +23,10 @@ namespace Dia
 				std::memset(mJsonlPath, 0, sizeof(mJsonlPath));
 				std::memset(mFinalPath, 0, sizeof(mFinalPath));
 
-				strncpy_s(mJsonlPath, "profile-test.jsonl",  sizeof(mJsonlPath) - 1);
-				strncpy_s(mFinalPath, "profile-test-final.json", sizeof(mFinalPath) - 1);
+				// Unique per process so sharded test processes do not collide.
+				const int pid = _getpid();
+				snprintf(mJsonlPath, sizeof(mJsonlPath), "profile-test-%d.jsonl", pid);
+				snprintf(mFinalPath, sizeof(mFinalPath), "profile-test-final-%d.json", pid);
 
 				// Ensure any previous run is stopped before starting fresh
 				Profile::Profiler::Instance().Stop();

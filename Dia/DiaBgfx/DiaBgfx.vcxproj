@@ -31,6 +31,12 @@
     <ClInclude Include="Imgui\BgfxImGuiBackend.h" />
     <ClInclude Include="Imgui\BgfxImGuiRenderer.h" />
     <ClInclude Include="Imgui\Win32WndProcChain.h" />
+    <ClInclude Include="Resources\CellFieldGeometryCache.h" />
+    <ClInclude Include="Renderers\CellFieldRenderer.h" />
+    <ClInclude Include="Renderers\CellFieldDrawParams.h" />
+    <ClInclude Include="Renderers\Ortho2D.h" />
+    <ClInclude Include="Renderers\CellFieldViewOrder.h" />
+    <ClInclude Include="Renderers\CellFieldObservation.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Canvas.cpp" />
@@ -60,6 +66,11 @@
     <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_draw.cpp" />
     <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_widgets.cpp" />
     <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_tables.cpp" />
+    <ClCompile Include="Resources\CellFieldGeometryCache.cpp" />
+    <ClCompile Include="Renderers\CellFieldRenderer.cpp" />
+    <ClCompile Include="Renderers\CellFieldDrawParams.cpp" />
+    <ClCompile Include="Renderers\Ortho2D.cpp" />
+    <ClCompile Include="Renderers\CellFieldObservation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\varying.def.sc" />
@@ -69,6 +80,8 @@
     <None Include="Shaders\fs_debug.sc" />
     <None Include="Shaders\vs_ui_overlay.sc" />
     <None Include="Shaders\fs_ui_overlay.sc" />
+    <None Include="Shaders\vs_cellfield.sc" />
+    <None Include="Shaders\fs_cellfield.sc" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaAsset\DiaAsset.vcxproj">

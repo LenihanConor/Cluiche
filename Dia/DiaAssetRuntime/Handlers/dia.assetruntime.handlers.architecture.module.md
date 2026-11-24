@@ -22,11 +22,12 @@ dependent_modules:
 
 dependencies:
   required:
-    - dia.assetruntime
     - dia.graphics
     - dia.bgfx
     - dia.threading
     - dia.core.memory
     - dia.core.crc
     - dia.core.core
+    - dia.asset
+    - dia.observation
 ---

@@ -15,6 +15,10 @@
 #define DIA_PROFILE_SCOPE_NAMED(var, name, category) \
     ::Dia::Observation::Profile::ScopedZone var(::Dia::Core::StringCRC(name), (category))
 
+#define DIA_PROFILE_SCOPE_SUBJECT(name, category, subject) \
+    ::Dia::Observation::Profile::ScopedZone DIA_CONCAT(_dia_profile_, __LINE__)( \
+        ::Dia::Core::StringCRC(name), (category), static_cast<uint32_t>(subject))
+
 #define DIA_PROFILE_SCOPE_METRIC(name, category, histogram) \
     ::Dia::Observation::Profile::ScopedZone DIA_CONCAT(_dia_profile_, __LINE__)( \
         ::Dia::Core::StringCRC(name), (category), (histogram))

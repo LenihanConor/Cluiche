@@ -55,7 +55,7 @@ public_api:
 dependencies:
   required:
     - dia.core
-    - dia.logger
+    - dia.observation
   forbidden:
     - dia.rig2d
     - dia.statemachine

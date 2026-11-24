@@ -345,6 +345,10 @@ namespace Dia
                 if (mInFlightCount == 0)
                     return;
 
+                // Hand the source's slot back; otherwise a ring-buffered source is exhausted after a few captures.
+                if (mCaptureSource != nullptr)
+                    mCaptureSource->ReleaseFrameCapture(mInFlight[index].token);
+
                 unsigned int last = mInFlightCount - 1;
                 if (index != last)
                     mInFlight[index] = mInFlight[last];

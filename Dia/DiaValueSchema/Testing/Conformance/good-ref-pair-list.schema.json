@@ -1,0 +1,15 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "conf.pairs",
+  "entries": [
+    {
+      "key": "forbidden",
+      "kind": "parameter",
+      "label": "forbidden",
+      "description": "d",
+      "type": "ref[2][]",
+      "ref": "cow.biomes/biomes[].id"
+    }
+  ]
+}

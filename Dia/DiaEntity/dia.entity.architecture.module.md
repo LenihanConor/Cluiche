@@ -1,5 +1,5 @@
 ---
-module: dia.entity
+module_id: dia.entity
 version: 1
 layer: assets/core
 namespace: Dia::Entity
@@ -8,7 +8,7 @@ project: Dia/diaentitytemplate/diaentitytemplate.vcxproj
 dependent_modules:
   - dia.core
   - dia.maths
-  - dia.mailbox
+  - dia.observation
 public_headers:
   - Dia/diaentitytemplate/Domain.h
   - Dia/diaentitytemplate/Entity.h

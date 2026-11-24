@@ -1,0 +1,81 @@
+# Feature Spec: Extract DraoiHexWorld core
+
+**Plan:** @docs/specs/features/draoi/extract-hexworld-core.plan.md
+**Parent:** @docs/specs/applications/draoi/draoi.md (extraction order step (e), part 1)
+**Status:** `Done` (2026-11-21, plan Done; approved 2026-11-21; proceeds on the credible-second-consumer basis; layout and namespace decided, tests in GoogleTests)
+**Origin:** Draoi layer audit, 2026-11-21 (package split and WorldGeneration coupling audit in the parent spec).
+**Prerequisite:** @docs/specs/features/draoi/hexworld-core-prerequisites.md (Done). **Depends on / ordering:** Strata feature lands first (@docs/specs/features/draoi/generic-strata.md, Approved 2026-11-21, not yet built): the zone model becomes strata, so this spec's file list uses the Strata names. The world-sim kit's Draoi half (`WorldCellFields`, `CellSelectorSet`, codec data half) is owned by @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md; this spec only reserves the destination.
+
+## Summary
+Move the content-free world foundation out of CoW into a new Draoi project `DraoiHexWorld` (core). It is mechanical and behaviour-preserving: every golden stays byte-identical, and nothing is rewritten beyond include paths and (if decided) namespace.
+
+**Admission test (honest verdict):** the first consumer is CoW. The second is only *credible*, not real: Weather, Hydrology and Ecology (A4/A5/A1) are specced as separate Draoi packages that depend on this core, but they are CoW-authored. No second game exists. The package passes only on the "credible second consumer" leg, and the argument is structural (the sim packages need a home for cell vocabulary that does not depend on the generator). See Open Design Question 1.
+
+## Goals
+- `DraoiHexWorld` builds as a static library with no include of CoW, no `Modules/`, and no generator header.
+- CoW compiles against it with unchanged behaviour and goldens.
+- Tests for core types live in a Draoi test location and still run under `dia run googletest`.
+
+## Non-goals
+- The generator, session, JSON and view code (see @docs/specs/features/draoi/extract-hexworld-terrain.md).
+- Writing `WorldCellFields`, `CellSelectorSet` or the codec data half: they land in this project when the kit builds them (the kit plan owns the code); this spec only fixes the project and folder.
+- Changing any type, field, enum value, JSON key or save format.
+- Moving `biomes.json`, `strata.json` or any species/parameter data (content stays in CoW).
+
+## Design
+
+### Files that move (from `Cluiche/CoW/Shared/`)
+| From | To (`DraoiHexWorld/`) | Note |
+|---|---|---|
+| `World/CellVocabulary.h` | `CellVocabulary.h` | `BiomeIndex`, `StratumIndex` (was `DepthZone`; Strata feature), `WaterSource`, `TerrainType`, `RegionId`, `TerrainFlag` |
+| `World/BiomeRegistry.h/.cpp` | `BiomeRegistry.h/.cpp` | mechanism only; `biomes.json` stays in CoW |
+| `World/StratumTable.h/.cpp` (was `ZoneTable`; Strata feature) | `StratumTable.h/.cpp` | `strata.json` stays in CoW |
+| `WorldGeneration/WorldHexGrid.h/.cpp` | `WorldHexGrid.h/.cpp` | grid type |
+| `WorldGeneration/SharedWorldHexGrid.h` | `SharedWorldHexGrid.h` | |
+| `WorldGeneration/TerrainTypes.h` (`Cell`, `WorldStructure`, grid dimensions), `Regions.h` (`RegionRecord`, `RegionTable`), `Sites.h` (`Site`, `SiteKindInfo`, `SiteSet`) | world data types, split from the generator parts of `TerrainTypes.h` | **Decided 2026-11-21 (user): `Cell` and `WorldStructure` live in the core.** Data types only: the region partition/repair algorithms, `SiteRegistry`/`ISitePlacer`, `TerrainRules` and the generator stay in terrain |
+| `World/Testing/BiomeTestRegistry.h`, `ZoneTestIndices.h` | `Testing/` | helper rule below |
+| (future) `WorldCellFields`, `CellSelectorSet`, codec data half | `WorldCellFields.h`, `CellSelectorSet.h`, `WorldCodecData.h` | built by the world-sim kit; names indicative |
+
+Tests moving: `TestBiomeRegistry`, `TestBiomeRegistryData`, `TestBiomeRegistryEdge`, `TestBiomeRegistryLoad`, plus any `StratumTable`/`WorldHexGrid` tests, from `Cluiche/Tests/GoogleTests/CoW/` to a Draoi test folder (Question 2). Tests that exercise the generator through the registry (`TestBiome*` classify/climate/generator, `TestTerrain*`) stay for the terrain spec.
+
+### Project, include root, naming
+- New static-library project `DraoiHexWorld.vcxproj` (+ `.filters`) in a Draoi folder, solution folder `Draoi` in `Cluiche.sln` (`dia check sln-sync` must pass). Files are flat in the package; include root `#include <DraoiHexWorld/BiomeRegistry.h>`.
+- Depends on Dia only. Add a module doc `dia.draoi.hexworld.architecture.module.md` (`dia.module.v1`), then `dia docs registry` and `dia check deps`.
+- `CoW.vcxproj` adds a project reference and include directory; the old CoW paths are deleted, not shimmed. Include sites are updated per file group.
+- Helpers live in `DraoiHexWorld/Testing/` per the Draoi `Testing/` rule; GoogleTests includes them from there.
+
+### Namespace
+Today `CoW::World::` (the comment in `CellVocabulary.h` says namespaces are unchanged). Decision (user, 2026-11-21): rename to `Draoi::HexWorld` as part of task 5, a separate commit.
+
+**Placement rule (user, 2026-11-21: core is the shared base, not an "uber" package).** `DraoiHexWorld` holds only what **two or more sibling packages read** and that is **vocabulary or data, not an algorithm**: cell vocabulary, hex grid types, `StratumTable`, `BiomeRegistry`, `WorldCellFields`, `CellSelectorSet`, the codec data half. Anything one package owns stays in that package (the generator in `DraoiHexWorldTerrain`; weather, hydrology and ecology logic in their packages). Siblings depend on the core and never on each other, except the kit's one-way chain Weather, then Hydrology, then Ecology. Sims read cells through `WorldCellFields`, not through the generator's world structure, so they never depend on the generator. CoW content (`biomes.json`, `strata.json`, `guarantees.json`, dragon-layer placers, module wiring) stays in CoW.
+
+## Binding Decisions
+- PD-011/PD-012: no include up into CoW, no modules in the package.
+- Parent spec package split (agreed 2026-11-21): core holds grid/world types, `BiomeIndex`/`StratumIndex`, `StratumTable`, `BiomeRegistry`, `WorldCellFields`, `CellSelectorSet`, codec data half; nothing from the generator.
+- **Layout (user, 2026-11-21):** a top-level `Draoi/` folder beside `Dia/`, one project per package, namespaces `Draoi::HexWorld` (etc.).
+- **Tests (user, 2026-11-21):** Draoi tests stay in the GoogleTests project for now, under a `Draoi/` subfolder, run with `dia run googletest --filter=...`. Splitting GoogleTests into several test projects is a separate backlog item (a Draoi test project would be one of the splits); this feature does not block on it.
+- Escalation rule: a new Draoi project needs user confirmation of placement before Task 1 starts.
+
+## Acceptance Criteria
+1. `DraoiHexWorld` compiles with no include path to CoW; `dia check deps` is clean.
+2. Full CoW GoogleTests pass; `worldgen_layers.golden.json` and all JSON goldens are byte-identical.
+3. No moved header remains under `Cluiche/CoW/Shared/World/` or `WorldGeneration/` and no duplicate exists.
+4. Moved tests live under `Cluiche/Tests/GoogleTests/Draoi/` and run under `dia run googletest --filter=...`.
+5. `dia docs precommit` and `dia check sln-sync` pass; module doc and registry updated.
+
+## Tasks
+| # | Task | Test | Notes |
+|---|------|------|-------|
+| 1 | Create project, vcxproj/filters, sln folder, module doc; CoW reference | Empty lib builds; `dia check deps` | Needs user sign-off on the new Draoi project |
+| 2 | Move `CellVocabulary`, `StratumTable`, `WorldHexGrid`, `SharedWorldHexGrid`, and the world data types (`Cell`, `WorldStructure`, `RegionTable`, `SiteSet`; split generator-only declarations out of `TerrainTypes.h` first); update includes | Scoped filters for Stratum/Grid/Terrain; goldens | Mechanical |
+| 3 | Move `BiomeRegistry` + `Testing/` helpers; update includes | `TestBiomeRegistry*` | Registry must not include generator (true after prerequisites) |
+| 4 | Move tests that need no CoW data to `Tests/GoogleTests/Draoi/`; split mixed files | Filtered runs | |
+| 5 | Namespace change to `Draoi::HexWorld` | Full suite, goldens | Separate commit |
+| 6 | Close-out: gap audit, edge tests, one full sharded suite | Full suite | No mutation checks |
+
+## Open Design Questions
+1. **Admission.** No second game exists; Weather/Hydrology/Ecology are the credible second consumers. Proceed on that basis, or hold extraction until the first sim package is built so core is shaped by two real clients?
+2. **Resolved 2026-11-21:** layout, namespace and test location (see Binding Decisions).
+3. **Split of mixed test files.** Some biome-registry tests load shipped CoW data; decide per file whether to port them to a Draoi fixture or leave them in GoogleTests.
+
+4. **Resolved 2026-11-21 (user): `Cell` and `WorldStructure` live in the core**, with the region table and site set (data types only). Task 2 first splits `TerrainTypes.h` into world data (core) and generator declarations (terrain). Check during that split that nothing in the data types includes `TerrainRules` or a generator header.

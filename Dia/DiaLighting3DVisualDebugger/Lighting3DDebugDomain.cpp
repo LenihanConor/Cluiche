@@ -6,8 +6,8 @@
 #include "LightPathArcDrawer.h"
 #include "LightRangesDrawer.h"
 
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaLighting3D/Registry/LightRegistry3D.h>
 
 namespace Dia { namespace Lighting3D {

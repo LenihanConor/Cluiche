@@ -136,17 +136,17 @@ def generate_registry(repo_root: Path) -> str:
 
     output_lines.extend(["", "---", "", "## Module Hierarchy", ""])
 
-    for root in roots:
-        rid = root.get("module_id", "")
-        output_lines.extend(_render_tree(tree, root.get("parent_module_id", ""), 0))
-        output_lines.append("")
+    # Parentless modules are the tree's roots; render the whole forest once.
+    output_lines.extend(_render_tree(tree, "", 0))
+    output_lines.append("")
 
-    if not roots:
-        for parent_id in sorted(tree.keys()):
-            if parent_id and parent_id not in {m.get("module_id") for m in modules}:
-                output_lines.append(f"### Under {parent_id} (parent not found)")
-                output_lines.extend(_render_tree(tree, parent_id, 0))
-                output_lines.append("")
+    # Modules whose parent_module_id names no known module would otherwise vanish.
+    known_ids = {m.get("module_id") for m in modules}
+    for parent_id in sorted(tree.keys()):
+        if parent_id and parent_id not in known_ids:
+            output_lines.append(f"### Under {parent_id} (parent not found)")
+            output_lines.extend(_render_tree(tree, parent_id, 0))
+            output_lines.append("")
 
     return "\n".join(output_lines) + "\n"
 

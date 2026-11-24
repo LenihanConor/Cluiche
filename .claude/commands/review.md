@@ -50,6 +50,7 @@ Run each pass against the diff + spec. For each finding, record: severity, pass 
 
 #### Pass 3: Architecture
 - Is new code in the right module? Check `dia.*.architecture.module.md` responsibilities.
+- Is it in the right **layer** (Application -> Draoi -> Dia)? Reusable with no gameplay/game-world vocabulary -> Dia; reusable gameplay library with no one game's content -> Draoi (plain libraries, no modules or wiring); one game's content, logic or module wiring -> the application. Dia must never include a Draoi header (`dia check arch` enforces this).
 - Does it introduce dependencies that violate the module's declared dependency list?
 - Does it duplicate logic that already exists elsewhere?
 - Are lifetimes and ownership clear?

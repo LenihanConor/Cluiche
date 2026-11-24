@@ -54,7 +54,9 @@ dependencies:
     - dia.core.core
     - dia.graphics.frame
     - dia.graphics.misc
-    - dia.maths.shape.x2d
     - dia.maths.vector
+    - dia.core
+    - dia.geometry2d
+    - dia.observation
   forbidden: []
 ---

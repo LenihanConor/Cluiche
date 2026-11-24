@@ -1,0 +1,221 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "cow.worldshape",
+  "entries": [
+    {
+      "key": "id",
+      "kind": "field",
+      "label": "Id",
+      "description": "Preset id; must equal the file name without .worldshape.json.",
+      "type": "string"
+    },
+    {
+      "key": "displayName",
+      "kind": "field",
+      "label": "Name",
+      "description": "Name shown in the preset list.",
+      "type": "string"
+    },
+    {
+      "key": "description",
+      "kind": "field",
+      "label": "Description",
+      "description": "One-line summary of the world this preset makes.",
+      "type": "string"
+    },
+    {
+      "key": "params.landFraction",
+      "kind": "field",
+      "label": "Land fraction",
+      "description": "Share of the map that is land.",
+      "type": "float",
+      "min": 0.2,
+      "max": 0.65
+    },
+    {
+      "key": "params.continents",
+      "kind": "field",
+      "label": "Continents",
+      "description": "Number of major landmasses.",
+      "type": "int",
+      "min": 1,
+      "max": 3
+    },
+    {
+      "key": "params.islands",
+      "kind": "field",
+      "label": "Islands",
+      "description": "Number of free-standing islands.",
+      "type": "int",
+      "min": 0,
+      "max": 6
+    },
+    {
+      "key": "params.continentIslands",
+      "kind": "field",
+      "label": "Continent islands",
+      "description": "How much of the island budget sits close to a continent (1) versus far out (0).",
+      "type": "float",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "key": "params.peninsulas",
+      "kind": "field",
+      "label": "Peninsulas",
+      "description": "Number of peninsulas pushed out from the continents.",
+      "type": "int",
+      "min": 0,
+      "max": 3
+    },
+    {
+      "key": "params.coastline",
+      "kind": "field",
+      "label": "Coastline",
+      "description": "Coast roughness: 0 smooth, 1 ragged.",
+      "type": "float",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "key": "params.mountainousness",
+      "kind": "field",
+      "label": "Mountainousness",
+      "description": "How much of the land is mountain.",
+      "type": "float",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "key": "params.spineToRing",
+      "kind": "field",
+      "label": "Spine to ring",
+      "description": "Mountain layout: 0 a single spine, 1 a ring.",
+      "type": "float",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "key": "params.orientationDeg",
+      "kind": "field",
+      "label": "Orientation",
+      "description": "Direction of the main spine. Wraps into 0 to 360.",
+      "type": "float",
+      "min": 0,
+      "max": 360,
+      "unit": "deg"
+    },
+    {
+      "key": "params.passes",
+      "kind": "field",
+      "label": "Passes",
+      "description": "Number of passes cut through the mountain barrier.",
+      "type": "int",
+      "min": 0,
+      "max": 4
+    },
+    {
+      "key": "params.barrier",
+      "kind": "field",
+      "label": "Barrier",
+      "description": "Strength of the barrier between the depth zones.",
+      "type": "float",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "key": "params.barrierForm",
+      "kind": "field",
+      "label": "Barrier form",
+      "description": "Shape of the barrier: a broad plateau, or a chain of volcanoes (which blocks rivers).",
+      "type": "enum",
+      "values": [
+        {
+          "id": "Plateau",
+          "label": "Plateau",
+          "description": "A broad raised plateau."
+        },
+        {
+          "id": "VolcanicChain",
+          "label": "Volcanic chain",
+          "description": "A line of volcanoes."
+        }
+      ]
+    },
+    {
+      "key": "params.ruggedness",
+      "kind": "field",
+      "label": "Ruggedness",
+      "description": "Local elevation noise.",
+      "type": "float",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "key": "params.rivers",
+      "kind": "field",
+      "label": "Rivers",
+      "description": "River density.",
+      "type": "float",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "key": "params.valleyDepth",
+      "kind": "field",
+      "label": "Valley depth",
+      "description": "How deeply rivers carve valleys.",
+      "type": "float",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "key": "params.lakes",
+      "kind": "field",
+      "label": "Lakes",
+      "description": "Number of inland lakes.",
+      "type": "int",
+      "min": 0,
+      "max": 12
+    },
+    {
+      "key": "params.latitudeNorthDeg",
+      "kind": "field",
+      "label": "Latitude north",
+      "description": "Latitude at the north edge of the map.",
+      "type": "float",
+      "min": -90,
+      "max": 90,
+      "unit": "deg"
+    },
+    {
+      "key": "params.latitudeSouthDeg",
+      "kind": "field",
+      "label": "Latitude south",
+      "description": "Latitude at the south edge of the map.",
+      "type": "float",
+      "min": -90,
+      "max": 90,
+      "unit": "deg"
+    },
+    {
+      "key": "params.temperatureOffset",
+      "kind": "field",
+      "label": "Temperature offset",
+      "description": "Shifts every cell's temperature.",
+      "type": "float",
+      "min": -0.3,
+      "max": 0.3
+    },
+    {
+      "key": "params.moistureOffset",
+      "kind": "field",
+      "label": "Moisture offset",
+      "description": "Shifts every cell's moisture.",
+      "type": "float",
+      "min": -0.3,
+      "max": 0.3
+    }
+  ]
+}

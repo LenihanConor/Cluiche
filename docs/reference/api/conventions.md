@@ -615,7 +615,7 @@ class MyClass
 #include <string>                 // 3. C++ standard
 #include <vector>
 
-#include <SFML/Graphics.hpp>      // 4. External
+#include <SDL3/SDL.h>               // 4. External
 
 #include "DiaCore/Core/Assert.h"  // 5. Project
 #include "DiaMaths/Vector2D.h"

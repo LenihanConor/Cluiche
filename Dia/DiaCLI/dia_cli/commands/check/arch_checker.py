@@ -1,12 +1,16 @@
 """arch_checker — orchestrate the architecture audit (tasks 13-17)."""
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
+
+from dia_cli.utils.library_roots import root_of
 
 from .arch_module_map import ModuleInfo, build_module_map
 from .arch_include_parser import resolve_includes
 from .arch_layer_rules import check_layer_violation
+from .arch_placement import RULE as _PLACEMENT_RULE, find_wiring, is_exempt
 
 
 @dataclass
@@ -17,7 +21,85 @@ class ArchViolation:
     source_file: str    # repo-relative path
     lineno: int
     include_path: str
-    kind: str           # "forbidden" | "layer"
+    kind: str           # "forbidden" | "boundary" | "layer" | "placement"
+
+
+_NON_APP_DIRS = {"assets", "bin", "out", "external"}
+_INCLUDE_RE = re.compile(r'#\s*include\s+[<"]([^>"]+)[>"]')
+
+
+def application_names(repo_root: Path) -> set[str]:
+    """Top-level folders under Cluiche/ that hold application code (CoW, CluicheTest, ...)."""
+    base = repo_root / "Cluiche"
+    if not base.is_dir():
+        return set()
+    return {
+        p.name for p in base.iterdir()
+        if p.is_dir() and p.name.lower() not in _NON_APP_DIRS
+    }
+
+
+def _application_include(include_path: str, apps: set[str]) -> str | None:
+    """Return the application an include path points into, or None.
+
+    Matches both ``CoW/...`` (Cluiche/ on the include path) and ``Cluiche/CoW/...``.
+    """
+    parts = include_path.replace("\\", "/").lstrip("/").split("/")
+    if len(parts) < 2:
+        return None
+    if parts[0] == "Cluiche" and parts[1] in apps:
+        return parts[1]
+    if parts[0] in apps:
+        return parts[0]
+    return None
+
+
+def _application_violations(
+    module_id: str, rel_src: str, src: Path, apps: set[str],
+) -> list[ArchViolation]:
+    try:
+        lines = src.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return []
+    out: list[ArchViolation] = []
+    for lineno, line in enumerate(lines, start=1):
+        m = _INCLUDE_RE.search(line)
+        if not m:
+            continue
+        app = _application_include(m.group(1), apps)
+        if app:
+            out.append(ArchViolation(
+                from_module=module_id,
+                to_module=f"application:{app}",
+                rule="Dia and Draoi may not depend on application code (layer order: Application -> Draoi -> Dia)",
+                source_file=rel_src,
+                lineno=lineno,
+                include_path=m.group(1),
+                kind="boundary",
+            ))
+    return out
+
+
+def _placement_violations(module_id: str, module_path: str, rel_src: str, src: Path) -> list[ArchViolation]:
+    """PD-012: flag application wiring (module classes, affinity, registration) in a library package."""
+    if is_exempt(module_path, src):
+        return []
+    try:
+        text = src.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    return [
+        ArchViolation(
+            from_module=module_id,
+            to_module="application-wiring",
+            rule=_PLACEMENT_RULE,
+            source_file=rel_src,
+            lineno=lineno,
+            include_path=what,
+            kind="placement",
+        )
+        for lineno, what in find_wiring(text)
+    ]
 
 
 def run_arch_check(
@@ -34,6 +116,7 @@ def run_arch_check(
     module_map, warnings = build_module_map(repo_root)
 
     violations: list[ArchViolation] = []
+    apps = application_names(repo_root)
 
     # Select modules to scan
     if module_filter:
@@ -72,7 +155,7 @@ def run_arch_check(
             if p != module_dir and module_dir in p.parents
         }
 
-        raw_files = list(module_dir.rglob("*.h")) + list(module_dir.rglob("*.cpp"))
+        raw_files = [f for ext in ("*.h", "*.cpp", "*.inl") for f in module_dir.rglob(ext)]
         source_files = (
             [f for f in raw_files if not any(cd in f.parents for cd in child_module_dirs)]
             if child_module_dirs else raw_files
@@ -81,6 +164,16 @@ def run_arch_check(
         for src in sorted(source_files):
             rel_src = src.relative_to(repo_root).as_posix()
             includes = resolve_includes(src, repo_root, module_map, module_info)
+
+            if apps and root_of(module_info.path) in ("Dia", "Draoi"):
+                violations.extend(
+                    _application_violations(module_id, rel_src, src, apps)
+                )
+
+            if root_of(module_info.path) in ("Dia", "Draoi"):
+                violations.extend(
+                    _placement_violations(module_id, module_info.path, rel_src, src)
+                )
 
             for dep_id, lineno, raw_path in includes:
                 dep_info = module_map.get(dep_id)
@@ -98,7 +191,22 @@ def run_arch_check(
                     ))
                     continue  # don't double-report the same include
 
-                # Check 2: layer ordering
+                # Check 2: root boundary. Dia must never depend on Draoi. Keyed on the
+                # folder, not the layer, so Dia modules with an unparsed layer are covered.
+                if (dep_info and root_of(module_info.path) == "Dia"
+                        and root_of(dep_info.path) == "Draoi"):
+                    violations.append(ArchViolation(
+                        from_module=module_id,
+                        to_module=dep_id,
+                        rule="Dia may not depend on Draoi (layer order: Application -> Draoi -> Dia)",
+                        source_file=rel_src,
+                        lineno=lineno,
+                        include_path=raw_path,
+                        kind="boundary",
+                    ))
+                    continue
+
+                # Check 3: layer ordering
                 if module_info.layer and dep_info and dep_info.layer:
                     rule_violation = check_layer_violation(
                         module_info.layer, dep_info.layer
@@ -134,6 +242,12 @@ def format_violations(
 
     if not summary_only:
         for v in violations:
+            if v.kind == "placement":
+                lines.append(f"ARCH VIOLATION: {v.from_module} contains application wiring: {v.include_path}")
+                lines.append(f"  File: {v.source_file}:{v.lineno}")
+                lines.append(f"  Rule: {v.rule}")
+                lines.append("")
+                continue
             lines.append(
                 f"ARCH VIOLATION: {v.from_module} depends on {v.to_module}"
             )

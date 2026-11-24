@@ -34,6 +34,15 @@ void DiaEntityInspectorPlugin::OnGameConnected()
 {
     DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: Connected to game");
     mInspectorController.Activate(GetBridge());
+    mInspectorController.RegisterHandlers(
+        [this](const char* command, const Json::Value& args,
+               EntityInspectorController::SchemaReplyFn reply) -> bool
+        {
+            Dia::Editor::GameConnectionManager* conn = GetGameConnection();
+            if (conn == nullptr || !conn->IsConnected()) return false;
+            conn->SendCommandWithResponse(command, args, std::move(reply));
+            return true;
+        });
     mQueryController.Activate(GetBridge());
     mMailboxController.Activate(GetBridge());
     mWatchController.Activate(GetBridge());

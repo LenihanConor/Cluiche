@@ -7,6 +7,9 @@
     <Filter Include="Intersection">
       <UniqueIdentifier>{C2D3E4F5-A6B7-8901-2345-678901BCDEF0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Grid">
+      <UniqueIdentifier>{7A1E4C52-93B0-4D6F-8E21-5C3B9A0D7F14}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Transform">
       <UniqueIdentifier>{D3E4F5A6-B7C8-9012-3456-789012CDEF01}</UniqueIdentifier>
     </Filter>
@@ -74,6 +77,12 @@
     </ClInclude>
     <ClInclude Include="Intersection\IntersectionTests.h">
       <Filter>Intersection</Filter>
+    </ClInclude>
+    <ClInclude Include="Grid\CellCoord.h">
+      <Filter>Grid</Filter>
+    </ClInclude>
+    <ClInclude Include="Grid\HexTopology.h">
+      <Filter>Grid</Filter>
     </ClInclude>
     <ClInclude Include="Transform\Transform.h">
       <Filter>Transform</Filter>
@@ -148,6 +157,9 @@
     </ClCompile>
     <ClCompile Include="Intersection\IntersectionTests.cpp">
       <Filter>Intersection</Filter>
+    </ClCompile>
+    <ClCompile Include="Grid\HexTopology.cpp">
+      <Filter>Grid</Filter>
     </ClCompile>
     <ClCompile Include="Transform\Transform.cpp">
       <Filter>Transform</Filter>

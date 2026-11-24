@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.geometry2dvisualdebugger
 name: DiaGeometry2DVisualDebugger
 owner_team: TBD
-layer: foundation/maths/tools
+layer: 4.1-Maths
 status: active
 maturity: dev
 
@@ -32,11 +32,6 @@ non_responsibilities:
   - Does not render to screen directly (FrameData is the intermediary)
 
 dependent_modules:
-  - dia.diavisualdebugger
-  - dia.diageometry2d
-  - dia.diagraphics
-  - dia.diamaths
-  - dia.diacore
 
 public_api:
   headers:
@@ -56,10 +51,14 @@ public_api:
 
 dependencies:
   required:
-    - dia.diavisualdebugger
-    - dia.diageometry2d
-    - dia.diagraphics
-    - dia.diamaths
-    - dia.diacore
+    - dia.core.containers.arrays
+    - dia.core.core
+    - dia.core.debugdraw
+    - dia.debug.visualdebugger
+    - dia.geometry2d
+    - dia.graphics.misc
+    - dia.maths
+    - dia.maths.vector
+    - dia.observation
   forbidden: []
 ---

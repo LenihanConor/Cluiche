@@ -1,4 +1,6 @@
 #include "DiaPathfinding/SquarePathGrid.h"
+#include <DiaCore/Core/Assert.h>
+#include <limits>
 
 namespace Dia::Pathfinding {
 
@@ -7,32 +9,39 @@ namespace Dia::Pathfinding {
         , mHeight(height)
         , mConnectivity(connectivity)
     {
+        DIA_ASSERT(width >= 1 && height >= 1,
+                   "SquarePathGrid: invalid dimensions %dx%d (must be >= 1)", width, height);
+        // Check that width * height fits int (avoid overflow)
+        DIA_ASSERT(width <= std::numeric_limits<int>::max() / height,
+                   "SquarePathGrid: grid %dx%d overflows int", width, height);
+
         const int total = width * height;
+        mPassable.Reserve((unsigned int)total);
         for (int i = 0; i < total; ++i)
         {
             mPassable.Add(true);
         }
     }
 
-    void SquarePathGrid::SetPassable(CellCoord cell, bool passable)
+    void SquarePathGrid::SetPassable(Dia::Geometry2D::CellCoord cell, bool passable)
     {
         if (IsInBounds(cell))
         {
-            mPassable[CellIndex(cell)] = passable;
+            mPassable[(unsigned int)CellIndex(cell)] = passable;
         }
     }
 
-    bool SquarePathGrid::IsPassable(CellCoord cell) const
+    bool SquarePathGrid::IsPassable(Dia::Geometry2D::CellCoord cell) const
     {
         if (!IsInBounds(cell))
         {
             return false;
         }
-        return mPassable[CellIndex(cell)];
+        return mPassable[(unsigned int)CellIndex(cell)];
     }
 
-    void SquarePathGrid::GetNeighbours(CellCoord cell,
-                                       Dia::Core::Containers::DynamicArrayC<CellCoord, 16>& outNeighbours) const
+    void SquarePathGrid::GetNeighbours(Dia::Geometry2D::CellCoord cell,
+                                       Dia::Core::Containers::DynamicArrayC<Dia::Geometry2D::CellCoord, 16>& outNeighbours) const
     {
         outNeighbours.RemoveAll();
 
@@ -44,7 +53,7 @@ namespace Dia::Pathfinding {
 
         for (int i = 0; i < 4; ++i)
         {
-            CellCoord nc{ cell.x + kCardinalDx[i], cell.y + kCardinalDy[i] };
+            Dia::Geometry2D::CellCoord nc{ cell.x + kCardinalDx[i], cell.y + kCardinalDy[i] };
             if (IsInBounds(nc) && IsPassable(nc))
             {
                 outNeighbours.Add(nc);
@@ -55,7 +64,7 @@ namespace Dia::Pathfinding {
         {
             for (int i = 0; i < 4; ++i)
             {
-                CellCoord nc{ cell.x + kDiagonalDx[i], cell.y + kDiagonalDy[i] };
+                Dia::Geometry2D::CellCoord nc{ cell.x + kDiagonalDx[i], cell.y + kDiagonalDy[i] };
                 if (IsInBounds(nc) && IsPassable(nc))
                 {
                     outNeighbours.Add(nc);
@@ -79,12 +88,12 @@ namespace Dia::Pathfinding {
         return mConnectivity;
     }
 
-    bool SquarePathGrid::IsInBounds(CellCoord cell) const
+    bool SquarePathGrid::IsInBounds(Dia::Geometry2D::CellCoord cell) const
     {
         return cell.x >= 0 && cell.x < mWidth && cell.y >= 0 && cell.y < mHeight;
     }
 
-    int SquarePathGrid::CellIndex(CellCoord cell) const
+    int SquarePathGrid::CellIndex(Dia::Geometry2D::CellCoord cell) const
     {
         return cell.y * mWidth + cell.x;
     }

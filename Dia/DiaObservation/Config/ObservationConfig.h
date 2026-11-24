@@ -44,6 +44,19 @@ namespace Dia
 			bool     enableHealthFileSink        = true;
 			uint32_t metricSnapshotIntervalMs    = 100;
 			uint32_t healthPollIntervalMs        = 500;
+
+			// Perf Inspector A4a: trip detection config (applied to all PUs via Application)
+			struct PerfConfig
+			{
+				uint32_t tripFrames    = 10;       // consecutive over-budget frames to trip
+				float    tripFactor    = 2.0f;     // single frame > factor * budget trips
+				uint32_t rearmFrames   = 30;       // consecutive under-budget frames to re-arm
+				uint32_t minIntervalMs = 5000;     // min gap (ms) between emitted trips
+				float    budgetScale   = 1.0f;     // multiplies budget; <= 0 means 1.0
+				uint32_t perfExitSeconds = 0;      // exit after N seconds of profiling; 0 = never
+				bool     perfEnabled     = false;  // --perf given: write perf-summary.json at exit (A4b)
+			};
+			PerfConfig perfConfig;
 		};
 
 	} // namespace Observation

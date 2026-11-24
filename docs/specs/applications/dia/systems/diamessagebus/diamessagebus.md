@@ -225,6 +225,7 @@ public:
 | entity-router-registration | `RegisterRouter` point for diaentitytemplate's `EntityRouter`; `kEntityRouterId` address constant; integration test with entity-addressed `HitEvent` | [entity-router-registration.md](entity-router-registration.md) | Draft |
 | frame-ledger | Ledger **history ring buffer** (`kLedgerCapacity` ticks) over `LedgerSnapshot` + Release-build strip; feeds the visual debugger's History tab. (Last-tick tally is in core-bus; `ServiceStream` export stays deferred.) | [frame-ledger.md](frame-ledger.md) | Draft |
 | visual-debugger | `MessageBusDebugDomain` — in-game `IDebugDomain` overlay: Schema / Live / History tabs; reads the bus + ledger in-process; guarded `#ifdef DIA_DEBUG` | [visual-debugger.md](visual-debugger.md) | Draft |
+| bus-traffic-recorder | Debug-only `IBusRecorder` hook in `Bus::DispatchOne` + default `FileBusRecorder` (versioned binary per-message records); app owns and injects. Origin: CoW F-1 Test 6 | [bus-traffic-recorder.md](bus-traffic-recorder.md) | Approved |
 | messagebus-test-stage | CluicheTest E2E stage proving the doc → codegen → build loop end to end | [messagebus-test-stage spec](../../../../../cluichetest/systems/teststages/messagebus-test-stage.md) | Approved |
 
 ### Independent cleanup (in scope, unsequenced)

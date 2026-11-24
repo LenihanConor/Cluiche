@@ -15,11 +15,11 @@
 namespace Dia::FlowField {
 
     //-------------------------------------------------------------------------
-    // Internal hasher for CellCoord — used only within ComputeFlowField.
+    // Internal hasher for Dia::Geometry2D::CellCoord — used only within ComputeFlowField.
     //-------------------------------------------------------------------------
     struct CellCoordHash
     {
-        size_t operator()(Dia::Pathfinding::CellCoord c) const noexcept
+        size_t operator()(Dia::Geometry2D::CellCoord c) const noexcept
         {
             return std::hash<long long>()(((long long)c.x << 32) | (unsigned int)c.y);
         }
@@ -45,7 +45,7 @@ namespace Dia::FlowField {
     //-------------------------------------------------------------------------
     template<CFlowFieldGraph TGraph>
     FlowField ComputeFlowField(const TGraph&                         graph,
-                               Dia::Pathfinding::CellCoord           goalCell,
+                               Dia::Geometry2D::CellCoord           goalCell,
                                Dia::Pathfinding::IPathCostProvider&  costs,
                                int                                   width,
                                int                                   height)
@@ -57,22 +57,22 @@ namespace Dia::FlowField {
         FlowField& field = *fieldPtr;
 
         // Distance map: cell -> best cost from goalCell
-        std::unordered_map<Dia::Pathfinding::CellCoord, float, CellCoordHash> dist;
+        std::unordered_map<Dia::Geometry2D::CellCoord, float, CellCoordHash> dist;
 
         // Parent map: cell -> the neighbour that relaxed it (one step closer to goal)
-        std::unordered_map<Dia::Pathfinding::CellCoord,
-                           Dia::Pathfinding::CellCoord,
+        std::unordered_map<Dia::Geometry2D::CellCoord,
+                           Dia::Geometry2D::CellCoord,
                            CellCoordHash> parent;
 
         // Min-heap ordered by cost
-        using Entry = std::pair<float, Dia::Pathfinding::CellCoord>;
+        using Entry = std::pair<float, Dia::Geometry2D::CellCoord>;
         auto cmp = [](const Entry& a, const Entry& b) { return a.first > b.first; };
         std::priority_queue<Entry, std::vector<Entry>, decltype(cmp)> open(cmp);
 
         dist[goalCell] = 0.0f;
         open.push({ 0.0f, goalCell });
 
-        Dia::Core::Containers::DynamicArrayC<Dia::Pathfinding::CellCoord, 16> neighbours;
+        Dia::Core::Containers::DynamicArrayC<Dia::Geometry2D::CellCoord, 16> neighbours;
         int cellsVisited = 0;
 
         while (!open.empty())
@@ -92,7 +92,7 @@ namespace Dia::FlowField {
 
             for (unsigned int i = 0; i < neighbours.Size(); ++i)
             {
-                Dia::Pathfinding::CellCoord nb = neighbours[i];
+                Dia::Geometry2D::CellCoord nb = neighbours[i];
 
                 if (!graph.IsPassable(nb))
                     continue;

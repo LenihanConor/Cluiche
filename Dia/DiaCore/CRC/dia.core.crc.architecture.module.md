@@ -51,6 +51,5 @@ dependencies:
   required:
     - dia.core.containers.hashtables
     - dia.core.memory
-    - dia.core.type
   forbidden: []
 ---

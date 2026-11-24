@@ -1,0 +1,48 @@
+{
+  "description": "A valuesFrom enum whose data file resolves: the CLI reports nothing and ResolveValuesFrom fills 2 values in record order.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.test",
+      "entries": [
+        {
+          "key": "biomeIndex",
+          "kind": "field",
+          "label": "Biome",
+          "description": "d",
+          "type": "enum",
+          "valuesFrom": {
+            "format": "cow.biomes",
+            "records": "biomes",
+            "id": "id",
+            "label": "name"
+          },
+          "default": "forest"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/World/biomes.json",
+      "pack": false,
+      "content": {
+        "format": "cow.biomes",
+        "version": 1,
+        "biomes": [
+          {
+            "id": "forest",
+            "name": "Forest"
+          },
+          {
+            "id": "bog",
+            "name": "Bog"
+          }
+        ]
+      }
+    }
+  ],
+  "expected": [],
+  "schemaExpected": []
+}

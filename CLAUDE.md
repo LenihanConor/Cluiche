@@ -22,8 +22,11 @@ Applications (CluicheTest, CluicheEditor, CoW, future games) live as siblings un
 
 ### Layer boundary rule
 
-- **Reusable capability any game could consume → belongs in Dia**
-- **Specific to one game's content, logic, or characters → belongs in the Application**
+Three layers, dependencies pointing down only: **Application → Draoi → Dia** (see PD-011 to PD-014 in the platform spec and `docs/specs/applications/draoi/draoi.md`).
+
+- **Reusable engine capability any game could consume, with no gameplay or game-world vocabulary → belongs in Dia**
+- **Reusable gameplay library with no one game's content (world generation, world sims, game speed) → belongs in Draoi.** Plain libraries only: no modules or wiring, and sims are scheduler-agnostic (state in, state out). Needs two consumers or a credible second one; do not extract speculatively.
+- **Specific to one game's content, logic, or characters → belongs in the Application**, together with all module wiring and execution ordering
 
 This applies to systems, libraries, and data equally. `Animation2D` is engine — any game could use it. CoW's dragon animation system is application — only CoW needs it. The wiring (calling engine APIs from a game module) always stays in the application; the implementation, once it's generically useful, belongs in Dia.
 
@@ -31,7 +34,7 @@ This applies to systems, libraries, and data equally. `Animation2D` is engine �
 
 ### Escalation rule
 
-If a task would add a new header or implementation to a Dia project while working in a game project, **stop and flag it** — do not place it in the game. Describe what the Dia API should look like and ask the user to confirm the placement before proceeding.
+If a task would add a new header or implementation to a Dia or Draoi project while working in a game project, **stop and flag it** — do not place it in the game. Describe what the Dia API should look like and ask the user to confirm the placement before proceeding.
 
 ## Build System
 
@@ -46,14 +49,16 @@ This is a Visual Studio C++ project using MSBuild.
 | `dia run <target>` | Build + run in one step (tests, game, editor). Default choice. |
 | `dia launch <target>` | Run only — skip build (use when already built). |
 | `dia pipeline --target <target>` | Full pipeline: compile-code → build-assets → deploy. Required for editor targets that need UI built and copied. |
-| `dia scaffold module <Parent> <Name>` | Create a new Dia engine module (header, cpp, module.md, vcxproj entries). |
+| `dia scaffold module <Parent> <Name>` | Create a new Dia or Draoi module (header, cpp, module.md, vcxproj entries); a `Draoi*` parent selects the Draoi root. |
 | `dia scaffold plugin <Name>` | Create a new editor plugin (IEditorPlugin subclass, UI, vcxproj). |
 | `dia scaffold stage <Name>` | Create a new CluicheTest test stage (all 9 touch points). |
-| `dia check deps` | Cross-check module dependency declarations vs actual #includes. |
+| `dia check deps` | Cross-check module dependency declarations vs actual #includes (Dia and Draoi). Known issues live in docs/reference/registry/deps-baseline.json; `--accept-baseline` re-records. |
+| `dia check arch` | Layer audit: forbidden deps, layer order, and the boundary rule that Dia may never depend on Draoi. Also the placement rule (PD-012): no module classes, `DIA_MODULE`, or processing-unit affinity in a Dia/Draoi package outside `DiaApplicationFlow`. `--html PATH` also writes the Module Tower, a clickable visual report with a drag-to-fix what-if (mockup: docs/mockups/arch-tower-mockup.html). |
 | `dia check cppcheck` | Run cppcheck static analysis; write SARIF to out/check/findings.sarif. |
 | `dia check sanitizer` | Build and run googletest under ASan/UBSan. |
 | `dia check sln-sync` | Sync Cluiche.sln solution folders to module layer assignments. |
-| `dia check spec-sync` | Check spec Public Interface symbols against Dia headers; write spec-sync-status.md. |
+| `dia perf convert <session-dir\|profile.jsonl>` | Convert profile.jsonl (+ trips.jsonl) to Chrome-trace JSON for Perfetto; `--out`, `--from/--to` seconds. |
+| `dia check spec-sync` | Check spec Public Interface symbols against Dia/Draoi/application headers; write spec-sync-status.md. |
 | `dia validate manifest` | Validate .diaapp/.diagame/.diastage against schemas. |
 | `dia env setup/verify` | First-time setup or diagnosing missing dependencies. |
 | `dia docs plan <path> <#> --status <S>` | Update a plan task row (status, notes, model). Validates transitions. |
@@ -114,9 +119,10 @@ The codebase extensively uses `StringCRC` for efficient string comparison via co
 ## External Dependencies
 
 Located in `External/`:
-- **SFML** - Graphics, window, and multimedia library
+- **SDL3** - Window and input
+- **bgfx** - Rendering (2D and 3D)
 - **jsoncpp-master** - JSON parsing (used via `DiaCore/Json/`)
-- **Webix** & **VisJS** - Web UI frameworks for debugging/visualization
+- **VisJS** - Visualization framework for debugging
 
 ## Project Structure
 
@@ -224,7 +230,22 @@ After every feature implementation, at the Verify/Prove step, scan all files tou
 - **Metrics** — quantitative signals (counts, durations, depths) with no `MetricRegistry` registration
 - **Health** — modules or services with observable failure modes and no `IHealthReporter`
 
-Report findings in the task notes as suggestions. They do **not** block the feature being marked Done. They feed future domain instrumentation work.
+Rank each finding **High / Low**:
+
+- **High** — silent failure paths (error/reject/timeout/fallback with no `DIA_LOG_*`), lifecycle or state transitions on a critical path with no log, per-frame work that can plausibly exceed budget with no `DIA_PROFILE_SCOPE`, services with an observable failure mode and no `IHealthReporter`.
+- **Low** — everything else (extra metrics, cosmetic traces, nice-to-have logs).
+
+**Implement every High finding** before marking the feature Done: add the instrumentation (follow existing `DIA_*` usage in the module), run the scoped build/test for the touched module, and commit separately (`chore(<Module>): observation instrumentation`). Keep it minimal — no refactors, no behaviour change. Report Low findings in the task notes as suggestions; they do **not** block Done and feed future domain instrumentation work. If a High finding needs a design decision (new metric schema, new health reporter shape), report it instead of implementing.
+
+### Gaps and Loose Ends
+
+`docs/BACKLOG.md` "Loose Ends" is not a parking lot. When a task, review or close-out finds a gap, it ends in exactly one of three ways:
+
+1. **Fix it now**, in the same task, when it is small.
+2. **Promote it** to a real backlog row (one System, Task or Testbed with a deliverable) when it needs scheduling.
+3. **Drop it.** If it is not worth a row, it is not worth keeping.
+
+Do not add a Loose Ends row for "accepted, noted" gaps, fixed bugs (release notes belong in the commit), or reminders about harmless behaviour. Low observation findings and close-out notes stay in the plan's task notes, not in the backlog. Before closing a feature, say which of the three each remaining gap got.
 
 ### Build and Test Output
 
@@ -281,7 +302,7 @@ When including headers:
 ### Thread Safety
 
 Processing units can run on separate threads. When accessing shared state:
-- Use `std::mutex` for synchronization
+- Across PU boundaries use streams (EventStream request/reply, FrameStream snapshots); use `std::mutex` only for state private to one PU
 - `QueuePhaseTransition()` is thread-safe (vs immediate `TransitionPhase()`)
 - Review phase ordering and module dependencies for race conditions
 

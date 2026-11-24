@@ -10,7 +10,7 @@
 #include <DiaEntitySpatial/SpatialComponent.h>
 #include <DiaEntitySpatial/EntitySpatialIndex.h>
 #include <DiaEntitySpatial/Testing/SpatialTestHelpers.h>
-#include <DiaSensor/SensorModule.h>
+#include <Modules/SensorModule.h>
 #include <DiaSensor/SensorResultsComponent.h>
 #include <DiaSensor/SightSensorComponent.h>
 #include <DiaSensor/ProximitySensorComponent.h>
@@ -937,4 +937,36 @@ TEST_F(DiaSensorTest, SightSensor_CapacityFull_NoCrash_CappedAt8)
         << "sightResults must be capped at DynamicArrayC capacity (8)";
     EXPECT_GE(results->sightResults.Size(), 1u)
         << "At least some targets must be found";
+}
+
+// Pins the literal REQUIRES CRCs: each sensor's REQUIRES must equal the real components' kTypeId
+// (a typo in a literal would silently leave the sensor unattached).
+namespace
+{
+    template <typename T>
+    void ExpectRequires(std::initializer_list<Dia::Core::StringCRC> expected)
+    {
+        const Dia::Entity::ComponentTypeDesc& desc = T::GetDesc();
+        ASSERT_EQ(desc.requiresCount, expected.size());
+        unsigned int i = 0;
+        for (const Dia::Core::StringCRC& e : expected)
+        {
+            EXPECT_EQ(desc.requires_[i].Value(), e.Value()) << "index " << i;
+            ++i;
+        }
+    }
+}
+
+TEST(SensorRequiresLiteralsTest, SightProximitySoundRequireSpatialAndResults)
+{
+    using namespace Dia;
+    ExpectRequires<Sensor::SightSensorComponent>({ EntitySpatial::SpatialComponent::kTypeId, Sensor::SensorResultsComponent::kTypeId });
+    ExpectRequires<Sensor::ProximitySensorComponent>({ EntitySpatial::SpatialComponent::kTypeId, Sensor::SensorResultsComponent::kTypeId });
+    ExpectRequires<Sensor::SoundSensorComponent>({ EntitySpatial::SpatialComponent::kTypeId, Sensor::SensorResultsComponent::kTypeId });
+}
+
+TEST(SensorRequiresLiteralsTest, DamageRequiresDamageReceivedAndResults)
+{
+    using namespace Dia;
+    ExpectRequires<Sensor::DamageSensorComponent>({ Sensor::DamageReceivedComponent::kTypeId, Sensor::SensorResultsComponent::kTypeId });
 }

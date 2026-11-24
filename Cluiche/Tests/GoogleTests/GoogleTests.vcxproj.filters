@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Draoi">
+      <UniqueIdentifier>{7d2b1c40-3a5e-4f68-9b21-6c8e0a4d5f17}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Core">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
     </Filter>
@@ -234,6 +237,69 @@
     </Filter>
     <Filter Include="DiaPathfinding">
       <UniqueIdentifier>{848797c9-ea26-4ef7-af69-5e4405bcd89d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaMaths">
+      <UniqueIdentifier>{8355fe2c-307b-47d3-b965-8931117171cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests\GoogleTests\DiaAttribute">
+      <UniqueIdentifier>{f69c33c5-f439-4381-a9b9-3e979891d44e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaVisualDebugger\Console">
+      <UniqueIdentifier>{962cc1d4-2eda-41a1-98a2-afbcfe8ce603}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CoW">
+      <UniqueIdentifier>{5ef0f0fe-fb6f-45d7-b05f-7456788a4e11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaGraphics">
+      <UniqueIdentifier>{26af91b6-e184-45f6-8231-0da1950d8739}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaAPI">
+      <UniqueIdentifier>{3600b020-98fe-414f-bfaa-9da4d7a1501a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaValueSchema">
+      <UniqueIdentifier>{a2b4d7f0-75c9-4169-ad2b-0364279b7bb5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaCellLayers">
+      <UniqueIdentifier>{2a8c12fd-53d0-4060-98ae-92cc64482f64}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaCellHistory">
+      <UniqueIdentifier>{89118f48-3ea6-4469-8179-8d412b2da638}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaDeferredStep">
+      <UniqueIdentifier>{f3a9c7e1-b2d3-4e5f-a6c7-d8e9f0a1b2c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cluiche">
+      <UniqueIdentifier>{a5ec8eea-2c04-45d8-ae59-64971402a3c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Profile">
+      <UniqueIdentifier>{63a7bc41-ab14-4103-b690-06184f013467}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObservation\Perf">
+      <UniqueIdentifier>{bc2dc8a6-dd38-43f9-857b-80841639deec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaBlackboard">
+      <UniqueIdentifier>{465d7a42-e344-4052-aca8-5c63085c2a76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CoW\Shared\WorldStep">
+      <UniqueIdentifier>{e88c9b31-abfc-44cc-a05d-dd856c66cc27}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CoW\Shared\WorldStep\Testing">
+      <UniqueIdentifier>{8279cffd-7b09-410d-b75f-65677fb85746}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CoW\WorldStep">
+      <UniqueIdentifier>{51550e83-c5ca-43a2-a765-63c0061fe9d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CoW\Shared\World">
+      <UniqueIdentifier>{199452e2-25ca-4a04-81d3-afd02d3f7b73}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaCondition">
+      <UniqueIdentifier>{a474cfa9-d5b7-4e3a-9daf-de3031ad9f78}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CoW\WorldSimKit">
+      <UniqueIdentifier>{63ac5436-4ca7-4cba-be22-55b2f23eefed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CoWWeather">
+      <UniqueIdentifier>{5a4ec01e-ca10-4d72-acea-7c8ce9008ba3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -703,6 +769,9 @@
     <ClCompile Include="Editor\TestEditorPluginRegistry.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestEditorPluginRegistryGameScope.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
     <ClCompile Include="Editor\TestCommandHistory.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
@@ -1033,6 +1102,12 @@
       <Filter>DiaObservation\Log</Filter>
     </ClCompile>
     <ClCompile Include="DiaObservation\TestJsonEscape.cpp">
+      <Filter>DiaObservation</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\TestMetricInfo.cpp">
+      <Filter>DiaObservation</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\TestMetricInfoEdge.cpp">
       <Filter>DiaObservation</Filter>
     </ClCompile>
     <ClCompile Include="DiaObservation\Trace\TestTracer.cpp">
@@ -1732,6 +1807,63 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="DiaGraphics\HexTopologyToCellGridDesc.h">
+      <Filter>DiaGraphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\GameScopedPluginFixtures.h">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="DiaDeferredStep\DeferredStepModuleHarness.h">
+      <Filter>DiaDeferredStep</Filter>
+    </ClInclude>
+    <ClInclude Include="DiaPathfinding\GridSearchAllocCounter.h">
+      <Filter>DiaPathfinding</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Modules\WorldStep\WorldStepModule.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="CoW\WorldStep\WorldStepTestRig.h">
+      <Filter>CoW\WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="CoW\WorldStep\WorldStepSaveRig.h">
+      <Filter>CoW\WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Modules\Weather\WeatherModule.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Modules\Weather\WeatherMessages.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherStage.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherTerrainBuilder.h">
+      <Filter>CoWWeather</Filter>
+    </ClInclude>
+    <ClInclude Include="CoW\Weather\WeatherTestWorld.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="CoW\Weather\WeatherParamTestKit.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherParameterStore.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherStateRecord.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherPreset.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherSideStore.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherSaveFields.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Modules\Weather\WeatherSaveParticipant.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
@@ -1804,6 +1936,1507 @@
   <ItemGroup>
     <ClCompile Include="DiaAttributeVisualDebugger\TestAttributeVisualDebugger.cpp">
       <Filter>DiaAttributeVisualDebugger</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestBootMenuLogic.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestAppIdentity.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMaths\TestRandomStream.cpp">
+      <Filter>DiaMaths</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestManifestBootstrap.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAttribute\TestDiaAttributeBandInitialization.cpp">
+      <Filter>Tests\GoogleTests\DiaAttribute</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestBusTrafficRecorder.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestBusTrafficRecorderEdge.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestBusTrafficRecorderObservation.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestCommandLineParser.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestConsoleExecutor.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestConsoleLogRing.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestFuzzyMatcher.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestCommandCompleter.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestDebugConsoleEvents.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestConsoleJson.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestPaletteIndex.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestPaletteJson.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestPanelController.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestPanelContract.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestGameSpeedController.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGameSpeedCoWCalendar.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGameSpeedControllerModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\GameSpeed\GameSpeedControllerModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGameSpeedControllerObservability.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\GameSpeed\GameSpeedDebugDomain.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestSaveLoadModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGameSpeedSaveParticipant.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestRandomStreamSaveParticipant.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestSaveLoadWiring.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestSaveLoadIntegration.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2TestRunnerModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2Harness\F2TestRunnerModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2Fingerprint.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2Harness\F2Fingerprint.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2StreamIndependence.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2Harness\F2StreamIndependence.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2Scenario.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2Harness\F2Scenario.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2Harness\F2DragonStub.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2DragonStub.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2PanelModel.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2Harness\F2PanelModel.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2Harness\F2TestRunnerDebugDomain.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestHexTopology.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestHexPathGridRect.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestHexFindPath.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestHexGridPerformance.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGridVisibility\TestHexGridVisibility.cpp">
+      <Filter>DiaGridVisibility</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenerationMessages.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMaths\TestNoiseValueGradient.cpp">
+      <Filter>DiaMaths</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMaths\TestNoiseWorley.cpp">
+      <Filter>DiaMaths</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMaths\TestNoiseSimplex.cpp">
+      <Filter>DiaMaths</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMaths\TestNoise3D.cpp">
+      <Filter>DiaMaths</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMaths\TestNoiseFractal.cpp">
+      <Filter>DiaMaths</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMaths\TestNoisePurity.cpp">
+      <Filter>DiaMaths</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMaths\TestNoiseEdgeCases.cpp">
+      <Filter>DiaMaths</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\DebugDraw\TestCellFieldDebugDraw.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGraphics\TestCellFieldFrameData.cpp">
+      <Filter>DiaGraphics</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGraphics\TestHexGeometryBuilder.cpp">
+      <Filter>DiaGraphics</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGraphics\TestCellFieldRegistry.cpp">
+      <Filter>DiaGraphics</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBgfx\TestCellFieldGeometryCache.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBgfx\TestCellFieldRenderer.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBgfx\TestCellFieldCamera.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBgfx\TestCellFieldCanvas.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGraphics\TestCellFieldRegistryThreading.cpp">
+      <Filter>DiaGraphics</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGraphics\TestCellFieldRejected.cpp">
+      <Filter>DiaGraphics</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBgfx\TestCellFieldObservation.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGraphics\TestCellFieldGapsRegistry.cpp">
+      <Filter>DiaGraphics</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGraphics\TestCellFieldGapsGeometry.cpp">
+      <Filter>DiaGraphics</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGraphics\TestCellFieldGapsFrameData.cpp">
+      <Filter>DiaGraphics</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBgfx\TestCellFieldGapsBgfxRenderer.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBgfx\TestCellFieldGapsBgfxParams.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBgfx\TestCellFieldGapsBgfxObservation.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAPI\TestValueParam.cpp">
+      <Filter>DiaAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAPI\TestCommandInfoParams.cpp">
+      <Filter>DiaAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAPI\TestHelpSystemArguments.cpp">
+      <Filter>DiaAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAPI\TestHelpSystemArgumentsEdge.cpp">
+      <Filter>DiaAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAPI\TestCommandInfoParamsEdge.cpp">
+      <Filter>DiaAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAPI\TestEditorActionParamJsonEdge.cpp">
+      <Filter>DiaAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestPaletteArgsEdge.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\TestDescribedComponent.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\TestComponentDescribe.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaValueSchema\TestComponentFieldCollector.cpp">
+      <Filter>DiaValueSchema</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaValueSchema\TestComponentFieldWiring.cpp">
+      <Filter>DiaValueSchema</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\TestComponentSchemaJson.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaValueSchema\TestValueSchemaQuery.cpp">
+      <Filter>DiaValueSchema</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestSchemaControl.cpp">
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestServiceKeyResolver.cpp">
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSceneEditor\TestPropertyInspectorController.cpp">
+      <Filter>DiaSceneEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaValueSchema\TestValueSchemaExporter.cpp">
+      <Filter>DiaValueSchema</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaValueSchema\TestValueSchemaExportSubset.cpp">
+      <Filter>DiaValueSchema</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaValueSchema\TestDescribeMode.cpp">
+      <Filter>DiaValueSchema</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayerRegistry.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestLayerUploader.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellPicker.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestHotkeyTable.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayerLegend.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayerViewerDomain.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayersModule.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestViewValueSource.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayersLogging.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellPickerEdge.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayerRegistryEdge.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestHotkeyLegendEdge.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestLayerUploaderEdge.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayerViewerEdge.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestViewSourceModuleEdge.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayerJsonCommands.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestDomainStateQuery.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellSelection.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestLayerReader.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionTools.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionToolsPoly.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionCategory.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionOutline.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionView.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionCommands.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayersTestSelectionObservation.cpp" />
+    <ClCompile Include="DiaCellLayers\TestSelectionInput.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionPanelState.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionPerf.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheTest\CellLayersPointerFrameTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheTest\CellLayersPointerQueueTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionStats.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestInspectorState.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionPin.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellDetailRegistry.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestInspectorModel.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestInspectCommand.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers/TestInspectorObservation.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestInspectorPanelState.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestInspectorPerf.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestQueryLexer.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestQueryParser.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestQueryResolver.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestQueryEvaluator.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestQueryCommands.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestQueryPanelParts.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestQueryObservation.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestQueryPerf.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestPluginBrowserGameScope.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestEditorPluginDirtySave.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestGameSwitchGate.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestGameSwitchController.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestDebugServerPublishTopic.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionFingerprint.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestViewStatePublisher.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestMirrorQueries.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestMirrorLayerValues.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestMirrorStats.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestMirrorObservation.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestDebugServerSubscriberCount.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketLargeMessages.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestDebugServerLargePayload.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayerLifecycle.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionExhaustiveCore.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionExhaustiveInput.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionExhaustiveCommands.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestSimPendingTable.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestSimHostedDispatch.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestSimQueryHost.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestSimRegistrationMessage.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestStreamDeclaredCapacity.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestSimHostedObservation.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestSimHostedExhaustive.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestSimHostedExhaustiveModules.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestGameScopedPluginsIntegration.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheEditor\ApplicationFlow\Modules\PluginLoaderModule.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheEditor\ApplicationFlow\Modules\EditorModelModule.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheEditor\ApplicationFlow\Modules\EditorActionModule.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestViewerSimHostedCommands.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestViewerStateSnapshot.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestGameScopeDiscovery.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayersIntegrationWire.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayersIntegrationStreams.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestSecondaryPUTick.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestQueryExhaustive.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestInspectorExhaustive.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestMirrorExhaustive.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestDomainStateSnapshot.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestDomainStateSnapshotPublisher.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestSimAnnounceTracker.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestSimHostedResyncTable.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestSimQueryHostResync.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestSimAnnounceResyncIntegration.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestSimHelpInfo.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestSimRegistrationHelp.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestSimHostedCatalogue.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestSimHostedCommandList.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestPaletteSimHosted.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaValueSchema\TestCodeSideSimHosted.cpp">
+      <Filter>DiaValueSchema</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCommandHelp.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestQueryRegistryOwnerThread.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheTest\CellLayersHoverOverrideTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryConfig.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryTestSupport.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestAggregateStore.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestEventLog.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestCellRing.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestCellHistoryRecorder.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestEventPayloadValidation.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestCellHistoryTracking.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestCellHistoryCommands.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestCellHistoryModule.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="Cluiche\Tests\GoogleTests\DiaCellHistory\TestCellHistoryObservation.cpp">
+      <Filter>Cluiche</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryViewState.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryValueSource.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryViewCommands.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryViewIntegration.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestTimelineModel.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestScrubObservation.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestTimelineCard.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestSideReader.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestDeltaValueSource.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestDeltaScale.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestDeltaPresentation.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryDeltaCommands.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestGroupDeltaTable.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestDeltaViewIntegration.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayerHoverExtra.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryEncoding.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestSnapshotCellFile.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestSnapshotNaming.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestFakeSnapshotStore.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestSnapshotManagerTake.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestSnapshotManagerRestore.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestSnapshotCommands.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestSnapshotObservation.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheTest\CellLayersSnapshotStoreTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestSnapshotCellCache.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestDeltaSnapshotSide.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryExporter.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryExportCommands.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryQueries.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryTopics.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryConformance.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryExportPerf.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryClosingEdges.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestUtf8.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestSnapshotStoreAdapter.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainRules.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainGenerator.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainLandmass.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainMountains.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainRelief.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainDrainage.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainRivers.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainStrata.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainValleys.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainClassify.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainOutput.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainDeterminism.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldShapePreset.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainPresetShapes.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenSession.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenSessionQueries.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenerationModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\WorldGen\WorldGenerationModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\WorldGen\WorldGenDebugDomain.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenCommands.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenEdgeCases.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestDomainStateModules.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenDebugDomain.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenDomainStateRelay.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestVisualDebuggerPanelCommand.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestLogPushBatcher.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestDomainRootDelta.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWorldHexGrid.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldLayerSource.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenSchema.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldOverlayGeometry.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldCameraController.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldCameraController.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestInputStreamWheel.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenViewHost.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\WorldGen\WorldGenViewHost.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketOrigin.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestBiomeClimate.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestBiomeClassify.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestBiomeGenerator.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestBiomeAcceptance.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestBiomeEdgeCases.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestRegionsAndSitesTypes.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestSiteRegistry.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestRegionPartition.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestRegionRepair.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestNodesCorridor.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestNodesRiverFill.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestRegionsAndSites.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenSessionRegions.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestRegionsAndSitesEdge.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainNavigation.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestSiteGuarantees.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldLayoutGuarantee.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestValidationEdge.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGenerationRun.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenSessionRetry.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGenerationSystem.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldJsonExport.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldJsonImport.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldFiles.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenSessionImport.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldJsonExhaustive.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGenerationGuard.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenSessionTimeout.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenSessionValidate.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenDebugDomainPanel.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldOverlayEvidence.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenSizes.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenPresetStats.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayerGolden.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenLayerGoldens.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Job\TestJobInbox.cpp">
+      <Filter>DiaObservation\Metric</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Job\TestJobObserver.cpp">
+      <Filter>DiaObservation</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestModuleProfileSubject.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestUnitTimingTable.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestProcessingUnitTiming.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestTripDetector.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestTripRecord.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation/Config/TestObservationPerfConfig.cpp">
+      <Filter>DiaObservation\Config</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestPerfSummary.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestPerfExitTimer.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Perf\TestPerfMarkers.cpp">
+      <Filter>DiaObservation\Perf</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestPerfAutoMarkers.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestPerfPause.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestPerfPauseCommands.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Perf\TestLatencyProbe.cpp">
+      <Filter>DiaObservation\Perf</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestCoarseRing.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestCoarseChunk.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestStreamWriteBenchmark.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Trace\TestTraceLink.cpp">
+      <Filter>DiaObservation\Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestFrameStreamLink.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestEventStreamLink.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestStreamEdgeStats.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestStreamLinkEdgeCases.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestPerfWindowPacker.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestPerfWindowCommands.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestPerfTimingStats.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestPerfTimingPublisher.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestJobTimingTable.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestPerfWindowPackerJobs.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestPerfJobsCommands.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestPerfTimingJobs.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestPerfEdge.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestPerfEdgeCommands.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestTripChunk.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestPerfTripPublisher.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestChunkEpoch.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Trace\TestChainBuilder.cpp">
+      <Filter>DiaObservation\Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestPerfChainCommands.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestSerialExecutor.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestCapGate.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestJobStepLauncher.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestCapTimingAndFallback.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestCappedParallelExecutor.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestCapDeterminism.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestCapRangeSplit.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepHelpers.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepScheduler.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepSchedulerEdges.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepPending.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepSave.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepRoundTrip.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepSaveEdge.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepModule.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepMetricsHealth.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestProcessingUnitProfile.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Trace\TestProcessingUnitTrace.cpp">
+      <Filter>DiaObservation\Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestJobAttribution.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestStepTimes.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestStepSummary.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestStepSummaryScheduler.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepModuleSummary.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepNameAnnounce.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestChannelNameAnnounce.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBlackboard\TestBlackboardScopes.cpp">
+      <Filter>DiaBlackboard</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBlackboard\TestBlackboardNotifications.cpp">
+      <Filter>DiaBlackboard</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGame\TestJsonDiaStageSerializer.cpp">
+      <Filter>DiaGame</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGame\TestStageKinds.cpp">
+      <Filter>DiaGame</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestStageCatalogue.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestStageResultsFile.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestStageCatalogueModule.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestStageCatalogueQueries.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheTest\TestResultChangeTrackerTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\TestResultChangeTracker.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2StageResult.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestQueryRegistryHelp.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestManifestComposerPresets.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestStageLaunchPreset.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestStageLaunch.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenStageLaunch.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestGridSearchConcept.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestGridSearchSteps.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestGridSearchFlood.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestGridSearchDijkstra.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestGridSearchPriorityFlood.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestGridSearchScratch.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestGridSearchPerf.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\GridSearchAllocCounter.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAttribute/TestDiaAttributeSchemaFromValueSchema.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAttribute/TestDiaAttributeParameterFile.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAttribute/TestDiaAttributeParamBinding.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAttribute/TestDiaAttributeModifierKinds.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW/TestTerrainRulesSidecar.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAttribute\TestDiaAttributeSetIndexAccess.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaValueSchema\TestValueSchemaWriter.cpp">
+      <Filter>DiaValueSchema</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestGenerationReport.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestNavigationQuery.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestReachabilityValidator.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestSiteRules.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestTerrainTypes.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestValidationTypes.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestBiomeRegistry.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestBiomeRegistryLoad.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestBiomeRegistryData.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestBiomeDataOnly.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestBiomeLiterals.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainProfile.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaValueSchema\TestValueSchemaValuesFrom.cpp">
+      <Filter>DiaValueSchema</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestBiomeRegistryEdge.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\WorldStep\WorldStepModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldStep\TestWorldStepModule.cpp">
+      <Filter>CoW\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldStep\TestWorldStepCadence.cpp">
+      <Filter>CoW\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldStep\TestWorldStepLifecycle.cpp">
+      <Filter>CoW\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldStep\TestWorldStepSave.cpp">
+      <Filter>CoW\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldStep\TestWorldStepHistorySignal.cpp">
+      <Filter>CoW\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldStep\TestWorldStepSaveEdge.cpp">
+      <Filter>CoW\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldStep\TestWorldStepLoadReset.cpp">
+      <Filter>CoW\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestStratumTable.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestStepChain.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestStepChainEdge.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestStepChainConfig.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestStepFake.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestStepChainCapacity.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGuaranteeSpec.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCondition\TestConditionValidateContext.cpp">
+      <Filter>DiaCondition</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestStrataAssigner.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestStrataExtraSets.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestStrataMetric.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\CoWTestAssetPaths.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGameSpeedCalendar.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWorldCellFields.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestCellSelector.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestSelectorClauses.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestHexWorldSaveCodec.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestFieldContributions.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestMutationQueue.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestSpinUpSlot.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestWorldStepStageBase.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestWorldSimSaveCodec.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestSimCommandSet.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestParamCommandHelper.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestWorldSimNames.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldStep\WorldSimSaveCodec.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\Debug\SimCommandSet.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\Debug\ParamCommandHelper.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestRecordsCommandHelper.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\Debug\RecordsCommandHelper.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestWorldCellFieldsWiring.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestWorldGenCommandSet.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW/WorldSimKit/TestWorldGenLogChannel.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestWorldSimNamesRegistrations.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW/TestWorldGenReloadRules.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\CellHistoryModule.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\EntitySpawnerHealth.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\EntitySpawnerModule.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\EngineModules\TriggerScriptModule.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestTerrainTestHost.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestRegionsAndSitesTypesCoW.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherTypes.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherInitialise.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherSidecar.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWindDirection.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherLifecycle.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherPasses.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherTransport.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherForcing.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherDeterminism.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherPerf.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherOrographic.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherPrecipMelt.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherIntegration.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherGoldens.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestWeatherEdges.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherStage.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestHydrologyInputsProviderHeader.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\Weather\WeatherStage.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\Weather\WeatherModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherSpinUp.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\Weather\WeatherTerrainBuilder.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherSteps.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherParameters.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherQueue.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\Weather\WeatherParameterStore.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherEdgeCases.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherSaveFields.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherSaveParticipant.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherPendingSave.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\Weather\WeatherSaveFields.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\Weather\WeatherSaveParticipant.cpp">
+      <Filter>CoW</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

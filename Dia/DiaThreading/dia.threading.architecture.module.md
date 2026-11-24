@@ -23,7 +23,9 @@ intent: >
 
 responsibilities:
   - Provide JobSystem: Submit, Wait, IsComplete, Initialize, Shutdown
+  - Provide non-asserting TrySubmit(fn) and TrySubmit(fn, JobTag) (invalid handle before Initialize / after Shutdown; tagged form attributes identically to Submit(fn, tag))
   - Provide JobHandle: refcounted per-job completion token
+  - Provide IJobObserver hook (worker start/stop, context capture at Submit, begin/end + JobTimingRecord); implementation lives outside DiaThreading
   - Register dia.jobs.{queue_depth,active_workers,submitted,completed} on Initialize
   - Increment/update metrics at Submit time and job completion time
   - Null metric pointers on Shutdown
@@ -35,12 +37,18 @@ non_responsibilities:
 public_api:
   headers:
     - DiaThreading/JobSystem.h
+    - DiaThreading/JobContext.h
+    - DiaThreading/IJobObserver.h
   namespaces:
     - Dia::Threading
   entry_points:
     - JobSystem
     - JobHandle
     - JobFn
+    - IJobObserver
+    - JobContext
+    - JobTag
+    - JobTimingRecord
 
 dependencies:
   required:

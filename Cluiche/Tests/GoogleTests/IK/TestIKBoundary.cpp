@@ -48,7 +48,7 @@ TEST(DiaIK2D_Boundary, RegisterChain_UnknownStartBone_Dies)
 	chain.endBoneId   = Dia::Core::StringCRC("wrist");
 	chain.reachWeight = 1.0f;
 
-	EXPECT_DEATH(solver.RegisterChain(chain), "");
+	DIA_EXPECT_DEATH(solver.RegisterChain(chain), "");
 }
 
 // ---------------------------------------------------------------------------
@@ -66,7 +66,7 @@ TEST(DiaIK2D_Boundary, RegisterChain_UnknownEndBone_Dies)
 	chain.endBoneId   = Dia::Core::StringCRC("nonexistent");
 	chain.reachWeight = 1.0f;
 
-	EXPECT_DEATH(solver.RegisterChain(chain), "");
+	DIA_EXPECT_DEATH(solver.RegisterChain(chain), "");
 }
 
 // ---------------------------------------------------------------------------
@@ -84,7 +84,7 @@ TEST(DiaIK2D_Boundary, RegisterChain_SameBone_Dies)
 	chain.endBoneId   = Dia::Core::StringCRC("shoulder");
 	chain.reachWeight = 1.0f;
 
-	EXPECT_DEATH(solver.RegisterChain(chain), "");
+	DIA_EXPECT_DEATH(solver.RegisterChain(chain), "");
 }
 
 // ---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ TEST(DiaIK2D_Boundary, SolveTwoBone_WrongJointCount_Dies)
 	chain.reachWeight = 1.0f;
 	solver.RegisterChain(chain);
 
-	EXPECT_DEATH(solver.SolveTwoBone(Dia::Core::StringCRC("chain"),
+	DIA_EXPECT_DEATH(solver.SolveTwoBone(Dia::Core::StringCRC("chain"),
 	                                  Dia::Maths::Vector2D(1.0f, 0.0f)), "");
 }
 
@@ -124,7 +124,7 @@ TEST(DiaIK2D_Boundary, SolveTwoBone_BeforeSetRootTransform_Dies)
 	chain.reachWeight = 1.0f;
 	solver.RegisterChain(chain);
 
-	EXPECT_DEATH(solver.SolveTwoBone(Dia::Core::StringCRC("arm"),
+	DIA_EXPECT_DEATH(solver.SolveTwoBone(Dia::Core::StringCRC("arm"),
 	                                  Dia::Maths::Vector2D(1.0f, 0.0f)), "");
 }
 
@@ -144,7 +144,7 @@ TEST(DiaIK2D_Boundary, SolveFABRIK_BeforeSetRootTransform_Dies)
 	chain.reachWeight = 1.0f;
 	solver.RegisterChain(chain);
 
-	EXPECT_DEATH(solver.SolveFABRIK(Dia::Core::StringCRC("chain"),
+	DIA_EXPECT_DEATH(solver.SolveFABRIK(Dia::Core::StringCRC("chain"),
 	                                  Dia::Maths::Vector2D(1.0f, 0.0f)), "");
 }
 
@@ -157,7 +157,7 @@ TEST(DiaIK2D_Boundary, SolveLookAt_BeforeSetRootTransform_Dies)
 	TestRig rig(def);
 	IKSolver solver(rig.skeleton, rig.pose); // no SetRootTransform
 
-	EXPECT_DEATH(solver.SolveLookAt(0, Dia::Maths::Vector2D(1.0f, 0.0f)), "");
+	DIA_EXPECT_DEATH(solver.SolveLookAt(0, Dia::Maths::Vector2D(1.0f, 0.0f)), "");
 }
 
 // ---------------------------------------------------------------------------
@@ -169,8 +169,8 @@ TEST(DiaIK2D_Boundary, SolveLookAt_BoneIndexOutOfRange_Dies)
 	TestRig rig(def);
 	IKSolver solver = BuildTestIKSolver(rig.skeleton, rig.pose);
 
-	EXPECT_DEATH(solver.SolveLookAt(-1, Dia::Maths::Vector2D(1.0f, 0.0f)), "");
-	EXPECT_DEATH(solver.SolveLookAt(2,  Dia::Maths::Vector2D(1.0f, 0.0f)), "");
+	DIA_EXPECT_DEATH(solver.SolveLookAt(-1, Dia::Maths::Vector2D(1.0f, 0.0f)), "");
+	DIA_EXPECT_DEATH(solver.SolveLookAt(2,  Dia::Maths::Vector2D(1.0f, 0.0f)), "");
 }
 
 // ---------------------------------------------------------------------------

@@ -267,13 +267,16 @@ void TestLevelLoading()
 void TestRenderPipeline()
 {
     // Arrange: Create render components
-    DiaSFMLRenderWindow* window = new DiaSFMLRenderWindow();
-    RenderCanvasModule* canvas = new RenderCanvasModule(window);
+    Dia::SDL::WindowFactory windowFactory;
+    Dia::Window::IWindow* window = windowFactory.Create(settings);
+    Dia::Bgfx::Canvas* canvas = new Dia::Bgfx::Canvas();
+    canvas->AttachToNativeWindow(window->GetSystemHandle(), window->GetSize());
+    canvas->Initialize(Dia::Bgfx::CanvasSettings());
     
     // Act: Render frame
-    window->Clear(Color::Black);
-    canvas->DrawTestScene();  // Draw primitives
-    window->Display();
+    Dia::Graphics::FrameData frame;
+    frame.RequestDrawPoint(Dia::Maths::Vector2D(10.0f, 10.0f), Dia::Graphics::RGBA(255, 0, 0, 255));
+    canvas->RenderFrame(frame);
     
     // Assert: No crashes (visual verification)
     DIA_ASSERT(window->IsOpen(), "Window still open");
@@ -281,7 +284,7 @@ void TestRenderPipeline()
     // Cleanup
     window->Close();
     delete canvas;
-    delete window;
+    windowFactory.Destroy(window);
 }
 ```
 

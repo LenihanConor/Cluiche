@@ -88,7 +88,7 @@ dependent_modules: []
 public_api:
   headers:
     - Dia/DiaMessageBus/Bus.h
-    - Dia/DiaMessageBus/MessageBusModule.h
+    - Cluiche/CluicheGameBaseline/Modules/MessageBusHostModule.h
     - Dia/DiaMessageBus/IFlushAdapter.h
     - Dia/DiaMessageBus/LedgerSnapshot.h
     - Dia/DiaMessageBus/BusSubscriptionHandle.h

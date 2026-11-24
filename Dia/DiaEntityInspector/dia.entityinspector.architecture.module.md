@@ -6,10 +6,11 @@ layer: tools/inspector
 path: Dia/DiaEntityInspector
 dependencies:
   required:
-    - DiaEditor
-    - diaentitytemplate
-    - DiaCore
-    - DiaObservation
+    - dia.core.crc
+    - dia.core.json.external.json
+    - dia.editor
+    - dia.entity
+    - dia.observation
   optional: []
   forbidden: []
 public_api:

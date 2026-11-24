@@ -48,7 +48,7 @@ Valid question. Let's explore the reasoning.
 - ❌ Less mature C++ integration
 - ❌ Smaller ecosystem
 
-**SDL2 / SFML:**
+**SDL and similar multimedia libraries:**
 - ✅ Simple multimedia libraries
 - ✅ Cross-platform
 - ✅ Lightweight
@@ -244,7 +244,7 @@ objects.Reserve(100);  // Explicit allocation
 ❌ **Advanced Graphics** (Unreal has)
 - No PBR materials
 - No dynamic lighting
-- Trade-off: SFML is simple, good enough for 2D
+- Trade-off: the bgfx renderer is deliberately simple (2D plus basic lit 3D meshes; PBR is out of scope)
 
 ---
 
@@ -255,7 +255,7 @@ objects.Reserve(100);  // Explicit allocation
 ✅ **Learning:** Want to understand engine architecture  
 ✅ **Control:** Need full control over every system  
 ✅ **Lightweight:** Don't need AAA features  
-✅ **2D:** SFML is excellent for 2D games  
+✅ **2D:** bgfx-based 2D rendering is well covered  
 ✅ **Explicit:** Prefer explicit over implicit  
 ✅ **C++:** Want modern C++ patterns  
 
@@ -318,7 +318,7 @@ objects.Reserve(100);  // Explicit allocation
 
 ### What Cluiche Needs
 
-- ✅ 2D graphics (SFML sufficient)
+- ✅ 2D graphics (bgfx 2D renderer sufficient)
 - ✅ Input handling (keyboard, mouse, gamepad)
 - ✅ Basic UI (web-based)
 - ✅ Game loop with consistent frame rate
@@ -337,7 +337,7 @@ objects.Reserve(100);  // Explicit allocation
 
 - ✅ Module/Phase/ProcessingUnit framework
 - ✅ Threading model (Main/Render/Sim)
-- ✅ Basic graphics (SFML)
+- ✅ Basic graphics (bgfx)
 - ✅ Input system
 - ✅ Type system
 
@@ -482,4 +482,4 @@ Perfect for:
 **Philosophy:** Build what you need, understand what you build
 
 **[→ Back to Design Philosophy](design.md)**  
-**[→ Dia Engine Architecture](../architecture/dia-engine.md)**
+**[→ Dia Engine Architecture](../architecture/dia-engine.md)**

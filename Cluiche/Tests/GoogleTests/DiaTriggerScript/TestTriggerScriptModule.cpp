@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <DiaTriggerScript/TriggerScriptModule.h>
+#include <Modules/EngineModules/TriggerScriptModule.h>
 #include <DiaTriggerScript/TriggerActionRegistry.h>
 #include <DiaTriggerScript/Testing/TriggerScriptTestHelpers.h>
 #include <DiaCondition/ConditionRegistry.h>

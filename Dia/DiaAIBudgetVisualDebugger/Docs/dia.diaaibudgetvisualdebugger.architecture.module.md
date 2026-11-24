@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.aibudgetvisualdebugger
 name: DiaAIBudgetVisualDebugger
 owner_team: TBD
-layer: domain/gameplay/tools
+layer: 4.1-Gameplay
 status: active
 maturity: dev
 
@@ -43,7 +43,7 @@ dependencies:
   required:
     - dia.core
     - dia.aibudget
-    - dia.visualdebugger
+    - dia.debug.visualdebugger
   forbidden:
     - dia.entity
     - dia.applicationflow

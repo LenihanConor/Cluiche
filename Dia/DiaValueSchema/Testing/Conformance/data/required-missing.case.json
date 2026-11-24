@@ -1,0 +1,66 @@
+{
+  "description": "A record lacking a required column is reported with its index and id.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.species",
+      "entries": [
+        {
+          "key": "species[].id",
+          "kind": "parameter",
+          "label": "species[].id",
+          "description": "d",
+          "type": "string"
+        },
+        {
+          "key": "species[].growth_rate",
+          "kind": "parameter",
+          "label": "species[].growth_rate",
+          "description": "d",
+          "type": "float",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Species/species.json",
+      "pack": false,
+      "content": {
+        "format": "cow.species",
+        "version": 1,
+        "species": [
+          {
+            "id": "a",
+            "growth_rate": 1
+          },
+          {
+            "id": "b",
+            "growth_rate": 1
+          },
+          {
+            "id": "c",
+            "growth_rate": 1
+          },
+          {
+            "id": "bear"
+          }
+        ]
+      }
+    }
+  ],
+  "expected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.missing-required",
+      "file": "Global/Species/species.json",
+      "key": "species[].growth_rate",
+      "path": "species[3].growth_rate",
+      "record": "bear",
+      "messageContains": "growth_rate",
+      "suggestion": null
+    }
+  ]
+}

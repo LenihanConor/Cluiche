@@ -39,7 +39,6 @@ non_responsibilities:
 dependent_modules:
   - dia.editor
   - dia.core
-  - dia.logger
 
 public_api:
   headers:
@@ -53,7 +52,7 @@ dependencies:
   required:
     - dia.editor
     - dia.core
-    - dia.logger
+    - dia.observation
   forbidden:
     - dia.assetruntime
     - dia.assetcatalogue

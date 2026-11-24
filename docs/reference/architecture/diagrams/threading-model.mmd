@@ -26,7 +26,7 @@ sequenceDiagram
 
     Note over Render: Phase: RenderRunningPhase
     Render->>Render: Initialize RenderKernel
-    Render->>Render: Setup Canvas (SFML)
+    Render->>Render: Setup Canvas (bgfx)
 
     Note over Sim: Phase: SimBootPhase
     Sim->>Sim: Initialize SimTimeServer
@@ -39,7 +39,7 @@ sequenceDiagram
     Note over Main,Sim: Main Loop Begins
 
     loop Main Update Loop
-        Main->>Main: Collect input from SFML
+        Main->>Main: Collect input from SDL
         Main->>Main: Write to InputToSimFrameStream
         Main->>Main: Update UI system
         Main->>Main: Update TimeServer @ 30Hz
@@ -49,7 +49,7 @@ sequenceDiagram
         Note over Render: TimeThreadLimiter @ 60 FPS
         Render->>Render: Read SimToRenderFrameStream
         Render->>Render: Lock: Read graphics commands
-        Render->>Render: Render to SFML canvas
+        Render->>Render: Render to bgfx canvas
         Render->>Render: Display frame
         Render->>Render: Sleep if frame early
     end

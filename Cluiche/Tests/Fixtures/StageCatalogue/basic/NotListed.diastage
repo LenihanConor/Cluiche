@@ -1,0 +1,13 @@
+{
+    "name": "NotListed",
+    "manifest": "NotListed.stage.json",
+    "tags": [
+        "tool"
+    ],
+    "description": "Imported but absent from Boot transitions.",
+    "config": {
+        "path_aliases": {
+            "root": "."
+        }
+    }
+}

@@ -18,7 +18,7 @@ Each executable (`GoogleTests.exe`, `CluicheTest.exe`, `CluicheEditor.exe`) requ
 
 - Read per-target file copy rules from `pipeline.toml [targets.<name>.package]`
 - Resolve `$(OutDir)` and `$(Configuration)` in both `src` and `dest` paths
-- Support glob patterns in `src` (e.g., `External/SFML/Current-x64/bin/*.dll`)
+- Support glob patterns in `src` (e.g., `External/Python311/*.dll`)
 - Support recursive glob in `src` (e.g., `External/CEF/Resources/locales/**`)
 - Copy files only if source is newer than destination (matches `xcopy /D` behaviour)
 - Skip-if-staged guard: if all destination files already exist and are up to date, skip with log
@@ -50,7 +50,7 @@ files = [
 [targets.cluichetest.package]
 files = [
   { src = "Cluiche/pathStoreConfig.json", dest = "$(OutDir)" },
-  { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" },
+  { src = "External/Python311/*.dll", dest = "$(OutDir)" },
   { src = "Cluiche/CluicheTest/Data/Manifests/*.diaapp", dest = "$(OutDir)Data/Manifests/" }
 ]
 ```
@@ -176,6 +176,6 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
 | # | Section | Question | Answer |
 |---|---------|----------|--------|
 | 1 | CEF `Resources/**` | Does `External/CEF/Resources/**` exist in the repo (gitignored binary)? | CEF is a binary SDK in `External/` managed by `deps.json`. It is gitignored. The package stage copy rules only execute after `dia env setup` has restored the dep. If CEF is not restored, the glob matches nothing and the stage logs a warning rather than failing. |
-| 2 | Unmatched glob | Should an unmatched glob be a warning or a failure? | Warning — the dep may simply not have been restored yet (CEF, SFML). The stage continues and exits 0. The developer can re-run after `dia env setup` to get the files. This matches the existing `xcopy` behaviour (which also silently does nothing if the source doesn't exist). |
+| 2 | Unmatched glob | Should an unmatched glob be a warning or a failure? | Warning — the dep may simply not have been restored yet (CEF, Ultralight). The stage continues and exits 0. The developer can re-run after `dia env setup` to get the files. This matches the existing `xcopy` behaviour (which also silently does nothing if the source doesn't exist). |
 | 3 | `locales/**` pattern | Does `glob.glob(..., recursive=True)` correctly expand `locales/**` to all files recursively? | Yes — Python's `glob.glob` with `recursive=True` and a `**` wildcard recursively expands. Files within subdirectories are matched. |
 | 4 | Concurrent package runs | Is there a race condition if two `dia pipeline` runs execute package simultaneously? | Not a concern in the current single-developer use case. No locking needed. |

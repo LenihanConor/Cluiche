@@ -1,0 +1,65 @@
+{
+  "description": "A sparse pack over a complete keyEnum map is valid: packs list only the keys they override.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.params",
+      "entries": [
+        {
+          "key": "terrain_type",
+          "kind": "field",
+          "label": "Terrain",
+          "description": "d",
+          "type": "enum",
+          "values": [
+            {
+              "id": "Water"
+            },
+            {
+              "id": "Grass"
+            },
+            {
+              "id": "Sand"
+            },
+            {
+              "id": "Rock"
+            }
+          ],
+          "default": "Water"
+        },
+        {
+          "key": "terrain.cost",
+          "kind": "parameter",
+          "label": "cost",
+          "description": "d",
+          "type": "map",
+          "keyEnum": "terrain_type",
+          "valueType": "float",
+          "min": 0,
+          "max": 10,
+          "default": {
+            "Water": 9,
+            "Grass": 1,
+            "Sand": 2,
+            "Rock": 5
+          }
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Params/Packs/pack.json",
+      "pack": true,
+      "content": {
+        "format": "cow.params",
+        "version": 1,
+        "terrain.cost": {
+          "Sand": 3
+        }
+      }
+    }
+  ],
+  "expected": []
+}

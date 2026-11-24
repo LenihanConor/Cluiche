@@ -14,6 +14,8 @@ import uuid
 from pathlib import Path
 from typing import Optional
 
+from dia_cli.utils.library_roots import LIBRARY_ROOTS
+
 from .arch_module_map import build_module_map
 
 # ---------------------------------------------------------------------------
@@ -23,24 +25,26 @@ from .arch_module_map import build_module_map
 _LAYER_TO_FOLDER: dict[str, str] = {
     "foundation/core":        "1.0-Core",
     "foundation/maths":       "1.1-Maths",
-    "foundation/maths/tools": "1.1-Maths-Tools",
     "foundation/services":    "1.1-Services",
-    "foundation/services/tools": "1.1-Services-Tools",
     "foundation/platform":    "1.2-Platform",
     "foundation/application": "1.2-Application",
+    "draoi":                  "Draoi",
     "foundation/assets":      "2.0-Assets",
     "assets/core":            "2.0-Assets",
-    "assets/tools":           "2.1-Assets-Tools",
     "domain/visual/core":     "3.0-Visual",
-    "domain/visual/tools":    "3.1-Visual-Tools",
     "domain/physics/core":    "3.0-Physics",
-    "domain/physics/tools":   "3.1-Physics-Tools",
     "domain/animation/core":  "3.0-Animation",
-    "domain/animation/tools": "3.1-Animation-Tools",
     "domain/gameplay/core":   "3.0-Gameplay",
-    "domain/gameplay/tools":  "3.1-Gameplay-Tools",
     "tools/editor":           "4.0-Editors",
     "tools/inspector":        "4.0-Inspectors",
+    "4.0":                    "4.0-VisualDebuggers",
+    "4.1-Gameplay":           "4.1-VisualDebuggers-Gameplay",
+    "4.1-Physics":            "4.1-VisualDebuggers-Physics",
+    "4.1-Animation":          "4.1-VisualDebuggers-Animation",
+    "4.1-Visual":             "4.1-VisualDebuggers-Visual",
+    "4.1-Maths":              "4.1-VisualDebuggers-Maths",
+    "4.1-Assets":             "4.1-VisualDebuggers-Assets",
+    "4.1-Services":           "4.1-VisualDebuggers-Services",
 }
 
 # Folder → parent-folder name, for nesting inside the .sln tree. Anything not
@@ -49,17 +53,20 @@ _LAYER_TO_FOLDER: dict[str, str] = {
 # and Foundation sub-groups nest under 1.0-Core.
 _FOLDER_PARENT: dict[str, str] = {
     "1.1-Maths":            "1.0-Core",
-    "1.1-Maths-Tools":      "1.1-Maths",
     "1.1-Services":         "1.0-Core",
-    "1.1-Services-Tools":   "1.1-Services",
     "1.2-Application":      "1.0-Core",
     "1.2-Platform":         "1.0-Core",
-    "2.1-Assets-Tools":     "2.0-Assets",
-    "3.1-Visual-Tools":     "3.0-Visual",
-    "3.1-Physics-Tools":    "3.0-Physics",
-    "3.1-Animation-Tools":  "3.0-Animation",
-    "3.1-Gameplay-Tools":   "3.0-Gameplay",
+    "4.1-VisualDebuggers-Gameplay":  "4.0-VisualDebuggers",
+    "4.1-VisualDebuggers-Physics":   "4.0-VisualDebuggers",
+    "4.1-VisualDebuggers-Animation": "4.0-VisualDebuggers",
+    "4.1-VisualDebuggers-Visual":    "4.0-VisualDebuggers",
+    "4.1-VisualDebuggers-Maths":     "4.0-VisualDebuggers",
+    "4.1-VisualDebuggers-Assets":    "4.0-VisualDebuggers",
+    "4.1-VisualDebuggers-Services":  "4.0-VisualDebuggers",
 }
+
+# Folders that sit at the solution root, not under the "Dia" folder.
+_TOP_LEVEL_FOLDERS = frozenset({"Draoi"})
 
 _SOLUTION_FOLDER_TYPE = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}"
 _CPP_PROJECT_TYPE = "{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}"
@@ -132,9 +139,9 @@ def compute_assignments(
     for module_id, info in module_map.items():
         if not info.path:
             continue
-        # Only top-level Dia/ projects (not sub-modules)
+        # Only top-level library projects (Dia/<X> or Draoi/<X>), not sub-modules
         parts = info.path.strip("/").split("/")
-        if len(parts) == 2 and parts[0] == "Dia":
+        if len(parts) == 2 and parts[0] in LIBRARY_ROOTS:
             path_to_project[info.path] = parts[1]
 
     # For each top-level project, find a layer (prefer the root module doc)
@@ -143,7 +150,7 @@ def compute_assignments(
         if not info.path or not info.layer:
             continue
         parts = info.path.strip("/").split("/")
-        if len(parts) == 2 and parts[0] == "Dia":
+        if len(parts) == 2 and parts[0] in LIBRARY_ROOTS:
             project_name = parts[1]
             # Only override if not already set (first match wins — root module doc)
             if project_name not in project_layers:
@@ -165,15 +172,17 @@ def compute_assignments(
 # Target-layout doc generation
 # ---------------------------------------------------------------------------
 
-_FOLDER_GROUP_NAMES = {"1": "Foundation", "2": "Assets", "3": "Domains", "4": "Cross-Cutting Tools"}
+_FOLDER_GROUP_NAMES = {"1": "Foundation", "2": "Assets", "3": "Domains", "4": "Cross-Cutting Tools", "Draoi": "Draoi"}
 
 # One folder directly under Dia/, one file — regardless of whether the
 # vcxproj filename matches the folder name (renames sometimes leave them
 # out of sync, e.g. DiaEntityTemplateEditor/DiaBlueprintEditor.vcxproj).
-_TOP_LEVEL_DIA_PROJECT_RE = re.compile(r"^\.\./Dia/[^/]+/[^/]+\.vcxproj$")
+_TOP_LEVEL_DIA_PROJECT_RE = re.compile(r"^\.\./(?:Dia|Draoi)/[^/]+/[^/]+\.vcxproj$")
 
 
 def _folder_group(folder_name: str) -> str:
+    if folder_name in _TOP_LEVEL_FOLDERS:
+        return folder_name
     major = folder_name.split(".", 1)[0]
     return _FOLDER_GROUP_NAMES.get(major, "Other")
 
@@ -324,7 +333,7 @@ def run_sln_sync(
     folder_reassignments: list[tuple[str, str, str, str]] = []  # (folder_name, folder_guid, old_parent_name, new_parent_name)
     if dia_folder_guid:
         folder_guids.setdefault("Dia", dia_folder_guid)
-        for folder_name in sorted(folders_needed):
+        for folder_name in sorted(folders_needed - _TOP_LEVEL_FOLDERS):
             desired_parent_name = _FOLDER_PARENT.get(folder_name, "Dia")
             desired_parent_guid = folder_guids.get(desired_parent_name)
             if not desired_parent_guid:

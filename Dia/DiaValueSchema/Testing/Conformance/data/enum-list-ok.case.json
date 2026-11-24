@@ -1,0 +1,81 @@
+{
+  "description": "enum[] accepts members of the enum, including an empty array; ref[2][] accepts resolving pairs.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.biomes",
+      "entries": [
+        {
+          "key": "biomes[].id",
+          "kind": "parameter",
+          "label": "biomes[].id",
+          "description": "d",
+          "type": "string",
+          "unique": true,
+          "required": true
+        },
+        {
+          "key": "biomes[].tags",
+          "kind": "parameter",
+          "label": "biomes[].tags",
+          "description": "d",
+          "type": "enum[]",
+          "values": [
+            {
+              "id": "land"
+            },
+            {
+              "id": "water"
+            }
+          ]
+        },
+        {
+          "key": "forbidden",
+          "kind": "parameter",
+          "label": "forbidden",
+          "description": "d",
+          "type": "ref[2][]",
+          "ref": "cow.biomes/biomes[].id"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/World/biomes.json",
+      "pack": false,
+      "content": {
+        "format": "cow.biomes",
+        "version": 1,
+        "biomes": [
+          {
+            "id": "Forest",
+            "tags": [
+              "land",
+              "water"
+            ]
+          },
+          {
+            "id": "Desert",
+            "tags": []
+          },
+          {
+            "id": "Tundra"
+          }
+        ],
+        "forbidden": [
+          [
+            "Forest",
+            "Desert"
+          ],
+          [
+            "Desert",
+            "Tundra"
+          ]
+        ]
+      }
+    }
+  ],
+  "expected": []
+}

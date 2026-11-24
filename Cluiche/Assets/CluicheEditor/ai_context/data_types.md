@@ -109,6 +109,6 @@ Used for component type IDs, module IDs, event names, and asset keys.
 | DiaMaths | `Dia::Maths::` | Vectors, matrices, quaternions |
 | DiaGraphics | `Dia::Graphics::` | Rendering, camera, geometry |
 | DiaPhysics | `Dia::Physics::` | Rigid body, collision |
-| DiaSDL | — | Window and input (SDL3; replacing DiaSFML) |
+| DiaSDL | — | Window and input (SDL3) |
 | DiaObservation | — | Logging, tracing, metrics, health |
 | DiaEditor | — | Plugin framework, WebUIBridge, EditorActionRegistry |

@@ -1,0 +1,13 @@
+{
+    "name": "TestRig",
+    "manifest": "TestRig.stage.json",
+    "tags": [
+        "test"
+    ],
+    "description": "A test-only stage.",
+    "config": {
+        "path_aliases": {
+            "root": "."
+        }
+    }
+}

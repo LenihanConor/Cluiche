@@ -4,7 +4,7 @@
 #include "DiaFlowField/ComputeFlowField.h"
 #include "DiaFlowField/FlowFieldLogChannel.h"
 #include <DiaPathfinding/IPathCostProvider.h>
-#include <DiaPathfinding/CellCoord.h>
+#include <DiaGeometry2D/Grid/CellCoord.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <memory>
@@ -31,37 +31,39 @@ namespace Dia::FlowField {
         {}
 
         // Returns existing field if clean; recomputes if dirty or absent.
-        const FlowField& GetOrCompute(FlowFieldKey key, Dia::Pathfinding::CellCoord goalCell)
+        const FlowField& GetOrCompute(FlowFieldKey key, Dia::Geometry2D::CellCoord goalCell)
         {
             auto it = mEntries.find(key);
             if (it == mEntries.end())
             {
-                // New entry: compute and store (heap-allocated to avoid C6262 stack pressure)
-                auto entryPtr = std::make_unique<CacheEntry>();
-                entryPtr->goalCell = goalCell;
-                entryPtr->field    = ComputeFlowField(mGraph, goalCell, mCosts, mWidth, mHeight);
-                entryPtr->dirty    = false;
-                auto [inserted_it, ok] = mEntries.emplace(key, std::move(*entryPtr));
+                // New entry: compute and store
+                CacheEntry entry;
+                entry.goalCell = goalCell;
+                entry.field    = std::make_unique<FlowField>(
+                    ComputeFlowField(mGraph, goalCell, mCosts, mWidth, mHeight));
+                entry.dirty    = false;
+                auto [inserted_it, ok] = mEntries.emplace(key, std::move(entry));
                 DIA_LOG_INFO("FlowField", "FlowFieldCache: computed new field key=%s goal=(%d,%d)",
                              key.AsChar(), goalCell.x, goalCell.y);
                 ++mMisses;
                 ++mRecomputes;
-                return inserted_it->second.field;
+                return *inserted_it->second.field;
             }
             if (it->second.dirty)
             {
                 // Recompute dirty field
                 it->second.goalCell = goalCell;
-                it->second.field    = ComputeFlowField(mGraph, goalCell, mCosts, mWidth, mHeight);
+                it->second.field    = std::make_unique<FlowField>(
+                    ComputeFlowField(mGraph, goalCell, mCosts, mWidth, mHeight));
                 it->second.dirty    = false;
                 DIA_LOG_INFO("FlowField", "FlowFieldCache: recomputed dirty field key=%s goal=(%d,%d)",
                              key.AsChar(), goalCell.x, goalCell.y);
                 ++mMisses;
                 ++mRecomputes;
-                return it->second.field;
+                return *it->second.field;
             }
             ++mHits;
-            return it->second.field;
+            return *it->second.field;
         }
 
         // Mark a specific field dirty — recomputed on next GetOrCompute.
@@ -84,8 +86,8 @@ namespace Dia::FlowField {
         }
 
         // Mark all fields dirty whose goal cell falls within [topLeft, bottomRight] inclusive.
-        void InvalidateRegion(Dia::Pathfinding::CellCoord topLeft,
-                              Dia::Pathfinding::CellCoord bottomRight)
+        void InvalidateRegion(Dia::Geometry2D::CellCoord topLeft,
+                              Dia::Geometry2D::CellCoord bottomRight)
         {
             int count = 0;
             for (auto& [key, entry] : mEntries)
@@ -109,11 +111,9 @@ namespace Dia::FlowField {
     private:
         struct CacheEntry
         {
-            FlowField field;
+            std::unique_ptr<FlowField> field;
             bool dirty = true;
-            Dia::Pathfinding::CellCoord goalCell{};
-
-            CacheEntry() : field(1, 1) {}  // dummy default — replaced on first compute
+            Dia::Geometry2D::CellCoord goalCell{};
         };
 
         const TGraph&                          mGraph;

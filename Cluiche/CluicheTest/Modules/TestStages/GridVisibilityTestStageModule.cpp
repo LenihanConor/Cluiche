@@ -8,7 +8,7 @@
 #include <DiaEntity/ComponentPool.h>
 #include <DiaEntitySpatial/EntitySpatialIndex.h>
 #include <DiaGridVisibility/VisibilityState.h>
-#include <DiaPathfinding/CellCoord.h>
+#include <DiaGeometry2D/Grid/CellCoord.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <cmath>
 
@@ -387,7 +387,7 @@ void GridVisibilityTestStageModule::UpdateMetrics()
     {
         for (int x = 0; x < w; ++x)
         {
-            const Dia::Pathfinding::CellCoord cell{ x, y };
+            const Dia::Geometry2D::CellCoord cell{ x, y };
             if (mVisSystem->GetCellState(cell, kRedGroup)  == Dia::GridVisibility::VisibilityState::Visible)
                 ++redVisible;
             if (mVisSystem->GetCellState(cell, kBlueGroup) == Dia::GridVisibility::VisibilityState::Visible)

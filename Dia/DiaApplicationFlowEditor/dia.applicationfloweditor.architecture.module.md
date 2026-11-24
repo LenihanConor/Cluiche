@@ -6,10 +6,11 @@ layer: tools/editor
 path: Dia/DiaApplicationFlowEditor
 status: active
 dependent_modules:
-  - dia.applicationflow
   - dia.editor
   - dia.core
   - dia.observation
+  - dia.application
+  - dia.streams
 public_api:
   headers:
     - DiaApplicationFlowEditorPlugin.h

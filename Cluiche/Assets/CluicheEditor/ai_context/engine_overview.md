@@ -106,4 +106,4 @@ Entities contain **components**. Components are typed, composable behaviors:
 
 - **SDL3** — windowing, input, display management
 - **jsoncpp** — JSON parsing (used for manifests, asset metadata)
-- **Webix, VisJS** — web UI frameworks for editor plugins and debugging
+- **VisJS** — visualization framework for debugging

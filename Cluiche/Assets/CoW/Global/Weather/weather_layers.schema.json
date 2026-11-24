@@ -1,0 +1,127 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "cow.weather.layers",
+  "entries": [
+    {
+      "key": "moisture",
+      "kind": "field",
+      "label": "Moisture",
+      "description": "Air and ground moisture, 0 dry to 1 saturated.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "ramp": "sequential.blue"
+      }
+    },
+    {
+      "key": "temperature",
+      "kind": "field",
+      "label": "Temperature",
+      "description": "Normalised temperature, 0 coldest to 1 hottest.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "ramp": "sequential.heat"
+      }
+    },
+    {
+      "key": "pressure",
+      "kind": "field",
+      "label": "Pressure",
+      "description": "Normalised air pressure, 0 low to 1 high.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "ramp": "sequential.purple"
+      }
+    },
+    {
+      "key": "wind_direction",
+      "kind": "field",
+      "label": "Wind direction",
+      "description": "Wind direction in radians, counter-clockwise on screen. The sim wraps into [0, 2pi); the range here is the inclusive 2pi bound.",
+      "type": "float",
+      "min": 0,
+      "max": 6.283185307179586,
+      "ui": {
+        "ramp": "sequential.grey"
+      }
+    },
+    {
+      "key": "wind_speed",
+      "kind": "field",
+      "label": "Wind speed",
+      "description": "Normalised wind speed, 0 calm to 1 gale.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "ramp": "sequential.grey"
+      }
+    },
+    {
+      "key": "precipitation",
+      "kind": "field",
+      "label": "Precipitation",
+      "description": "Precipitation falling this week, 0 none to 1 heaviest.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "ramp": "sequential.blue"
+      }
+    },
+    {
+      "key": "cloud_cover",
+      "kind": "field",
+      "label": "Cloud cover",
+      "description": "Cloud cover, 0 clear to 1 overcast.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "ramp": "sequential.grey"
+      }
+    },
+    {
+      "key": "water_to_ground",
+      "kind": "field",
+      "label": "Water to ground",
+      "description": "Water reaching the ground this week (rain plus melt); can exceed 1, capped at 2.",
+      "type": "float",
+      "min": 0,
+      "max": 2,
+      "ui": {
+        "ramp": "sequential.blue"
+      }
+    },
+    {
+      "key": "snow_pack",
+      "kind": "field",
+      "label": "Snow pack",
+      "description": "Accumulated snow, 0 none to 1 full pack.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "ramp": "sequential.grey"
+      }
+    },
+    {
+      "key": "pressure_anomaly",
+      "kind": "field",
+      "label": "Pressure anomaly",
+      "description": "Signed local pressure anomaly added to the base pressure; clamped to plus or minus 0.5.",
+      "type": "float",
+      "min": -0.5,
+      "max": 0.5,
+      "ui": {
+        "ramp": "sequential.purple"
+      }
+    }
+  ]
+}

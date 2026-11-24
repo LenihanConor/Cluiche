@@ -9,6 +9,7 @@
 | Application | Description | Spec | Status |
 |-------------|-------------|------|--------|
 | Dia | The game engine (DiaCore, DiaMaths, DiaGraphics, etc.) - shared engine code organized as an application for spec purposes | [dia.md](../applications/dia/dia.md) | Active |
+| Draoi | Layer between Dia and the applications: reusable, content-free gameplay libraries (world generation, world sims, game speed). Organised as an application for spec purposes; libraries only, no executable. Nothing built yet | [draoi.md](../applications/draoi/draoi.md) | Draft |
 | CluicheTest | Demo game and engine testbed that showcases Dia engine capabilities | [cluichetest.md](../applications/cluichetest/cluichetest.md) | Active |
 | CluicheEditor | Plugin-based editor application for building and debugging Cluiche games, built on DiaEditor framework | [cluicheeditor.md](../applications/cluicheeditor/cluicheeditor.md) | Draft |
 | GoogleTests | Unit testing suite for validating Dia engine modules with intelligent dirty test tracking | [googletests.md](../applications/googletests/googletests.md) | Active |
@@ -17,6 +18,24 @@
 ## Shared Codebase
 
 The **Dia application** serves as the shared engine code for all other applications on the platform. While organized as an "application" in the spec hierarchy, Dia is functionally the shared game engine infrastructure that other applications consume.
+
+### Layers
+
+The platform has three code layers. Dependencies point down only:
+
+```
+Applications   CoW, CluicheTest, CluicheEditor, future games
+     ↓
+Draoi          game-agnostic, content-free gameplay libraries
+     ↓
+Dia            the engine
+```
+
+- **Dia** holds reusable engine capability and is fully agnostic: no gameplay or game-world vocabulary.
+- **Draoi** holds reusable gameplay libraries that carry no one game's content. It is scoped by role, not genre; genre kits are separate opt-in packages. A package is admitted only with two consumers or a credible second one.
+- **Applications** hold one game's content, the module wiring for every library they use (processing-unit affinity, bus, save, debug domains), and the execution order of its simulations.
+
+Guidance (not binding): Draoi offers hooks and registries while games supply the data (species tables, parameter files, site guarantees); package names say what they hang off (`DraoiHexWorldWeather`). See @docs/specs/applications/draoi/draoi.md.
 
 ### Dia Engine Modules
 
@@ -30,7 +49,8 @@ The Dia engine is a modular C++ framework organized into subsystems:
 **Rendering & Graphics:**
 - **DiaGraphics** - Graphics abstraction layer (ICanvas, Frame)
 - **DiaWindow** - Window management
-- **DiaSFML** - SFML integration layer
+- **DiaSDL** - SDL3 window and input backend
+- **DiaBgfx / DiaBgfx3D** - bgfx 2D and 3D renderer
 
 **Input & UI:**
 - **DiaInput** - Input handling (keyboard, mouse, events)
@@ -125,7 +145,11 @@ Module dependency changes validated via `python Tools/dia_modules.py --validate`
 | PD-007 | C++20 is the required language standard | All projects must compile under `/std:c++20`; enables concepts, std::span, constexpr improvements, and enforces stricter name lookup that catches latent bugs | Platform-wide | Accepted | Yes |
 | PD-008 | `Directory.Build.props` owns OutDir, IntDir, PlatformToolset, WindowsTargetPlatformVersion, and LanguageStandard | Centralises all build output paths and toolchain settings; prevents scatter across per-project files; `Application` projects automatically get `bin/<ProjectName>/<Config>/<Platform>/`, all other types get `bin/sharedlibs/<Config>/<Platform>/` via a `$(ConfigurationType)` conditional — no `.vcxproj` may override these properties | Platform-wide | Accepted | Yes |
 | PD-009 | All generated non-binary output lives under `Cluiche/out/<AppName>/` | Keeps the repo root clean; parallel to `Cluiche/bin/` for binaries; each application owns its subdirectory; fully gitignored | Platform-wide | Accepted | Yes |
-| PD-010 | `.diagame` is the project root file; `.diastage` declares stage metadata; typed imports route loading | Every application's entry point is a `.diagame` file containing `name`, `version`, typed `imports` (`manifest` or `stage`), and `config`. Stages are `.diastage` files (name + manifest path). Systems that need project discovery (editor, pipeline, CLI) resolve from `.diagame` — never couple directly to `.diaapp` paths. Runtime loaders find the root manifest via the first `manifest`-type import; stage data is metadata for tooling, not construction instructions for the runtime loader. | Platform-wide | Accepted | Yes |
+| PD-010 | `.diagame` is the project root file; `.diastage` declares stage metadata; typed imports route loading | Every application's entry point is a `.diagame` file containing `name`, `version`, typed `imports` (`manifest` or `stage`), and `config`. Stages are `.diastage` files (name + manifest path). Systems that need project discovery (editor, pipeline, CLI) resolve from `.diagame` — never couple directly to `.diaapp` paths. Runtime loaders find the root manifest via the first `manifest`-type import; stage data is metadata for tooling, not construction instructions for the runtime loader. A `.diastage` may also carry launch parameters (named presets: per-module config overrides that are applied at stage entry through the opt-in `Module::OnStageLaunch` hook). Launch parameters never change which modules are built (amended 2026-11-18, Stage Catalogue SC-007). | Platform-wide | Accepted | Yes |
+| PD-011 | Layer dependencies point down only: Application → Draoi → Dia | Keeps the engine free of gameplay and gameplay libraries free of any one game; Draoi never includes an application and Dia never includes Draoi (decided 2026-11-20) | Platform-wide | Accepted | Yes |
+| PD-012 | Draoi packages are plain libraries with no modules | Wiring (processing-unit affinity, bus, save, debug domains) is where games differ, so it always stays in the application, as with Dia; libraries stay testable without a processing unit (decided 2026-11-20) | Draoi and all applications | Accepted | Yes |
+| PD-013 | Draoi simulations are scheduler-agnostic | A sim is state in, state out, safe to run off-thread, and knows nothing of any step chain; execution ordering is the application's decision, so another game can run the same sim on a different loop (decided 2026-11-20) | Draoi and all applications | Accepted | Yes |
+| PD-014 | Dia contains no gameplay or game-world vocabulary | Dia stays 100% agnostic; a mechanism with a world-flavoured name (e.g. `IWorldStepStage`) is renamed generically before it moves to Dia. New Dia headers still require sign-off under the escalation rule (decided 2026-11-20) | Dia | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`  
 **Binding:** `Yes` = enforced constraint on all children · `No` = guidance only

@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.pathfindingvisualdebugger
 name: DiaPathfindingVisualDebugger
 owner_team: TBD
-layer: domain/gameplay/tools
+layer: 4.1-Gameplay
 status: active
 maturity: dev
 
@@ -42,7 +42,9 @@ dependencies:
   required:
     - dia.core
     - dia.pathfinding
-    - dia.visualdebugger
+    - dia.geometry2d
+    - dia.debug.visualdebugger
+    - dia.maths.vector
   forbidden:
     - dia.entity
     - dia.applicationflow

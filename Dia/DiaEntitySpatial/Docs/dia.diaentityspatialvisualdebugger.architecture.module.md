@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.diaentityspatialvisualdebugger
 name: DiaEntitySpatialVisualDebugger
 owner_team: TBD
-layer: debug-adaptor
+layer: 4.1-Gameplay
 status: active
 maturity: dev
 
@@ -59,7 +59,6 @@ dependencies:
     - dia.geometry2d
     - dia.entity
     - dia.entityspatial
-    - dia.diavisualdebugger
     - dia.core.containers.arrays
     - dia.maths.vector
     - dia.core.crc

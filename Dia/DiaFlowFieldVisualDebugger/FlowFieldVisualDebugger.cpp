@@ -7,10 +7,10 @@
 
 #include "DirectionArrowsDrawer.h"
 #include "ReachabilityOverlayDrawer.h"
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaFlowField/FlowField.h>
-#include <DiaPathfinding/CellCoord.h>
+#include <DiaGeometry2D/Grid/CellCoord.h>
 #include <memory>
 
 namespace
@@ -86,7 +86,7 @@ void FlowFieldVisualDebugger::GetJSONState(Json::Value& out)
     int reachableCount = 0;
     for (int row = 0; row < mField.GetHeight(); ++row)
         for (int col = 0; col < mField.GetWidth(); ++col)
-            if (mField.Sample(Dia::Pathfinding::CellCoord{col, row}).reachable)
+            if (mField.Sample(Dia::Geometry2D::CellCoord{col, row}).reachable)
                 ++reachableCount;
 
     Json::Value stats(Json::objectValue);

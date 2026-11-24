@@ -3,12 +3,27 @@
 #include <atomic>
 #include <mutex>
 #include <optional>
+#include <chrono>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaStreams/IStreamStore.h>
 #include <DiaStreams/FrameStreamDiagnostics.h>
+#include <DiaObservation/Trace/Tracer.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/MetricInfo.h>
+#include <DiaObservation/Metric/Counter.h>
+#include <DiaObservation/Metric/Gauge.h>
 
 namespace Dia { namespace ApplicationFlow {
+
+// StreamLink: trace link captured at write time, exposed to readers.
+struct StreamLink
+{
+    uint64_t traceId;
+    uint64_t spanId;
+    uint64_t writeSteadyNs;
+    bool valid;
+};
 
 // FrameStreamStore<T>
 // ---------------------------------------------------------------------------
@@ -32,6 +47,7 @@ public:
 
     // Reader side (lock-free for single-writer)
     const T* FetchLatest() const;
+    const T* FetchLatestLinked(StreamLink& outLink) const;
     // FetchClosestTo: returns a pointer to the ALREADY-STORED sample whose
     // timestamp is nearest the requested time (nearest-sample selection, not a
     // blended/interpolated value — the const T* signature cannot return a
@@ -58,6 +74,11 @@ private:
         std::optional<T> data;
         long long timestampUs = 0LL;  // raw microseconds; TimeAbsolute has no default ctor
         bool     hasData      = false;
+        // Trace-link fields: writer's trace and span id at Write() time. Zero when
+        // the tracer is not started or no span is open. Always compiled; tracer-gated.
+        uint64_t traceId       = 0;
+        uint64_t spanId        = 0;
+        uint64_t writeSteadyNs = 0;
     };
 
     // Concurrency tradeoff: single-writer reads are lock-free. A reader captures
@@ -75,6 +96,20 @@ private:
     std::atomic<int>      mWriteCursor{-1};  // index of most recently written slot; -1 = never written
     mutable std::mutex    mWriteMutex;       // only used when mMultiWriter == true
     mutable std::atomic<bool> mWarnedNoData{false};  // fire-once warn when a Fetch returns nullptr
+
+    // Edge statistics (Task 5): per-stream metrics for write/read cost and data age.
+    // Mutable: updated from const Fetch methods.
+    mutable std::atomic<uint64_t> mEdgeWrites{0};
+    mutable std::atomic<uint64_t> mEdgeBytes{0};
+    mutable std::atomic<uint64_t> mEdgeLastWriteSteadyNs{0};
+    mutable std::atomic<uint64_t> mEdgeWriteNsTotal{0};
+    mutable std::atomic<uint64_t> mEdgeReads{0};
+    mutable std::atomic<uint64_t> mEdgeReadNsTotal{0};
+    Dia::Observation::Metric::Counter* mMetricWrites    = nullptr;
+    Dia::Observation::Metric::Counter* mMetricBytes     = nullptr;
+    Dia::Observation::Metric::Gauge*   mMetricDataAgeNs = nullptr;
+    Dia::Observation::Metric::Gauge*   mMetricWriteCostNs = nullptr;
+    Dia::Observation::Metric::Gauge*   mMetricReadCostNs  = nullptr;
 };
 
 // ---------------------------------------------------------------------------
@@ -90,12 +125,41 @@ inline FrameStreamStore<T>::FrameStreamStore(const Dia::Core::StringCRC& id,
     , mMultiWriter(multiWriter)
     , mWriteCursor(-1)
 {
+    // Register edge statistics metrics (Task 5)
+    using namespace Dia::Observation::Metric;
+    auto& registry = MetricRegistry::Instance();
+
+    char nameBuf[256];
+    std::snprintf(nameBuf, sizeof(nameBuf), "stream.frame.%s.writes", id.AsChar());
+    mMetricWrites = registry.RegisterCounter(Dia::Core::StringCRC(nameBuf),
+        MetricInfo{"Writes", "Number of Write() calls", "count"});
+
+    std::snprintf(nameBuf, sizeof(nameBuf), "stream.frame.%s.bytes", id.AsChar());
+    mMetricBytes = registry.RegisterCounter(Dia::Core::StringCRC(nameBuf),
+        MetricInfo{"Bytes", "Total bytes written (payload size)", "bytes"});
+
+    std::snprintf(nameBuf, sizeof(nameBuf), "stream.frame.%s.data_age_ns", id.AsChar());
+    mMetricDataAgeNs = registry.RegisterGauge(Dia::Core::StringCRC(nameBuf),
+        MetricInfo{"Data Age", "Steady time between write and read", "nanoseconds"});
+
+    std::snprintf(nameBuf, sizeof(nameBuf), "stream.frame.%s.write_cost_ns", id.AsChar());
+    mMetricWriteCostNs = registry.RegisterGauge(Dia::Core::StringCRC(nameBuf),
+        MetricInfo{"Write Cost", "Average steady time per Write() call", "nanoseconds"});
+
+    std::snprintf(nameBuf, sizeof(nameBuf), "stream.frame.%s.read_cost_ns", id.AsChar());
+    mMetricReadCostNs = registry.RegisterGauge(Dia::Core::StringCRC(nameBuf),
+        MetricInfo{"Read Cost", "Average steady time per FetchLatestLinked() call", "nanoseconds"});
 }
 
 template<typename T>
 inline void FrameStreamStore<T>::Write(const T& data, const Dia::Core::TimeAbsolute& timestamp)
 {
     mWarnedNoData.store(false, std::memory_order_relaxed);
+
+    // Capture trace link if tracer is active (one flag test when off; zero fields otherwise)
+    Dia::Observation::Trace::TraceLink link = Dia::Observation::Trace::Tracer::GetCurrentLink();
+    uint64_t writeStartNs = static_cast<uint64_t>(
+        std::chrono::steady_clock::now().time_since_epoch().count());
 
     auto doWrite = [&]()
     {
@@ -104,9 +168,12 @@ inline void FrameStreamStore<T>::Write(const T& data, const Dia::Core::TimeAbsol
         // modulo ever occurs; the first write always lands in slot 0.
         int cur  = mWriteCursor.load(std::memory_order_relaxed);
         int next = (cur + 1) % static_cast<int>(kRingCapacity);
-        mSlots[next].data        = data;
-        mSlots[next].timestampUs = timestamp.AsLongLongInMicroseconds();
-        mSlots[next].hasData     = true;
+        mSlots[next].data          = data;
+        mSlots[next].timestampUs   = timestamp.AsLongLongInMicroseconds();
+        mSlots[next].hasData       = true;
+        mSlots[next].traceId       = link.traceId;
+        mSlots[next].spanId        = link.spanId;
+        mSlots[next].writeSteadyNs = writeStartNs;
         mWriteCursor.store(next, std::memory_order_release);
     };
 
@@ -118,6 +185,29 @@ inline void FrameStreamStore<T>::Write(const T& data, const Dia::Core::TimeAbsol
     else
     {
         doWrite();
+    }
+
+    // Edge statistics (Task 5): update after write
+    uint64_t writeEndNs = static_cast<uint64_t>(
+        std::chrono::steady_clock::now().time_since_epoch().count());
+    uint64_t writeCostNs = writeEndNs - writeStartNs;
+
+    mEdgeWrites.fetch_add(1, std::memory_order_relaxed);
+    mEdgeBytes.fetch_add(sizeof(T), std::memory_order_relaxed);
+    mEdgeLastWriteSteadyNs.store(writeStartNs, std::memory_order_relaxed);
+    mEdgeWriteNsTotal.fetch_add(writeCostNs, std::memory_order_relaxed);
+
+    // Update gauges (average cost)
+    if (mMetricWrites)
+        mMetricWrites->Inc();
+    if (mMetricBytes)
+        mMetricBytes->Inc(sizeof(T));
+    if (mMetricWriteCostNs)
+    {
+        uint64_t writes = mEdgeWrites.load(std::memory_order_relaxed);
+        uint64_t totalNs = mEdgeWriteNsTotal.load(std::memory_order_relaxed);
+        if (writes > 0)
+            mMetricWriteCostNs->Set(static_cast<double>(totalNs) / static_cast<double>(writes));
     }
 }
 
@@ -132,6 +222,49 @@ inline const T* FrameStreamStore<T>::FetchLatest() const
     }
     if (!mWarnedNoData.exchange(true, std::memory_order_relaxed))
         FrameStream_WarnNoData(mId);
+    return nullptr;
+}
+
+template<typename T>
+inline const T* FrameStreamStore<T>::FetchLatestLinked(StreamLink& outLink) const
+{
+    uint64_t readStartNs = static_cast<uint64_t>(
+        std::chrono::steady_clock::now().time_since_epoch().count());
+
+    int cur = mWriteCursor.load(std::memory_order_acquire);
+    if (cur >= 0 && mSlots[cur].hasData)
+    {
+        mWarnedNoData.store(false, std::memory_order_relaxed);
+        outLink.traceId       = mSlots[cur].traceId;
+        outLink.spanId        = mSlots[cur].spanId;
+        outLink.writeSteadyNs = mSlots[cur].writeSteadyNs;
+        outLink.valid         = (mSlots[cur].traceId != 0 && mSlots[cur].spanId != 0);
+
+        // Edge statistics (Task 5): update after read
+        uint64_t readEndNs = static_cast<uint64_t>(
+            std::chrono::steady_clock::now().time_since_epoch().count());
+        uint64_t readCostNs = readEndNs - readStartNs;
+        uint64_t dataAgeNs = readStartNs - mSlots[cur].writeSteadyNs;
+
+        mEdgeReads.fetch_add(1, std::memory_order_relaxed);
+        mEdgeReadNsTotal.fetch_add(readCostNs, std::memory_order_relaxed);
+
+        // Update gauges
+        if (mMetricDataAgeNs)
+            mMetricDataAgeNs->Set(static_cast<double>(dataAgeNs));
+        if (mMetricReadCostNs)
+        {
+            uint64_t reads = mEdgeReads.load(std::memory_order_relaxed);
+            uint64_t totalNs = mEdgeReadNsTotal.load(std::memory_order_relaxed);
+            if (reads > 0)
+                mMetricReadCostNs->Set(static_cast<double>(totalNs) / static_cast<double>(reads));
+        }
+
+        return &(*mSlots[cur].data);
+    }
+    if (!mWarnedNoData.exchange(true, std::memory_order_relaxed))
+        FrameStream_WarnNoData(mId);
+    outLink.valid = false;
     return nullptr;
 }
 

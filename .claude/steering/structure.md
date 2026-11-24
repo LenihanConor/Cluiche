@@ -16,8 +16,15 @@ C:\GitHub\Cluiche\
 │   ├── DiaInput/                 # Input handling
 │   ├── DiaApplicationFlow/           # Application framework
 │   ├── DiaUI/                    # UI base
-│   ├── DiaSFML/                  # SFML integration layer
-│   └── ...                       # Other subsystems
+│   ├── DiaSDL/                   # SDL3 window and input backend
+│   ├── DiaBgfx/                  # bgfx 2D renderer
+│   ├── DiaBgfx3D/                # bgfx 3D renderer
+│   └── ...                       # Other subsystems   (Dia never depends on Draoi)
+│
+├── Draoi/                        # Draoi gameplay libraries (between Dia and applications)
+│   ├── DraoiHexWorld/            # Hex world foundation (cells, grid, strata, biomes)
+│   ├── DraoiHexWorldTerrain/     # Terrain generator
+│   └── DraoiGameSpeed/           # Game speed / calendar
 │
 ├── Cluiche/                      # Main solution directory
 │   ├── Cluiche.sln               # Visual Studio solution
@@ -30,9 +37,9 @@ C:\GitHub\Cluiche\
 │       └── GoogleTests/          # Google Test suites
 │
 ├── External/                     # Third-party dependencies
-│   ├── SFML/                     # Graphics/window/multimedia
+│   ├── SDL3/                     # Window and input
+│   ├── bgfx/                     # Rendering
 │   ├── jsoncpp-master/           # JSON parsing
-│   ├── Webix/                    # Web UI framework
 │   └── VisJS/                    # Visualization framework
 │
 ├── Tools/                        # Build and analysis tools

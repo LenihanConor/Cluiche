@@ -31,18 +31,6 @@ namespace Dia
 			{}
 
 
-			//-----------------------------------------------------------------------------
-			inline
-			String512::String512 (const char* pRawString, ...)
-				: String<512>()
-			{
-				DIA_ASSERT(pRawString != NULL, "Invalid Data");
-
-				va_list args;
-				va_start(args, pRawString);
-				Format(pRawString, args);
-				va_end(args);
-			}
 			
 			//-----------------------------------------------------------------------------
 			inline

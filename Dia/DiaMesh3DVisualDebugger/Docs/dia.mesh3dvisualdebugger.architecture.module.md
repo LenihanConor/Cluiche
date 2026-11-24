@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.mesh3dvisualdebugger
 name: DiaMesh3DVisualDebugger
 owner_team: TBD
-layer: assets/tools
+layer: 4.1-Assets
 status: active
 maturity: dev
 
@@ -37,7 +37,6 @@ dependent_modules:
   - dia.maths
   - dia.graphics3d
   - dia.mesh3d
-  - dia.visualdebugger
 
 public_api:
   headers:
@@ -53,9 +52,11 @@ dependencies:
   required:
     - dia.mesh3d
     - dia.graphics3d
-    - dia.visualdebugger
     - dia.maths
     - dia.core
+    - dia.debug.visualdebugger
+    - dia.geometry3d
+    - dia.graphics.frame
   forbidden:
     - dia.application
     - dia.bgfx3d
