@@ -413,7 +413,12 @@ public:
         const Json::Value& blob = ctx.Root();
         mHaveStashPending = false;
         mStashPending = Json::Value();
-        if (!blob.isObject() || !blob["valid"].isBool() || !blob["valid"].asBool()) { return; }   // nothing in flight
+        if (!blob.isObject() || !blob["valid"].isBool() || !blob["valid"].asBool())
+        {
+            mStepValid = false;        // nothing in flight: a following Commit is a logged no-op
+            mInFlight = false;
+            return;
+        }
         if (mActive != nullptr)
         {
             ApplyPending(blob);
@@ -567,7 +572,16 @@ private:
 
     void ApplyPending(const Json::Value& blob)
     {
-        if (mHooks.RestorePending(*mActive, blob, mCommittedRecord)) { return; }
+        if (mHooks.RestorePending(*mActive, blob, mCommittedRecord))
+        {
+            // Re-arm the commit state so the restored step publishes at its own day and re-serialises.
+            mCapturedDay = blob["step_day"].asUInt();
+            mCaptureRevision = mTargetRevision;
+            mStepValid = true;
+            mInFlight = true;
+            mDropAfterStep = false;
+            return;
+        }
         DIA_LOG_WARNING(mLogChannel, "%s: pending blob could not be restored, stage not ready", mLogChannel);
         DropSims();
         mRestoredValid = false;

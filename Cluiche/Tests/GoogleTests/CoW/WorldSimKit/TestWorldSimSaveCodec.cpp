@@ -96,9 +96,10 @@ public:
         if (strstr(e.message, "FakeWorld") == nullptr) { return; }   // only this stage's channel text
         if (e.level == Dia::Observation::Log::LogLevel::kWarning) { ++warnings; }
         if (e.level == Dia::Observation::Log::LogLevel::kInfo) { ++infos; }
+        if (strstr(e.message, "discard") != nullptr) { ++discardLogs; }
     }
     const char* GetName() const override { return "WorldSimSaveCodecSink"; }
-    unsigned warnings = 0, infos = 0;
+    unsigned warnings = 0, infos = 0, discardLogs = 0;
 };
 
 }  // namespace
@@ -809,6 +810,59 @@ TEST_F(WorldSimSaveCodecTest, PendingBlobRoundTripsAStepInFlight)
     EXPECT_EQ(89, hooks2.pendingRestoredValue);
     EXPECT_TRUE(stage2.IsReady());
     stage2.Stop();
+}
+
+TEST_F(WorldSimSaveCodecTest, RestoredPendingStepCommitsAtItsStepDayAndReSerializes)
+{
+    const RecordSpec spec = MakeSpec();
+    stage.SetRecordSpec(&spec);
+    Announce(MakeWorld(1));
+    ASSERT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42)));
+    stage.Capture(5);
+    stage.Run(exec);
+    Dia::SaveGame::SaveContext out;
+    stage.SerializePending(out);
+    const Json::Value blob = out.Root();
+    ASSERT_TRUE(blob["valid"].asBool());
+
+    FakeHooks hooks2;
+    FakeStage stage2(hooks2, &hooks2.log);
+    stage2.SetRecordSpec(&spec);
+    stage2.Start();
+    stage2.OnWorldGenerationComplete(MakeWorld(1));
+    ASSERT_EQ(Rr::kApplied, stage2.Restore(ReadyRecord(42)));
+    Dia::SaveGame::LoadContext ctx(blob);
+    ASSERT_TRUE(stage2.ValidatePending(ctx));
+    stage2.DeserializePending(ctx);
+
+    Dia::SaveGame::SaveContext again;
+    stage2.SerializePending(again);
+    EXPECT_TRUE(again.Root()["valid"].asBool());
+    EXPECT_EQ(5u, again.Root()["step_day"].asUInt());
+
+    stage2.Commit();
+    EXPECT_EQ(1u, hooks2.publishCount);
+    EXPECT_EQ(5u, hooks2.publishedDay);
+    EXPECT_EQ(89, hooks2.publishedValue);
+    stage2.Stop();
+}
+
+TEST_F(WorldSimSaveCodecTest, InvalidPendingBlobLeavesCommitALoggedNoOp)
+{
+    Announce(MakeWorld(1));
+    ASSERT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42)));
+    Json::Value blob(Json::objectValue);
+    WritePendingInvalid(blob);
+    Dia::SaveGame::LoadContext ctx(blob);
+    stage.DeserializePending(ctx);
+    hooks.publishCount = 0;
+    const unsigned before = Sink().discardLogs;
+    stage.Commit();
+    EXPECT_EQ(0u, hooks.publishCount);
+    EXPECT_EQ(before + 1, Sink().discardLogs);
+    Dia::SaveGame::SaveContext out;
+    stage.SerializePending(out);
+    EXPECT_FALSE(out.Root()["valid"].asBool());
 }
 
 TEST_F(WorldSimSaveCodecTest, DiscardedStepWritesTheInvalidFormAndRoundTrips)
