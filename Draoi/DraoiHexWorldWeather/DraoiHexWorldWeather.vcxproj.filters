@@ -97,6 +97,7 @@
     <ClInclude Include="Testing\WorldJsonTestWorlds.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="WeatherTypes.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BiomeClassify.cpp" />
@@ -142,6 +143,7 @@
     <ClCompile Include="TerrainFieldContribution.cpp">
       <Filter>TerrainFieldContribution</Filter>
     </ClCompile>
+    <ClCompile Include="WeatherTypes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.draoi.hexworldweather.architecture.module.md">

@@ -75,9 +75,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="DraoiHexWorldWeather.h" />
+    <ClInclude Include="WeatherTypes.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DraoiHexWorldWeather.cpp" />
+    <ClCompile Include="WeatherTypes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.draoi.hexworldweather.architecture.module.md" />
