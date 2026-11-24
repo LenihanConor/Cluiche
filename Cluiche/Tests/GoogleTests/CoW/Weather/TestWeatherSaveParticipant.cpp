@@ -962,3 +962,136 @@ TEST(WeatherSaveSize, ACorruptedCapturedRecordFailsValidateAndLiveStateIsUnchang
     EXPECT_FALSE(rig.module.GetSaveParticipant().Validate(ctx));
     EXPECT_EQ(before, Take(rig.module.GetStage()));
 }
+
+// ---- Task 1 spike (Open Design Question 1): the real E1 load order ------------------------------------------------------
+// Real SaveManager::Load, real WorldStepModule observing OnLoadStarted, real WeatherModule + participant. A recording
+// wrapper stands in for the registered participant so the order of Validate / Deserialize is visible, and a bus probe
+// records every WorldGenerationComplete. Finding: no module re-announces a world on a load (WorldGenerationModule is not
+// ISaveable and does not observe the SaveManager), so a load produces ZERO completions; the record is applied at once when
+// the world is already present, and stashed until the next completion when it is not.
+namespace
+{
+class OrderRecorder final : public Dia::SaveGame::ISaveable
+{
+public:
+    OrderRecorder(Dia::SaveGame::ISaveable& inner, std::vector<std::string>& log, CoW::Weather::WeatherStage& stage)
+        : mInner(inner), mLog(log), mStage(stage) {}
+    void Serialize(Dia::SaveGame::SaveContext& ctx) const override { mInner.Serialize(ctx); }
+    bool Validate(Dia::SaveGame::LoadContext& ctx) const override
+    {
+        mLog.push_back("Validate");
+        return mInner.Validate(ctx);
+    }
+    void Deserialize(Dia::SaveGame::LoadContext& ctx) override
+    {
+        mLog.push_back(mStage.ReadableSim() != nullptr ? "Deserialize(world present, sim live)" : "Deserialize(no sim)");
+        mInner.Deserialize(ctx);
+        mLog.push_back(mStage.HasStashedRecord() ? "after:stashed" : (mStage.IsReadyForRevision(5) ? "after:applied" : "after:other"));
+    }
+    uint32_t GetVersion() const override { return mInner.GetVersion(); }
+private:
+    Dia::SaveGame::ISaveable& mInner;
+    std::vector<std::string>& mLog;
+    CoW::Weather::WeatherStage& mStage;
+};
+
+// Wires the real load observer and the recording wrapper around a SaveWorld; undone in the destructor.
+struct LoadOrderRig
+{
+    explicit LoadOrderRig(SaveWorld& world)
+        : w(world)
+        , recorder(w.module.GetSaveParticipant(), log, w.module.GetStage())
+    {
+        w.harness.module.ObserveLoads(w.manager);
+        w.registry.Unregister(StringCRC("cow.weather"));
+        w.registry.Register(StringCRC("cow.weather"), &recorder);
+        completions = w.bus.Subscribe<CoW::WorldGenerationComplete>(
+            StringCRC("LoadOrderProbe"), [this](const CoW::WorldGenerationComplete& m) {
+                log.push_back("WorldGenerationComplete(rev " + std::to_string(m.worldRevision) + ")");
+            });
+    }
+    ~LoadOrderRig()
+    {
+        w.registry.Unregister(StringCRC("cow.weather"));
+        w.registry.Register(StringCRC("cow.weather"), &w.module.GetSaveParticipant());   // SaveWorld's dtor unregisters it
+        w.harness.module.StopObservingLoads();
+    }
+    // Everything the bus delivers after a load, as the frame loop would.
+    void Pump() { w.bus.Update(); w.module.GetStage().Update(); }
+    uint32_t Count(const std::string& prefix) const
+    {
+        uint32_t n = 0;
+        for (const std::string& e : log) { if (e.rfind(prefix, 0) == 0) { ++n; } }
+        return n;
+    }
+
+    SaveWorld& w;
+    std::vector<std::string> log;
+    OrderRecorder recorder;
+    decltype(std::declval<Dia::MessageBus::Bus&>().Subscribe<CoW::WorldGenerationComplete>(StringCRC(), nullptr)) completions;
+};
+}
+
+TEST(WeatherSaveLoadOrder, WorldAlreadyAnnouncedAtLoad_LoadCausesNoCompletion_RecordAppliedAtOnce_ReAnnounceIgnored)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    const Snap saved = SaveSteppedWorld(slot);
+
+    SaveWorld b(slot);
+    uint32_t spinWeeks = 0;
+    b.module.GetStage().SetSpinUpWeekObserver([&spinWeeks](uint32_t) { ++spinWeeks; });
+    b.Announce(5);   // the world generation announced before the load (the in-game order)
+    const uint32_t spinAfterAnnounce = spinWeeks;
+    LoadOrderRig rig(b);
+    rig.log.clear();
+
+    ASSERT_TRUE(b.Load().Ok());
+    rig.Pump();
+
+    // Order: Validate, then Deserialize; the world is present and applied inside Deserialize; nothing is announced by the load.
+    ASSERT_GE(rig.log.size(), 3u);
+    EXPECT_EQ("Validate", rig.log[0]);
+    EXPECT_EQ("Deserialize(world present, sim live)", rig.log[1]);
+    EXPECT_EQ("after:applied", rig.log[2]);
+    EXPECT_EQ(0u, rig.Count("WorldGenerationComplete")) << "E1 gained a completion on load: re-check restore step 7";
+    EXPECT_EQ(3u, rig.log.size());
+    EXPECT_FALSE(b.module.GetStage().HasStashedRecord());
+    EXPECT_EQ(spinAfterAnnounce, spinWeeks);
+    EXPECT_EQ(saved, Take(b.module.GetStage()));
+
+    // Were a completion of the restored revision to arrive anyway, it is ignored: no spin-up, state untouched.
+    b.Announce(5);
+    EXPECT_EQ(spinAfterAnnounce, spinWeeks);
+    EXPECT_EQ(saved, Take(b.module.GetStage()));
+    EXPECT_TRUE(b.module.GetStage().IsReadyForRevision(5));
+}
+
+TEST(WeatherSaveLoadOrder, LoadBeforeAnyWorldIsAnnounced_RecordStashed_NextCompletionAppliesItWithoutSpinUp)
+{
+    const std::string slot = WsTest::UniqueSlot();
+    WsTest::SlotFile file(slot);
+    const Snap saved = SaveSteppedWorld(slot);
+
+    SaveWorld b(slot);
+    uint32_t spinWeeks = 0;
+    b.module.GetStage().SetSpinUpWeekObserver([&spinWeeks](uint32_t) { ++spinWeeks; });
+    LoadOrderRig rig(b);
+    rig.log.clear();
+
+    ASSERT_TRUE(b.Load().Ok());
+    rig.Pump();
+    ASSERT_EQ(3u, rig.log.size());
+    EXPECT_EQ("Validate", rig.log[0]);
+    EXPECT_EQ("Deserialize(no sim)", rig.log[1]);
+    EXPECT_EQ("after:stashed", rig.log[2]);
+    EXPECT_EQ(0u, rig.Count("WorldGenerationComplete")) << "the load itself announces nothing";
+    EXPECT_FALSE(b.module.GetStage().IsReady());
+
+    b.Announce(5);   // the first real completion
+    EXPECT_EQ(1u, rig.Count("WorldGenerationComplete(rev 5)"));
+    EXPECT_FALSE(b.module.GetStage().HasStashedRecord());
+    EXPECT_EQ(0u, spinWeeks) << "stash applied at the completion, no spin-up";
+    EXPECT_TRUE(b.module.GetStage().IsReadyForRevision(5));
+    EXPECT_EQ(saved, Take(b.module.GetStage()));
+}
