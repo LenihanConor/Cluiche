@@ -111,11 +111,11 @@ A4 runs standalone: a stage may register `WeatherModule` as the only world-step 
 
 ### Grid
 
-The hex grid is Dia's, constructed from S-1's world dimensions (amended 2026-11-13: S-1 owns no topology helper — it constructs `Dia::Pathfinding::HexTopology` ad hoc per algorithm, and there is **no neighbour accessor on `WorldStructure` or `Cell`**; A4 does the same).
+The hex grid is Dia's, constructed from S-1's world dimensions (amended 2026-11-13: S-1 owns no topology helper — it constructs `Dia::Geometry2D::HexTopology` ad hoc per algorithm, and there is **no neighbour accessor on `WorldStructure` or `Cell`**; A4 does the same).
 
-- `Dia::Pathfinding::HexTopology topo(width, height)` — rectangular **flat-top odd-q**; odd columns shifted half a cell down; `index = y * width + x`.
+- `Dia::Geometry2D::HexTopology topo(width, height)` — rectangular **flat-top odd-q**; odd columns shifted half a cell down; `index = y * width + x`.
 - Cells are indexed `0..N-1`, each with up to 6 neighbours in a fixed direction order `d = 0..5`.
-- Direction `d` sits at on-screen angle `30° + d × 60°`, counter-clockwise (flat-top hexes have no east or west neighbour; `0` NE, `1` N, `2` NW, `3` SW, `4` S, `5` SE). `NeighbourAt(i, d)` returns `Dia::Pathfinding::kNoCell` (`0xFFFFFFFF`) past the world edge.
+- Direction `d` sits at on-screen angle `30° + d × 60°`, counter-clockwise (flat-top hexes have no east or west neighbour; `0` NE, `1` N, `2` NW, `3` SW, `4` S, `5` SE). `NeighbourAt(i, d)` returns `Dia::Geometry2D::kNoCell` (`0xFFFFFFFF`) past the world edge.
 - Wind angles snap to the nearest direction with `HexTopology::DirectionFromAngle`, `d = round((angle - 30°) / 60°) mod 6`, where the angle is the on-screen counter-clockwise angle in y-down world space. This is the GDD's CH-06 adapted to flat-top hexes; the GDD's east-based wind angle needs the same 30° shift.
 
 Map sizes come from S-1's `WorldSize` (verified against `WorldSizeDimensions`, 2026-11-13): Small 66 × 42 = 2,772 cells, Standard 80 × 52 = 4,160, Large 104 × 64 = 6,656.

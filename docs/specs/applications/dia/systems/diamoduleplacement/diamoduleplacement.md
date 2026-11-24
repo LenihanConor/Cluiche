@@ -101,6 +101,6 @@ All three were answered 2026-11-23; kept here as the record.
 
 ## Status
 
-In Progress. Implemented 2026-11-23 (all moves, the deletion, the rename and the guard; `dia check arch` is at 0). Open: layer re-review, Release build, E2E for moved modules, stale docs.
+In Progress. Implemented 2026-11-23 (all moves, the deletion, the rename and the guard; `dia check arch` is at 0). Layer re-review and stale docs done 2026-11-23 (dia.deferredstep relabelled to foundation/services). Open: Release build and E2E for the moved modules.
 
 Was Draft. Plan written 2026-11-23. Approval gate: the user approves this spec, then `/implement`.

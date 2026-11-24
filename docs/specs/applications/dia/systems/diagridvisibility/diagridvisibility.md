@@ -75,7 +75,7 @@ namespace Dia::GridVisibility {
         virtual ~IVisibilityChangeObserver() = default;
 
         // Called when a cell's state changes for a group (e.g. Unexplored→Visible, Visible→Revealed).
-        virtual void OnCellStateChanged(Dia::Pathfinding::CellCoord cell,
+        virtual void OnCellStateChanged(Dia::Geometry2D::CellCoord cell,
                                         VisibilityGroupId groupId,
                                         VisibilityState oldState,
                                         VisibilityState newState) {}
@@ -126,7 +126,7 @@ namespace Dia::GridVisibility {
                     VisibilityGroupId groupId) const;
 
         // Raw per-cell visibility state for a group. O(1) lookup.
-        VisibilityState GetCellState(Dia::Pathfinding::CellCoord cell,
+        VisibilityState GetCellState(Dia::Geometry2D::CellCoord cell,
                                      VisibilityGroupId groupId) const;
 
         // All entities whose current cell is Visible to groupId.

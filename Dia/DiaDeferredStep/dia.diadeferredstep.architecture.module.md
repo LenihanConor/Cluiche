@@ -4,7 +4,7 @@ module_id: dia.deferredstep
 name: DiaDeferredStep
 path: Dia/DiaDeferredStep
 parent_module_id: dia.root
-layer: foundation/application
+layer: foundation/services
 status: active
 maturity: dev
 version: "0.1"

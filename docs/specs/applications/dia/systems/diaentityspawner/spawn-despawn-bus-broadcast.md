@@ -61,7 +61,7 @@ No designated pre-Primary step is needed here — same reasoning as the DiaEcono
 
 | File | Change |
 |---|---|
-| `Dia/DiaEntitySpawner/EntitySpawnerModule.h` | Add `Bus&`/`Bus*` member; add to constructor signature |
+| `Cluiche/CluicheTest/Modules/EngineModules/EntitySpawnerModule.h` | Add `Bus&`/`Bus*` member; add to constructor signature |
 | `Dia/DiaEntitySpawner/EntitySpawnerModule.cpp` | Add `bus.Broadcast<T>()` calls in `DoUpdate`, alongside existing stream writes |
 | `Dia/DiaEntitySpawner/Messages/entityspawner_messages.diagamemessages` | New — `EntitySpawnedEvent`/`EntityDespawnedEvent` declarations |
 | `Dia/DiaEntitySpawner/DiaEntitySpawner.vcxproj` | Add new file; add `DiaMessageBus` reference |

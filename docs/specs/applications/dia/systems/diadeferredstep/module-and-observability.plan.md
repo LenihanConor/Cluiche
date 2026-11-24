@@ -11,7 +11,7 @@ sequential (same module files); Tasks 7–8 (the stage) can start as soon as Tas
 
 ### Module (Tasks 1–2)
 - Mirror `Cluiche/CluicheGameBaseline/Modules/JobSystemModule.h` for the service-stream side and
-  `Dia/DiaSimTime/DiaSimTimeModule.h` for the injection side — between them they show every pattern
+  `Cluiche/CluicheGameBaseline/Modules/DiaSimTimeModule.h` for the injection side — between them they show every pattern
   this module needs.
 - `class DeferredStepModule : public Dia::ApplicationFlow::SimModule`, with
   `static const Dia::Core::StringCRC kTypeId;` (defined in the `.cpp`),

@@ -60,7 +60,7 @@ The system spec's Public Interfaces lists only `Step(Season, IParallelExecutor&)
 
 ### Grid tables (built once at `Initialise`)
 
-- `uint32_t neighbours[N * 6]`, from `Dia::Pathfinding::HexTopology::NeighbourAt`, `kNoCell` past the edge. Passes index this table; they never call the topology.
+- `uint32_t neighbours[N * 6]`, from `Dia::Geometry2D::HexTopology::NeighbourAt`, `kNoCell` past the edge. Passes index this table; they never call the topology.
 - `static constexpr` unit vectors for directions `d = 0..5`, at on-screen angle `30° + 60°·d`, counter-clockwise, y-down world space. This is the angle convention for every wind angle in the system, including the `wind_direction` V-1 reads.
 - Scratch arrays, allocated at `Initialise` and reused: `moistureOut`, `heatOut`, `anomalyOut` (float; `anomalyOut` added 2026-11-17, row 6d), `dirIndex` (`uint8_t`, the snapped downwind direction), and pass 0's per-cell influence deltas (temperature, moisture; Feature 7). **`Run` does no heap allocation.**
 

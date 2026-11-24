@@ -44,7 +44,7 @@ before escalating" (feedback_confirm_opus).
 
 ### Grid tables (Task 4)
 - Built in Feature 1's empty `BuildGridTables()`: `DynamicArrayC<uint32_t> neighbours` of `N*6` from
-  `Dia::Pathfinding::HexTopology::NeighbourAt`, `kNoCell` past the edge; `static constexpr` unit vectors
+  `Dia::Geometry2D::HexTopology::NeighbourAt`, `kNoCell` past the edge; `static constexpr` unit vectors
   for `d = 0..5` at on-screen angle `30 deg + 60 deg * d`, counter-clockwise, y-down; scratch arrays
   `moistureOut`, `heatOut`, `anomalyOut` (float; `anomalyOut` added 2026-11-17 (row 6d)) and `dirIndex` (`uint8_t`) allocated here and reused, plus pass 0's per-cell delta scratch (Feature 7).
 - **`Run` does no heap allocation.** Every per-pass temporary is one of these scratch arrays or a stack

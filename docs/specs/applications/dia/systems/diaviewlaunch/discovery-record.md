@@ -102,7 +102,7 @@ Every running game that hosts a DebugServer writes a small `discovery.json` into
 | `Dia/DiaDebugProtocol/DiaDebugProtocol.vcxproj(.filters)`, module doc | New files; `dia docs vcxproj-add` |
 | `Dia/DiaWebSocket/Server.h/.cpp` | `GetBoundPort()`; port 0 |
 | `Dia/DiaDebugServer/DebugServer.h/.cpp` | `GetBoundPort()`, `auto` port |
-| `Dia/DiaApplicationFlow/Observation/ObservationModule.h/.cpp` | `ObservationSessionService` writer |
+| `Dia/DiaApplicationFlow/Observation/ObservationModuleBase.h/.cpp` | `ObservationSessionService` writer |
 | `Cluiche/CluicheGameBaseline/Modules/DebugServerHostModule.h/.cpp` | Session reader, record write and stop, session id to the bridge |
 | `Cluiche/Assets/CluicheTest/.../cluiche_main.diaapp`, `Cluiche/Assets/CoW/cow_main.diaapp` | Stream declaration |
 | `Dia/DiaCLI/dia_cli/utils/discovery.py` (new), `dia_cli/cli/query.py` (new; `games` only in this feature) | Python reader, `dia query games` |

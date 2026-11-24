@@ -103,7 +103,7 @@ This is the one-week lag the World Step model gives for free. It is documented, 
 
 ### Grid and terrain ingest
 
-The grid is the same `Dia::Pathfinding::HexTopology` (flat-top odd-q) that A4 uses, built from S-1's dimensions. A5 copies at `Initialise` and never holds the pointer:
+The grid is the same `Dia::Geometry2D::HexTopology` (flat-top odd-q) that A4 uses, built from S-1's dimensions. A5 copies at `Initialise` and never holds the pointer:
 
 - From `Cell`: `elevation`, `waterSource`, `downstream` (0..5 on river cells), `biome`, `region`, `terrainFlags`.
 - From S-1's drainage stage: flow direction for **every** land cell, flow accumulation (an init weight only), the **basin table** (cells, spill height, spill cell, volume), lake membership and **bed elevation** under lakes (`Cell::elevation` is the lake *surface*).

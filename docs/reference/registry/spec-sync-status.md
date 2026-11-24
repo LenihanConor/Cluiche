@@ -135,6 +135,7 @@ Limits: this checks class/struct names only. It cannot see prose drift (stale st
 | diamesh3dvisualdebugger | Draft | — | — | no Public Interfaces |
 | diamessagebus | Unknown | ✅ | BusSubscriptionHandle, IFlushAdapter, Bus, Pass, MessageBusModule, LedgerMessageEntry, LedgerSnapshot, PhysicsBusAdapter | — |
 | diametrics | Unknown | — | — | no Public Interfaces |
+| diamoduleplacement | In Progress | — | — | no Public Interfaces |
 | diaobjective | Done | ✅ | IObjectiveObserver, RewardEntry, ObjectiveClassification, ObjectiveState, ObjectiveDef, ObjectiveSet, ObjectiveSetComponent, CapturingObserver, Event, Type | — |
 | diaobservation | Unknown | — | — | no Public Interfaces |
 | diaorder | Unknown | — | — | no Public Interfaces |
@@ -171,7 +172,7 @@ Limits: this checks class/struct names only. It cannot see prose drift (stale st
 | diatestharness | Unknown | — | — | no Public Interfaces |
 | diathreading | Unknown | — | — | no Public Interfaces |
 | diatoonshading | Unknown | — | — | no Public Interfaces |
-| diatriggerscript | Done | ✅ | TriggerType, SpatialParams, TemporalParams, StateParams, CountParams, ActionDef, TriggerDef, ActionContext, ITriggerActionHandler, TriggerActionRegistry, TriggerScriptModule, TriggerFiredEvent, MockActionHandler, Call | — |
+| diatriggerscript | Done | ⚠️ | TriggerType, SpatialParams, TemporalParams, StateParams, CountParams, ActionDef, TriggerDef, ActionContext, ITriggerActionHandler, TriggerActionRegistry, TriggerFiredEvent, MockActionHandler, Call | TriggerScriptModule |
 | diauicef | Unknown | — | — | no Public Interfaces |
 | diauiultralight | Unknown | — | — | no Public Interfaces |
 | diautilityai | Done | ✅ | CurveShape, ResponseCurve, ScorerDef, ActionDef, GroupConsiderationContext, UtilitySelection, UtilitySet, UtilitySetComponent, UtilityScoreDrawer | — |

@@ -26,7 +26,7 @@ per-kind values, and the `weather_parameters.json` / `weather_schema.json` edits
 - `ca-pipeline.plan.md` (A4 Feature 2): from the pipeline task that adds pass 0 scratch and `Capture` taking an
   `InfluenceSnapshot`.
 `grid-search-helpers.plan.md` and `blackboard-scopes.plan.md` are not needed (hex distance already exists as
-`Dia::Pathfinding::HexTopology::Distance`).
+`Dia::Geometry2D::HexTopology::Distance`).
 
 **Startable earlier on fakes.** The catalogue, book, weight and evaluation tasks (Tasks 2 to 8) are pure logic on
 hand-built terrain and need only A4 Feature 1's types and the sidecar generic caps. Tasks that need pipeline passes,
@@ -46,7 +46,7 @@ the book in `presets-and-regression.plan.md`; name registration and the `force s
 `weather-debug.plan.md`; the preview interface header in `weather-smoothing.plan.md`.
 
 All code is CoW (application) under `Cluiche/CoW/Shared/Weather/` and `Cluiche/CoW/Modules/`. No Dia files are
-added or edited (AD-001). Hex distance exists as `Dia::Pathfinding::HexTopology::Distance(CellCoord, CellCoord)`
+added or edited (AD-001). Hex distance exists as `Dia::Geometry2D::HexTopology::Distance(CellCoord, CellCoord)`
 (static, cube coordinates, flat-top odd-q), so no A4 distance helper is written. Where a task could need more than
 sonnet it says "ask before escalating" (feedback_confirm_opus).
 

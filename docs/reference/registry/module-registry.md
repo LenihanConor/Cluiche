@@ -162,7 +162,7 @@
       >
     - **dia.serializer** (DiaSerializer) — `Dia/DiaSerializer` [foundation/services/active]
       >
-  - **dia.deferredstep** (DiaDeferredStep) — `Dia/DiaDeferredStep` [foundation/application/active]
+  - **dia.deferredstep** (DiaDeferredStep) — `Dia/DiaDeferredStep` [foundation/services/active]
   - **dia.dia.diadebugprotocol** (DiaDebugProtocol) — `Dia/DiaDebugProtocol` [foundation/services/active]
     >
   - **dia.dia.diawebsocket** (DiaWebSocket) — `Dia/DiaWebSocket` [foundation/services/active]

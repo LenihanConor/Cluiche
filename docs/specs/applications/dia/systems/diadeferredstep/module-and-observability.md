@@ -224,7 +224,7 @@ keys, CPU ms, cap wait and worker wait per step instance, and two sources would 
 | File | Change |
 |---|---|
 | `Dia/DiaDeferredStep/IStepKeySource.h` | New |
-| `Dia/DiaDeferredStep/DeferredStepModule.h/.cpp` | New — the SimModule |
+| `Cluiche/CluicheGameBaseline/Modules/DeferredStepModule.h/.cpp` | New — the SimModule |
 | `Dia/DiaDeferredStep/DeferredStepMetrics.h/.cpp` | New — the nine registrations and their update |
 | `Dia/DiaDeferredStep/DeferredStepHealth.h/.cpp` | New — the rolling-window reporter |
 | `Dia/DiaDeferredStep/DiaDeferredStep.vcxproj(.filters)` | New files (`dia docs vcxproj-add`); add DiaApplicationFlow, DiaStreams, DiaObservation references |

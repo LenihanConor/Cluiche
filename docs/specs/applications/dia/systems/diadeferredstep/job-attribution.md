@@ -183,7 +183,7 @@ written with `kRestoredFromSave` and zeroed worker fields rather than being sile
 | `Dia/DiaDeferredStep/JobStepLauncher.cpp` | Tag the coordinator with `kCoordinatorRange` |
 | `Dia/DiaDeferredStep/StepSummary.h/.cpp` | New — builds a `StepSummaryRecord` from `RangeTiming` plus the scheduler's kick/ready/apply/stall times; owns the ring of the last 16 |
 | `Dia/DiaDeferredStep/DeferredStepScheduler.h/.cpp` | Record `kickNs`, `readyNs`, `applyNs`, `stallNs` and hand them to the summary builder at apply |
-| `Dia/DiaDeferredStep/DeferredStepModule.h/.cpp` | Resolve the `JobTimingTable` (or none), forward summaries, expose the ring |
+| `Cluiche/CluicheGameBaseline/Modules/DeferredStepModule.h/.cpp` | Resolve the `JobTimingTable` (or none), forward summaries, expose the ring |
 | `Dia/DiaObservation/Profile/StepSummaryRecord.h` | New — the record type, so `JobTimingTable` need not know DiaDeferredStep (AD-001 sign-off) |
 | `Dia/DiaObservation/Profile/JobTimingTable.h/.cpp` | `AddStepSummary` + storage — **owned by perf-inspector Task 8**; this feature consumes it and must not fork it |
 | `Cluiche/Tests/GoogleTests/DiaThreading/TestJobSystem.cpp` | Overload tests (AC 1–3) |
