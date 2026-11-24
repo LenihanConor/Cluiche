@@ -98,6 +98,8 @@
       <Filter>Testing</Filter>
     </ClInclude>
     <ClInclude Include="WeatherTypes.h" />
+    <ClInclude Include="WeatherParameters.h" />
+    <ClInclude Include="WeatherSimulation.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BiomeClassify.cpp" />
@@ -144,6 +146,8 @@
       <Filter>TerrainFieldContribution</Filter>
     </ClCompile>
     <ClCompile Include="WeatherTypes.cpp" />
+    <ClCompile Include="WeatherParameters.cpp" />
+    <ClCompile Include="WeatherSimulation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.draoi.hexworldweather.architecture.module.md">

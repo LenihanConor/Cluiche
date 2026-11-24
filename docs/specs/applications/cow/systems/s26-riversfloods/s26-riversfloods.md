@@ -178,11 +178,11 @@ Mirrors S-2.5. Feature specs to be written (`/spec-feature`), all Draft.
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | Stage & World | `.diastage`, F-1 menu entry, `S26RiversFloodsModule`, mode switch, world load and size picker, the prechecks, A5 (and in Coupled mode A4) hosting, time controls and year-step, forced years, climate-cycle scrubber, layers, click-to-inspect, step-back, S26 card. **HTML mockup of the S26 card first** (extend S-2.5's) | `stage-and-world.md` (to write) | Draft |
-| 2 | Hydrology Checks | Pure helpers (river-tree and head/mouth lookup, flood-lag and attenuation, basin level series, counter tracking, balance accumulator), the ten tests as `Hard`/`Default` checks with `reopenSection`, baseline record/compare. TDD over hand-built hydrology grids with known answers | `hydrology-checks.md` (to write) | Draft |
-| 3 | Headless Runner & Report | `S26HeadlessRunner` on `HydrologyRunner` + the A5 command executor, test plan and run table, worker job with progress and cancel, report JSON, edge-case coverage table, performance reporting, DiaAutomation trigger, live-vs-runner integration test | `headless-runner.md` (to write) | Draft |
-| 4 | Scenarios & Walkthrough | S-2.6 scenarios (one per test plus presets), vocabulary file and its GoogleTest, check and overlay registration over the CoW-Shared format | `scenarios-and-walkthrough.md` (to write) | Draft |
-| 5 | History & Graphs | DiaCellHistory block for A5 layers and events, `dia.cell_history` export from the card and each run, flood scrub-from-peak-to-onset | `history-and-graphs.md` (to write) | Draft |
+| 1 | Stage & World | `.diastage`, F-1 menu entry, `S26RiversFloodsModule`, mode switch, world load and size picker, the prechecks, A5 (and in Coupled mode A4) hosting, time controls and year-step, forced years, climate-cycle scrubber, layers, click-to-inspect, step-back, S26 card. **HTML mockup of the S26 card first** (extend S-2.5's) | [stage-and-world.md](stage-and-world.md) | Approved |
+| 2 | Hydrology Checks | Pure helpers (river-tree and head/mouth lookup, flood-lag and attenuation, basin level series, counter tracking, balance accumulator), the ten tests as `Hard`/`Default` checks with `reopenSection`, baseline record/compare. TDD over hand-built hydrology grids with known answers | [hydrology-checks.md](hydrology-checks.md) | Approved |
+| 3 | Headless Runner & Report | `S26HeadlessRunner` on `HydrologyRunner` + the A5 command executor, test plan and run table, worker job with progress and cancel, report JSON, edge-case coverage table, performance reporting, DiaAutomation trigger, live-vs-runner integration test | [headless-runner.md](headless-runner.md) | Approved |
+| 4 | Scenarios & Walkthrough | S-2.6 scenarios (one per test plus presets), vocabulary file and its GoogleTest, check and overlay registration over the CoW-Shared format | [scenarios-and-walkthrough.md](scenarios-and-walkthrough.md) | Approved |
+| 5 | History & Graphs | DiaCellHistory block for A5 layers and events, `dia.cell_history` export from the card and each run, flood scrub-from-peak-to-onset | [history-and-graphs.md](history-and-graphs.md) | Approved |
 
 **Build order:** 2 can start once A5 Feature 1 exists (it needs only A5's data types and hand-built grids). 3 follows A5 Features 2, 5 and 6. 1 needs A5 Feature 3 and S-1 Features 1 and 8. 4 needs S-2.5 Feature 4 (the shared format and validator). 5 follows 1. **Scripted first (user decision 2026-11-24):** Features 2, 3, 4 and 5 deliver the Scripted verdict with no A4. The Coupled parts (Test 8, the Coupled Test 4 variant, the cycle scrubber, the `SLOW_` Coupled Test 6, Coupled determinism) are tasks inside Features 1, 2 and 3 marked **blocked on A4 Features 1–3 and 8**, and do not gate marking a feature Done.
 
@@ -242,4 +242,11 @@ For the GDD session to fold back into `S2.6_RiversFloods.md` (never edit the GDD
 
 ## Status
 
-**Status:** `Draft` (2026-11-24). System spec written from the locked GDD; feature specs not yet written, no plan, no code. Cannot be built until A5 and S-2.5 Feature 4 exist (backlog order #4 → #9 → #11). Approve this spec, then write the five feature specs.
+**Status:** `Approved` (2026-11-24, user). Five feature specs written the same day, all `Approved` (2026-11-24, user). No plan, no code. Cannot be built until A5 and S-2.5 Feature 4 exist (backlog order #4 → #9 → #11).
+
+**Design points the feature specs settled (each supersedes contradicting text above):**
+- Checks read a compact **per-week series** (`S26WeekSummary`), not full fields; the live module and the runner build it with one function, so live equals headless (Feature 2).
+- A new check state `CoupledOnly` marks the Coupled checks in a Scripted context (Feature 2); a Scripted `Pass` report lists them under `coupledOnly[]` (Feature 3).
+- Forced years in Scripted mode use a feature-local `ScaledWaterInput` (rain only); Test 5 plays 5,200 weeks per preset with a base-weather tail (Features 1, 3).
+- Command names: Feature 1 owns `cow.s26.{world,mode,year_step,forced_year,cycle,status}`; Feature 3 owns `cow.s26.{run,report,baseline,livesmoke}`. `cow.s26.baseline` takes `{"action":"record","force":false}`.
+- Graphs: `hydro.totals` and a new `s26.series` event per week plus layer aggregates, exported as `dia.cell_history` (Feature 5).
